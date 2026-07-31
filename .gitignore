@@ -1,0 +1,15 @@
+## .NET
+bin/
+obj/
+*.user
+
+## Rider/VS
+.vs/
+.vscode/
+*.suo
+
+## OS
+.DS_Store
+
+## Secrets - never commit real connection strings/credentials
+appsettings.*.local.json

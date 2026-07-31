@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C3B6CD80-69CB-43F2-A751-9F88D7C97D93}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sugentra.ERP.Api", "src\Sugentra.ERP.Api\Sugentra.ERP.Api.csproj", "{B4C90420-8DDF-43D0-876B-2F0481F41C99}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sugentra.ERP.Migrator", "src\Sugentra.ERP.Migrator\Sugentra.ERP.Migrator.csproj", "{7691F689-850C-47EA-8406-2EB1CA3FCCC8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F3AEFAFC-771F-4276-A182-E7AC3FD8566E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sugentra.ERP.Tests", "tests\Sugentra.ERP.Tests\Sugentra.ERP.Tests.csproj", "{9FDB6462-C1FB-423A-B7D2-ADF0EC942C53}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B4C90420-8DDF-43D0-876B-2F0481F41C99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4C90420-8DDF-43D0-876B-2F0481F41C99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4C90420-8DDF-43D0-876B-2F0481F41C99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4C90420-8DDF-43D0-876B-2F0481F41C99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7691F689-850C-47EA-8406-2EB1CA3FCCC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7691F689-850C-47EA-8406-2EB1CA3FCCC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7691F689-850C-47EA-8406-2EB1CA3FCCC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7691F689-850C-47EA-8406-2EB1CA3FCCC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FDB6462-C1FB-423A-B7D2-ADF0EC942C53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FDB6462-C1FB-423A-B7D2-ADF0EC942C53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FDB6462-C1FB-423A-B7D2-ADF0EC942C53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FDB6462-C1FB-423A-B7D2-ADF0EC942C53}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B4C90420-8DDF-43D0-876B-2F0481F41C99} = {C3B6CD80-69CB-43F2-A751-9F88D7C97D93}
+		{7691F689-850C-47EA-8406-2EB1CA3FCCC8} = {C3B6CD80-69CB-43F2-A751-9F88D7C97D93}
+		{9FDB6462-C1FB-423A-B7D2-ADF0EC942C53} = {F3AEFAFC-771F-4276-A182-E7AC3FD8566E}
+	EndGlobalSection
+EndGlobal
