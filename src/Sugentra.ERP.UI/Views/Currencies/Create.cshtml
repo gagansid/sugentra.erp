@@ -1,0 +1,80 @@
+@model Sugentra.ERP.UI.Models.Settings.Currency
+@{
+    ViewData["Title"] = "Currency";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-settings-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Settings", Url.Action("Index", "Workspace", new { id = "Settings" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Currencies", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Create Currency</h5>
+            </div>
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form id="currencyForm" method="post" novalidate>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Code" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Code" class="form-control form-control-sm" required />
+                            <div class="invalid-feedback">Code is required.</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Name" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Name" class="form-control form-control-sm" required />
+                            <div class="invalid-feedback">Name is required.</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Symbol" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Symbol" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                <button type="submit" form="currencyForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('currencyForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                field.classList.toggle('is-invalid', !isFieldValid);
+                valid = valid && isFieldValid;
+            });
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    </script>
+}

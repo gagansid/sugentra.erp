@@ -1,0 +1,376 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Add Business Partner";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-database-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Master Data", Url.Action("Index", "Workspace", new { id = "MasterData" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Business Partners", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Create Business Partner</h5>
+    </div>
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+             style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+        <form id="businessPartnerForm" method="post" novalidate>
+            <div class="row g-4 mb-2">
+                <div class="col-md-6">
+                    <h6 class="mb-3">General</h6>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Code</label>
+                        <div class="col-sm-9">
+                            <input name="code" class="form-control form-control-sm" required />
+                            <div class="invalid-feedback">Code is required.</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Name</label>
+                        <div class="col-sm-9">
+                            <input name="name" class="form-control form-control-sm" required />
+                            <div class="invalid-feedback">Name is required.</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Type</label>
+                        <div class="col-sm-9">
+                            <select name="partnerType" class="form-select form-select-sm">
+                                <option value="Customer">Customer</option>
+                                <option value="Supplier">Supplier</option>
+                                <option value="Both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Logo</label>
+                        <div class="col-sm-9">
+                            <input type="hidden" name="logoUrl" id="logoUrlInput" value="" />
+                            <input type="file" class="form-control form-control-sm" id="logoFileInput"
+                                   accept=".jpg,.jpeg,.png,.webp" />
+                            <div class="border rounded d-flex align-items-center justify-content-center mt-2"
+                                 style="inline-size:92px;block-size:86px;">
+                                <img id="logoPreview" src="" alt="Logo preview"
+                                     style="max-width:100%;max-height:100%;object-fit:contain;display:none" />
+                                <i class="ri ri-image-line text-muted" id="logoPlaceholder"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Active</label>
+                        <div class="col-sm-9 d-flex align-items-center">
+                            <div class="form-check form-switch mb-0">
+                                <input name="isActive" value="true" class="form-check-input" type="checkbox" checked />
+                                <input type="hidden" name="isActive" value="false" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <h6 class="mb-3">Tax Identity</h6>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Taxpayer Type</label>
+                        <div class="col-sm-9">
+                            <select name="taxpayerType" class="form-select form-select-sm">
+                                <option value="">-</option>
+                                <option value="Badan">Badan</option>
+                                <option value="OrangPribadi">Orang Pribadi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">NPWP (Tax ID)</label>
+                        <div class="col-sm-9">
+                            <input name="taxId" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">NIK</label>
+                        <div class="col-sm-9">
+                            <input name="nik" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">NITKU</label>
+                        <div class="col-sm-9">
+                            <input name="nitku" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Registered Name</label>
+                        <div class="col-sm-9">
+                            <input name="taxRegisteredName" class="form-control form-control-sm"
+                                   placeholder="per NPWP" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Registered Address</label>
+                        <div class="col-sm-9">
+                            <input name="taxAddress" class="form-control form-control-sm" placeholder="per NPWP" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">SKT Number</label>
+                        <div class="col-sm-9">
+                            <input name="sktNumber" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">KLU Code</label>
+                        <div class="col-sm-9">
+                            <input name="kluCode" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">PKP</label>
+                        <div class="col-sm-9 d-flex align-items-center">
+                            <div class="form-check form-switch mb-0">
+                                <input name="isPkp" value="true" class="form-check-input" type="checkbox" />
+                                <input type="hidden" name="isPkp" value="false" />
+                                <label class="form-check-label">VAT-registered</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <h6 class="mb-3">Addresses</h6>
+            <div id="addressLines">
+                <div class="row g-2 mb-3 pb-3 border-bottom address-row">
+                    <div class="col-12 col-md-2">
+                        <select name="addressType" class="form-select form-select-sm">
+                            <option value="Office">Office</option>
+                            <option value="Billing">Billing</option>
+                            <option value="Shipping">Shipping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <input name="address" class="form-control form-control-sm" placeholder="Address" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input name="addressCity" class="form-control form-control-sm" placeholder="City" />
+                    </div>
+                    <div class="col-6 col-md-1">
+                        <input name="addressPostalCode" class="form-control form-control-sm" placeholder="Postal" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <input name="addressProvince" class="form-control form-control-sm" placeholder="Province" />
+                    </div>
+                    <div class="col-6 col-md-1">
+                        <input name="addressCountry" class="form-control form-control-sm" placeholder="Country" />
+                    </div>
+                    <div class="col-auto d-flex align-items-center gap-1" data-bs-toggle="tooltip"
+                         title="Primary for this address type">
+                        <input type="radio" class="form-check-input address-primary-radio mt-0" />
+                        <small class="text-muted">Primary</small>
+                        <input type="hidden" name="addressIsPrimary" class="address-is-primary-hidden" value="false" />
+                    </div>
+                    <div class="col-auto d-flex align-items-center">
+                        <button type="button" class="btn btn-icon btn-text-danger remove-line" data-bs-toggle="tooltip"
+                                title="Remove"><i class="ri ri-delete-bin-line icon-14px"></i></button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" id="addAddressLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Address</button>
+
+            <h6 class="mb-3">Contacts (Email, Phone, WhatsApp, Fax)</h6>
+            <div id="contactLines">
+                <div class="row g-2 mb-3 pb-3 border-bottom contact-row">
+                    <div class="col-md-2">
+                        <select name="contactType" class="form-select form-select-sm">
+                            <option value="Phone">Phone</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="Fax">Fax</option>
+                            <option value="Email">Email</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <input name="contactName" class="form-control form-control-sm" placeholder="PIC Name" />
+                    </div>
+                    <div class="col-6 col-md-5">
+                        <input name="contactValue" class="form-control form-control-sm"
+                               placeholder="Phone / Email / etc." />
+                    </div>
+                    <div class="col-auto d-flex align-items-center gap-1" data-bs-toggle="tooltip"
+                         title="Primary for this contact type">
+                        <input type="radio" class="form-check-input contact-primary-radio mt-0" />
+                        <small class="text-muted">Primary</small>
+                        <input type="hidden" name="contactIsPrimary" class="contact-is-primary-hidden" value="false" />
+                    </div>
+                    <div class="col-auto d-flex align-items-center">
+                        <button type="button" class="btn btn-icon btn-text-danger remove-line" data-bs-toggle="tooltip"
+                                title="Remove"><i class="ri ri-delete-bin-line icon-14px"></i></button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" id="addContactLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Contact</button>
+        </form>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+        <button type="submit" form="businessPartnerForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmRemoveLineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Row</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to remove this row?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                        data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmRemoveLineBtn" class="btn btn-danger btn-filter-action">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('businessPartnerForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                field.classList.toggle('is-invalid', !isFieldValid);
+                valid = valid && isFieldValid;
+            });
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        document.getElementById('logoFileInput').addEventListener('change', function () {
+            var file = this.files[0];
+            if (!file) return;
+
+            var formData = new FormData();
+            formData.append('file', file);
+
+            fetch('@Url.Action("UploadLogo", "BusinessPartners")', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                body: formData
+            })
+                .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+                .then(function (result) {
+                    if (!result.ok) {
+                        alert(result.data.message || 'Upload failed.');
+                        return;
+                    }
+
+                    document.getElementById('logoUrlInput').value = result.data.url;
+                    var preview = document.getElementById('logoPreview');
+                    preview.src = '@Configuration["Api:BaseUrl"]' + result.data.url;
+                    preview.style.display = 'inline-block';
+                    document.getElementById('logoPlaceholder').style.display = 'none';
+                })
+                .catch(function () { alert('Upload failed.'); });
+        });
+        document.getElementById('addAddressLine').addEventListener('click', function () {
+            var lines = document.getElementById('addressLines');
+            var clone = lines.firstElementChild.cloneNode(true);
+            clone.querySelectorAll('input:not([type=radio])').forEach(function (i) { i.value = ''; });
+            clone.querySelector('.address-primary-radio').checked = false;
+            lines.appendChild(clone);
+            regroupPrimaryRadios(lines, '.address-row', 'select[name=addressType]', '.address-primary-radio', '.address-is-primary-hidden', 'addressPrimary');
+        });
+        document.getElementById('addContactLine').addEventListener('click', function () {
+            var lines = document.getElementById('contactLines');
+            var clone = lines.firstElementChild.cloneNode(true);
+            clone.querySelectorAll('input:not([type=radio])').forEach(function (i) { i.value = ''; });
+            clone.querySelector('.contact-primary-radio').checked = false;
+            lines.appendChild(clone);
+            regroupPrimaryRadios(lines, '.contact-row', 'select[name=contactType]', '.contact-primary-radio', '.contact-is-primary-hidden', 'contactPrimary');
+        });
+        // Only one row per type (Office/Billing/... or Phone/Email/...) can be marked Primary - radios are regrouped
+        // by current type value so the browser enforces mutual exclusivity within each type.
+        function regroupPrimaryRadios(container, rowSelector, typeSelector, radioSelector, hiddenSelector, namePrefix) {
+            var groups = {};
+            container.querySelectorAll(rowSelector).forEach(function (row) {
+                var type = row.querySelector(typeSelector).value;
+                var radio = row.querySelector(radioSelector);
+                radio.name = namePrefix + '_' + type;
+                (groups[type] = groups[type] || []).push(radio);
+            });
+            Object.keys(groups).forEach(function (type) {
+                var radios = groups[type];
+                if (!radios.some(function (r) { return r.checked; })) {
+                    radios[0].checked = true;
+                }
+            });
+            syncPrimaryHidden(container, rowSelector, radioSelector, hiddenSelector);
+        }
+        function syncPrimaryHidden(container, rowSelector, radioSelector, hiddenSelector) {
+            container.querySelectorAll(rowSelector).forEach(function (row) {
+                row.querySelector(hiddenSelector).value = row.querySelector(radioSelector).checked ? 'true' : 'false';
+            });
+        }
+        var addressLinesEl = document.getElementById('addressLines');
+        var contactLinesEl = document.getElementById('contactLines');
+        regroupPrimaryRadios(addressLinesEl, '.address-row', 'select[name=addressType]', '.address-primary-radio', '.address-is-primary-hidden', 'addressPrimary');
+        regroupPrimaryRadios(contactLinesEl, '.contact-row', 'select[name=contactType]', '.contact-primary-radio', '.contact-is-primary-hidden', 'contactPrimary');
+        addressLinesEl.addEventListener('change', function (e) {
+            if (e.target.matches('select[name=addressType]') || e.target.matches('.address-primary-radio')) {
+                regroupPrimaryRadios(addressLinesEl, '.address-row', 'select[name=addressType]', '.address-primary-radio', '.address-is-primary-hidden', 'addressPrimary');
+            }
+        });
+        contactLinesEl.addEventListener('change', function (e) {
+            if (e.target.matches('select[name=contactType]') || e.target.matches('.contact-primary-radio')) {
+                regroupPrimaryRadios(contactLinesEl, '.contact-row', 'select[name=contactType]', '.contact-primary-radio', '.contact-is-primary-hidden', 'contactPrimary');
+            }
+        });
+        function removeLine(container, row) {
+            if (container.children.length > 1) {
+                row.remove();
+            } else {
+                row.querySelectorAll('input:not([type=radio])').forEach(function (i) { i.value = ''; });
+                row.querySelector('.address-primary-radio, .contact-primary-radio').checked = false;
+            }
+            if (container === addressLinesEl) {
+                regroupPrimaryRadios(addressLinesEl, '.address-row', 'select[name=addressType]', '.address-primary-radio', '.address-is-primary-hidden', 'addressPrimary');
+            } else {
+                regroupPrimaryRadios(contactLinesEl, '.contact-row', 'select[name=contactType]', '.contact-primary-radio', '.contact-is-primary-hidden', 'contactPrimary');
+            }
+        }
+        var pendingRemove = null;
+        function askRemoveLine(container, row) {
+            pendingRemove = { container: container, row: row };
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmRemoveLineModal')).show();
+        }
+        document.getElementById('confirmRemoveLineBtn').addEventListener('click', function () {
+            if (pendingRemove) {
+                removeLine(pendingRemove.container, pendingRemove.row);
+                pendingRemove = null;
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmRemoveLineModal')).hide();
+        });
+        document.getElementById('addressLines').addEventListener('click', function (e) {
+            var btn = e.target.closest('.remove-line');
+            if (btn) {
+                askRemoveLine(this, btn.closest('.address-row'));
+            }
+        });
+        document.getElementById('contactLines').addEventListener('click', function (e) {
+            var btn = e.target.closest('.remove-line');
+            if (btn) {
+                askRemoveLine(this, btn.closest('.contact-row'));
+            }
+        });
+    </script>
+}
+
