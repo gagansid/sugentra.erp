@@ -1,0 +1,51 @@
+@model Sugentra.ERP.UI.Models.Identity.CreateUserViewModel
+@{
+    ViewData["Title"] = "Add User";
+}
+
+<h4 class="mb-4">Add User</h4>
+
+<div class="card">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+             style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+
+        <form asp-action="Create" method="post">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label">Username</label>
+                    <input asp-for="Username" class="form-control" />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Password</label>
+                    <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Employee Id</label>
+                    <input asp-for="EmployeeId" class="form-control" />
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary btn-filter-action">Save</button>
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-filter-action">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

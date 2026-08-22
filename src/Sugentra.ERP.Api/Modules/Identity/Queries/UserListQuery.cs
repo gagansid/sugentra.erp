@@ -1,34 +1,15 @@
-using Dapper;
-using Sugentra.ERP.Api.Modules.Identity.Dtos;
-using Sugentra.ERP.Api.Shared.Common;
-using Sugentra.ERP.Api.Shared.Persistence;
-
 namespace Sugentra.ERP.Api.Modules.Identity.Queries;
 
-public class UserListQuery(IDbConnectionFactory connectionFactory)
+// SQL text only — no execution here. Repository executes these and returns results (Queries convention).
+public static class UserListQuery
 {
-    public async Task<PagedResult<UserListItemDto>> GetPagedAsync(int page, int pageSize)
-    {
-        using var connection = connectionFactory.CreateConnection();
+    public const string GetByUsernameSql = "SELECT * FROM Identity_Users WHERE Username = @Username AND IsDeleted = 0";
+    // Login accepts either username or email in the same field.
+    public const string GetByUsernameOrEmailSql = "SELECT * FROM Identity_Users WHERE (Username = @UsernameOrEmail OR Email = @UsernameOrEmail) AND IsDeleted = 0";
+    public const string ExistsByUsernameSql = "SELECT COUNT(1) FROM Identity_Users WHERE Username = @Username AND IsDeleted = 0";
+    public const string ExistsByEmailSql = "SELECT COUNT(1) FROM Identity_Users WHERE Email = @Email AND IsDeleted = 0";
+    public const string ExistsByEmailForOtherUserSql = "SELECT COUNT(1) FROM Identity_Users WHERE Email = @Email AND Id <> @ExcludeId AND IsDeleted = 0";
 
-        const string countSql = "SELECT COUNT(1) FROM Identity_Users WHERE IsDeleted = 0";
-        const string pageSql = """
-            SELECT Id, Username, Email, FullName, IsActive
-            FROM Identity_Users
-            WHERE IsDeleted = 0
-            ORDER BY Id
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
-            """;
-
-        var totalCount = await connection.ExecuteScalarAsync<int>(countSql);
-        var items = await connection.QueryAsync<UserListItemDto>(pageSql, new { Offset = (page - 1) * pageSize, PageSize = pageSize });
-
-        return new PagedResult<UserListItemDto>
-        {
-            Items = items.ToList(),
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
-    }
+    // 3 optional filters crosses the SP threshold rule (many optional filters needing dynamic WHERE) — moved to a stored procedure.
+    public const string GetPagedProcedureName = "usp_Identity_User_GetPaged";
 }

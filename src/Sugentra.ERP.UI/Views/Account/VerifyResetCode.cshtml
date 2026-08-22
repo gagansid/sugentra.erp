@@ -1,0 +1,74 @@
+@model Sugentra.ERP.UI.Models.Account.VerifyResetCodeViewModel
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Verify Reset Code";
+}
+
+<div class="authentication-wrapper authentication-basic container-p-y p-4 p-sm-0">
+    <div class="authentication-inner py-6">
+        <div class="card p-md-7 p-1">
+            <div class="app-brand justify-content-center mt-5">
+                <a asp-controller="Account" asp-action="Login" class="app-brand-link gap-2">
+                    @if (!string.IsNullOrEmpty((string?)ViewBag.LogoUrl))
+                    {
+                        <img src="@ViewBag.LogoUrl" alt="@(ViewBag.CompanyName ?? "Sugentra ERP")"
+                             style="block-size: 72px; inline-size: auto;" />
+                    }
+                    else
+                    {
+                        <span class="app-brand-text demo text-heading fw-semibold">@(ViewBag.CompanyName ?? "Sugentra ERP")</span>
+                    }
+                </a>
+            </div>
+            <div class="card-body mt-1">
+                <h5 class="mb-1">Verify Reset Code</h5>
+                <p class="mb-5">A reset code has been sent to <strong>@Model.Email</strong>. The code is valid for 15
+                    minutes. If you didn't receive it, you can request a new one below.</p>
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger validation-summary-plain" role="alert"
+                         style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                    @if (TempData["SuccessMessage"] is string successMessage)
+                    {
+                        <div class="alert alert-primary" role="alert">@successMessage</div>
+                    }
+
+                    <form asp-controller="Account" asp-action="VerifyResetCode" method="post" class="mb-3">
+                        <input type="hidden" asp-for="Email" />
+                        <div class="mb-3">
+                            <label asp-for="Code" class="form-label">Reset Code</label>
+                            <input asp-for="Code" class="form-control form-control-sm text-uppercase" maxlength="6"
+                                   style="letter-spacing: 4px;" placeholder="XXXXXX" autofocus />
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-primary d-grid w-100" type="submit">Verify Code</button>
+                        </div>
+                    </form>
+
+                    <form asp-controller="Account" asp-action="ResendResetCode" method="post" class="mb-5">
+                        <input type="hidden" asp-for="Email" />
+                        <div class="text-center">
+                            <button class="btn btn-link p-0" type="submit">Resend Code</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center">
+                        <a asp-action="Login" class="text-decoration-none">Back to Sign In</a>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center mt-4 mb-0 text-body-secondary" style="font-size: 0.75rem;">Sugentra ERP v1.0.0</p>
+        </div>
+    </div>
+
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+    }
+
+    <style>
+        .validation-summary-plain ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+    </style>

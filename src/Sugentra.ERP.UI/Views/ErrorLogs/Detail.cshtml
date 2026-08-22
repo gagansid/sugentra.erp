@@ -1,0 +1,343 @@
+@model Sugentra.ERP.UI.Models.Shared.ErrorLogDetailDto
+@{
+    ViewData["Title"] = "Error Log Detail";
+    var canEdit = User.HasPermission("ErrorLog_Edit");
+    var canSendEmail = User.HasPermission("ErrorLog_SendEmail");
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-history-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Audit Log", Url.Action("Index", "Workspace", new { id =
+"AuditLog" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Error Logs", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="mb-0">
+        @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+    </div>
+    <div class="d-flex align-items-center gap-1">
+        @if (ViewBag.FirstId is long firstId && firstId != Model.Id)
+        {
+            <a asp-action="Detail" asp-route-id="@firstId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="First">&laquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="First">&laquo;</button>
+        }
+        @if (ViewBag.PreviousId is long previousId)
+        {
+            <a asp-action="Detail" asp-route-id="@previousId" class="btn btn-icon btn-label-secondary"
+               data-bs-toggle="tooltip" data-bs-placement="top" title="Previous">&lsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Previous">&lsaquo;</button>
+        }
+        @if (ViewBag.NextId is long nextId)
+        {
+            <a asp-action="Detail" asp-route-id="@nextId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Next">&rsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Next">&rsaquo;</button>
+        }
+        @if (ViewBag.LastId is long lastId && lastId != Model.Id)
+        {
+            <a asp-action="Detail" asp-route-id="@lastId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Last">&raquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Last">&raquo;</button>
+        }
+        <a asp-action="Detail" asp-route-id="@Model.Id" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip"
+           data-bs-placement="top" title="Refresh"><i class="ri ri-refresh-line icon-14px"></i></a>
+        @if (canSendEmail && Model.Status != "Solved")
+        {
+            <button type="button" class="btn btn-icon btn-label-dark" data-bs-toggle="modal"
+                    data-bs-target="#sendEmailModal" title="Send Email"><i class="ri ri-mail-send-line icon-14px"></i></button>
+        }
+        <a asp-action="Index" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+           title="Back to List"><i class="ri ri-arrow-go-back-line icon-14px"></i></a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="row g-0">
+        <div class="col-md-8 border-end">
+            <h5 class="card-header">Error Log Detail</h5>
+            <div class="card-body">
+                <p><strong>Entry #@Model.Id</strong></p>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Source</strong></div>
+                    <div class="col-sm-9">@Model.Source</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Occurred At</strong></div>
+                    <div class="col-sm-9">@Model.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Endpoint</strong></div>
+                    <div class="col-sm-9">@(Model.Endpoint ?? "-")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>HTTP Method</strong></div>
+                    <div class="col-sm-9">@(Model.HttpMethod ?? "-")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Status Code</strong></div>
+                    <div class="col-sm-9">@(Model.StatusCode?.ToString() ?? "-")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Exception Type</strong></div>
+                    <div class="col-sm-9">@(Model.ExceptionType ?? "-")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Query String</strong></div>
+                    <div class="col-sm-9">@(Model.QueryString ?? "-")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Request Parameters</strong></div>
+                    <div class="col-sm-9">@(Model.RequestParameters ?? "-")</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>User</strong></div>
+                    <div class="col-sm-9">@(string.IsNullOrEmpty(Model.Username) ? "-" : Model.ReporterFullName is null
+                                                                                                                                                                                                                                                                                                                                                ? Model.Username : $"{Model.ReporterFullName} ({Model.Username})")</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-3"><strong>IP Address</strong></div>
+                        <div class="col-sm-9">@(Model.IpAddress ?? "-")</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-3"><strong>Email Sent At</strong></div>
+                        <div class="col-sm-9">@(Model.EmailSentAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-3"><strong>Email Sent By</strong></div>
+                        <div class="col-sm-9">@(Model.EmailSentByEmail ?? "-")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 d-flex flex-column">
+                <h5 class="card-header">Condition</h5>
+                <div class="card-body d-flex flex-column flex-grow-1">
+                    <div id="sendEmailAlert" class="alert alert-primary d-none" role="alert"></div>
+                    <form id="conditionForm" class="d-flex flex-column flex-grow-1">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Condition</strong></label>
+                            <select id="conditionSelect" class="form-select form-select-sm" @(canEdit ? "" : "disabled")>
+                                <option value="NotSolved" selected="@(Model.Status != "Solved" ? "selected" : null)">Not
+                                    Solved
+                                </option>
+                                <option value="Solved" selected="@(Model.Status == "Solved" ? "selected" : null)">Solved
+                                </option>
+                            </select>
+                        </div>
+                        @if (canEdit || !string.IsNullOrEmpty(Model.Remarks))
+                        {
+                            <div class="mb-3 d-flex flex-column flex-grow-1">
+                                <label class="form-label"><strong>Remarks</strong></label>
+                                <!-- Only ErrorLog_Edit can fill remarks; everyone else can read them but not change them. -->
+                                <textarea id="remarksInput" class="form-control form-control-sm flex-grow-1"
+                                          style="min-height: 150px;" placeholder="@(canEdit ? "Add remarks..." : "")"
+                                          readonly="@(canEdit ? null : "readonly")">@Model.Remarks</textarea>
+                            </div>
+                        }
+                        @if (canEdit || Model.SolvedAt is not null)
+                        {
+                            <div class="row mb-2">
+                                <div class="col-sm-4"><strong>Solved At</strong></div>
+                                <div class="col-sm-8">@(Model.SolvedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Solved By</strong></div>
+                                <div class="col-sm-8">@(Model.SolvedByEmail ?? "-")</div>
+                            </div>
+                        }
+                        @if (canEdit)
+                        {
+                            <div class="d-flex justify-content-end">
+                                <button type="button" id="saveConditionBtn"
+                                        class="btn btn-primary btn-sm btn-filter-action">Submit</button>
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h5 class="card-header">Message</h5>
+        <div class="card-body">
+            <pre class="mb-0" style="white-space: pre-wrap;">@(Model.Message ?? "-")</pre>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <h5 class="card-header">Stack Trace</h5>
+        <div class="card-body">
+            <pre class="mb-0" style="white-space: pre-wrap;">@(Model.StackTrace ?? "-")</pre>
+        </div>
+    </div>
+
+    @if (canEdit || canSendEmail)
+    {
+        @if (canEdit)
+        {
+            <div class="modal fade" id="confirmConditionModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog" style="max-width: 480px;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Confirm Condition Change</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-0">Set this entry's condition to <strong id="confirmConditionText"></strong>?</p>
+                        </div>
+                        <div class="modal-footer flex-nowrap">
+                            <button type="button" class="btn btn-label-dark waves-effect btn-filter-action text-nowrap"
+                                    data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" id="confirmConditionBtn"
+                                    class="btn btn-label-primary btn-filter-action text-nowrap">Save</button>
+                            @if (canSendEmail)
+                            {
+                                <button type="button" id="confirmConditionSendEmailBtn" class="btn btn-primary text-nowrap">Save &amp;
+                                    Send Email</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (canSendEmail && Model.Status != "Solved")
+            {
+                <div class="modal fade" id="sendEmailModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Send Email Notification</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <label class="form-label">Recipient Email</label>
+                                <input type="email" id="sendEmailToInput" class="form-control" autocomplete="off"
+                                       value="@ViewBag.DefaultNotificationEmail" required />
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                        data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" id="confirmSendEmailBtn" class="btn btn-primary btn-filter-action">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @section Scripts {
+                @Html.AntiForgeryToken()
+                <script>
+                    (function () {
+                        var conditionSelect = document.getElementById('conditionSelect');
+                        var remarksInput = document.getElementById('remarksInput');
+                        var saveBtn = document.getElementById('saveConditionBtn');
+                        var confirmModalEl = document.getElementById('confirmConditionModal');
+                        var confirmModal = confirmModalEl ? new bootstrap.Modal(confirmModalEl) : null;
+                        var confirmText = document.getElementById('confirmConditionText');
+                        var confirmBtn = document.getElementById('confirmConditionBtn');
+                        var confirmSendEmailModalBtn = document.getElementById('confirmConditionSendEmailBtn');
+                        var sendEmailAlert = document.getElementById('sendEmailAlert');
+                        var defaultNotificationEmail = '@ViewBag.DefaultNotificationEmail';
+                        var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                        if (saveBtn) {
+                            saveBtn.addEventListener('click', function () {
+                                confirmText.textContent = conditionSelect.options[conditionSelect.selectedIndex].text;
+                                confirmModal.show();
+                            });
+                        }
+
+                        function saveCondition() {
+                            return fetch('@Url.Action("UpdateStatus")', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                                body: 'id=@Model.Id&status=' + encodeURIComponent(conditionSelect.value) + '&remarks=' + encodeURIComponent(remarksInput.value)
+                            }).then(function (r) { return r.json(); });
+                        }
+
+                        if (confirmBtn) {
+                            confirmBtn.addEventListener('click', function () {
+                                confirmBtn.disabled = true;
+                                saveCondition()
+                                    .then(function () { location.reload(); })
+                                    .finally(function () { confirmBtn.disabled = false; });
+                            });
+                        }
+
+                        if (confirmSendEmailModalBtn) {
+                            confirmSendEmailModalBtn.addEventListener('click', function () {
+                                confirmSendEmailModalBtn.disabled = true;
+                                saveCondition()
+                                    .then(function () {
+                                        return fetch('@Url.Action("SendEmail")', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                                            body: 'id=@Model.Id&toEmail=' + encodeURIComponent(defaultNotificationEmail)
+                                        });
+                                    })
+                                    .then(function (r) { return r.json(); })
+                                    .then(function (result) {
+                                        confirmModal.hide();
+                                        sendEmailAlert.textContent = result.message || (result.success ? 'Email sent.' : 'Failed to send email.');
+                                        sendEmailAlert.classList.remove('d-none', 'alert-primary', 'alert-danger');
+                                        sendEmailAlert.classList.add(result.success ? 'alert-primary' : 'alert-danger');
+                                        if (result.success) {
+                                            setTimeout(function () { location.reload(); }, 1500);
+                                        }
+                                    })
+                                    .finally(function () { confirmSendEmailModalBtn.disabled = false; });
+                            });
+                        }
+
+                        var sendEmailModalEl = document.getElementById('sendEmailModal');
+                        var sendEmailToInput = document.getElementById('sendEmailToInput');
+                        var confirmSendEmailBtn = document.getElementById('confirmSendEmailBtn');
+
+                        if (confirmSendEmailBtn) {
+                            confirmSendEmailBtn.addEventListener('click', function () {
+                                if (!sendEmailToInput.reportValidity()) {
+                                    return;
+                                }
+
+                                confirmSendEmailBtn.disabled = true;
+                                fetch('@Url.Action("SendEmail")', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                                    body: 'id=@Model.Id&toEmail=' + encodeURIComponent(sendEmailToInput.value)
+                                })
+                                    .then(function (r) { return r.json(); })
+                                    .then(function (result) {
+                                        bootstrap.Modal.getInstance(sendEmailModalEl).hide();
+                                        sendEmailAlert.textContent = result.message || (result.success ? 'Email sent.' : 'Failed to send email.');
+                                        sendEmailAlert.classList.remove('d-none', 'alert-primary', 'alert-danger');
+                                        sendEmailAlert.classList.add(result.success ? 'alert-primary' : 'alert-danger');
+                                        if (result.success) {
+                                            setTimeout(function () { location.reload(); }, 1500);
+                                        }
+                                    })
+                                    .finally(function () { confirmSendEmailBtn.disabled = false; });
+                            });
+                        }
+                    })();
+                </script>
+            }
+        }

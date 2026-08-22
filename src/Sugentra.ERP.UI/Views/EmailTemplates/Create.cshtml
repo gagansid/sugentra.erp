@@ -1,0 +1,163 @@
+@model Sugentra.ERP.UI.Models.Settings.EmailTemplate
+@{
+    ViewData["Title"] = "Email Template";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-mail-settings-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Administration", Url.Action("Index", "Workspace", new { id =
+"SystemAdministration" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Email Templates", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/quill/typography.css" />
+    <link rel="stylesheet" href="~/vendor/libs/quill/editor.css" />
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<form method="post" id="emailTemplateForm">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="BodyHtml" id="BodyHtmlHidden" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+         style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <label asp-for="Code" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Code" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Name" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Name" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Description" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <textarea asp-for="Description" class="form-control form-control-sm" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="FromEmail" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="FromEmail" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="FromName" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="FromName" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="ReplyToEmail" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="ReplyToEmail" class="form-control form-control-sm" />
+                            <div class="form-check mt-2">
+                                <input asp-for="IsReplyToEnabled" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsReplyToEnabled" class="form-check-label">Use Reply-To</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Subject" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Subject" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="AvailablePlaceholders"
+                               class="col-sm-3 col-form-label col-form-label-sm">Placeholders</label>
+                        <div class="col-sm-9">
+                            <input asp-for="AvailablePlaceholders" class="form-control form-control-sm"
+                                   placeholder="UserName,ResetLink,ExpiryMinutes" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="BodyText" class="col-sm-3 col-form-label col-form-label-sm">Body (Plain
+                            Text)</label>
+                            <div class="col-sm-9">
+                                <textarea asp-for="BodyText" class="form-control form-control-sm" rows="4"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="IsActive" class="col-sm-3 col-form-label col-form-label-sm">Active</label>
+                            <div class="col-sm-9">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Body (HTML)</label>
+                            <button type="button" id="toggleHtmlSourceBtn" class="btn btn-sm btn-outline-secondary">View
+                                HTML</button>
+                            </div>
+                            <div id="quillWrapper">
+                                <div id="templateBodyEditor" style="min-height: 420px;">@Html.Raw(Model.BodyHtml)</div>
+                            </div>
+                            <textarea id="templateBodySource" class="form-control form-control-sm font-monospace d-none"
+                                      style="min-height: 420px;" spellcheck="false"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-filter-action">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-filter-action">Save</button>
+            </div>
+        </form>
+
+        @section VendorScripts {
+            <script src="~/vendor/libs/quill/katex.js"></script>
+            <script src="~/vendor/libs/quill/quill.js"></script>
+        }
+
+        @section PageScripts {
+            <script>
+                const templateBodyEditor = new Quill('#templateBodyEditor', {
+                    modules: { toolbar: true },
+                    theme: 'snow'
+                });
+
+                const htmlSourceView = document.getElementById('templateBodySource');
+                const toggleHtmlSourceBtn = document.getElementById('toggleHtmlSourceBtn');
+                const quillWrapper = document.getElementById('quillWrapper');
+                let showingHtmlSource = false;
+
+                toggleHtmlSourceBtn.addEventListener('click', function () {
+                    showingHtmlSource = !showingHtmlSource;
+                    if (showingHtmlSource) {
+                        htmlSourceView.value = templateBodyEditor.root.innerHTML;
+                        quillWrapper.classList.add('d-none');
+                        htmlSourceView.classList.remove('d-none');
+                        toggleHtmlSourceBtn.textContent = 'View Editor';
+                    } else {
+                        templateBodyEditor.root.innerHTML = htmlSourceView.value;
+                        quillWrapper.classList.remove('d-none');
+                        htmlSourceView.classList.add('d-none');
+                        toggleHtmlSourceBtn.textContent = 'View HTML';
+                    }
+                });
+
+                document.getElementById('emailTemplateForm').addEventListener('submit', function () {
+                    document.getElementById('BodyHtmlHidden').value = showingHtmlSource
+                        ? htmlSourceView.value
+                        : templateBodyEditor.root.innerHTML;
+                });
+            </script>
+        }

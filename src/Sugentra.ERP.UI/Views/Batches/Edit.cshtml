@@ -1,0 +1,115 @@
+@model Sugentra.ERP.UI.Models.Inventory.Batch
+@{
+    ViewData["Title"] = "Edit Batch";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-archive-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Batches", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">@ViewData["Title"]</h5>
+            </div>
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form id="batchForm" method="post" novalidate>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Code" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Code" class="form-control form-control-sm" required />
+                            <div class="invalid-feedback">Code is required.</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Item</label>
+                        <div class="col-sm-9">
+                            <select asp-for="ItemId" class="form-select form-select-sm" required>
+                                @foreach (var item in items)
+                                {
+                                    <option value="@item.Id">@item.Code - @item.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Grade" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9"><input asp-for="Grade" class="form-control form-control-sm" /></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Warehouse</label>
+                        <div class="col-sm-9">
+                            <select asp-for="WarehouseId" class="form-select form-select-sm" required>
+                                @foreach (var w in warehouses)
+                                {
+                                    <option value="@w.Id">@w.Code - @w.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="ReceivedDate" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="ReceivedDate" type="date" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="LegalityDocumentType" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <select asp-for="LegalityDocumentType" class="form-select form-select-sm">
+                                <option value="">-- None --</option>
+                                <option value="SVLK">SVLK</option>
+                                <option value="FSC">FSC</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="LegalityDocumentNumber"
+                               class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9"><input asp-for="LegalityDocumentNumber"
+                                                         class="form-control form-control-sm" /></div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <label asp-for="LegalityDocumentUrl" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                            <div class="col-sm-9"><input asp-for="LegalityDocumentUrl"
+                                                             class="form-control form-control-sm" /></div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <label asp-for="SourceReference" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                                <div class="col-sm-9"><input asp-for="SourceReference" class="form-control form-control-sm" />
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                        <button type="submit" form="batchForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @section Scripts {
+            <script>
+                document.getElementById('batchForm').addEventListener('submit', function (event) {
+                    var valid = true;
+                    this.querySelectorAll('[required]').forEach(function (field) {
+                        var isFieldValid = field.checkValidity();
+                        field.classList.toggle('is-invalid', !isFieldValid);
+                        valid = valid && isFieldValid;
+                    });
+                    if (!valid) { event.preventDefault(); event.stopPropagation(); }
+                });
+            </script>
+        }

@@ -1,0 +1,154 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Settings.DocumentNumbering>
+@{
+    ViewData["Title"] = "Document Numbering";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-settings-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Settings", Url.Action("Index", "Workspace", new { id = "Settings" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Document Numbering", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<style>
+    .doc-numberings-filter-form .filter-field {
+        width: 100%;
+    }
+
+    .doc-numberings-filter-form-actions .btn {
+        width: 80px;
+        max-width: 80px;
+    }
+
+    @@media (min-width: 576px) {
+        .doc-numberings-filter-form .filter-keyword {
+            width: 220px;
+        }
+    }
+</style>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Document Numbering</h5>
+        @if (User.HasPermission("DocumentNumbering_Create"))
+        {
+            <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add Data</a>
+        }
+    </div>
+    <div class="pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <form method="get" id="docNumberingsFilterForm" class="doc-numberings-filter-form">
+            <div class="d-flex flex-wrap align-items-center gap-2 justify-content-end w-100 mb-2">
+                <input type="text" name="keyword" class="form-control form-control-sm filter-field filter-keyword"
+                       value="@ViewBag.Keyword" placeholder="Search..." />
+            </div>
+        </form>
+        <div class="d-flex flex-row justify-content-between align-items-center gap-2">
+            <div class="flex-shrink-0">
+                @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+            </div>
+            <div class="d-flex gap-2 doc-numberings-filter-form-actions">
+                <button type="submit" form="docNumberingsFilterForm"
+                        class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+                <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Reset</a>
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Document Type</th>
+                    <th>Prefix</th>
+                    <th>Suffix</th>
+                    <th class="text-center">Number Length</th>
+                    <th>Reset Period</th>
+                    <th class="text-center">Current Number</th>
+                    <th>Format Numbering</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="9" class="text-muted text-center">No document numbering configs configured.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var item in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@item.DocumentType</td>
+                            <td>@item.Prefix</td>
+                            <td>@item.Suffix</td>
+                            <td class="text-center">@item.NumberLength</td>
+                            <td>@item.ResetPeriod</td>
+                            <td class="text-center">@item.CurrentNumber</td>
+                            <td><code>@item.FormatTemplate</code></td>
+                            <td>
+                                @if (User.HasPermission("DocumentNumbering_Edit") ||
+                        User.HasPermission("DocumentNumbering_Delete"))
+                                {
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        @if (User.HasPermission("DocumentNumbering_Edit"))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-icon btn-text-secondary"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Edit"><i
+                                                class="ri ri-edit-line icon-14px"></i></a>
+                                            }
+                                            @if (User.HasPermission("DocumentNumbering_Delete"))
+                                            {
+                                                <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                        data-bs-placement="top" title="Delete" onclick="showDeleteDocumentNumberingModal(this)"
+                                                        data-name="@item.DocumentType"
+                                                        data-delete-url="@Url.Action("Delete", new { id = item.Id })"><i
+                                                    class="ri ri-delete-bin-line icon-14px"></i></button>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        </div>
+
+        <div class="modal fade" id="deleteDocumentNumberingModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="deleteDocumentNumberingForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="modal-header">
+                            <h5 class="modal-title">Delete Document Numbering</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-0">Are you sure you want to delete <strong id="deleteDocumentNumberingName"></strong>?
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                    data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function showDeleteDocumentNumberingModal(button) {
+                document.getElementById('deleteDocumentNumberingName').textContent = button.getAttribute('data-name');
+                document.getElementById('deleteDocumentNumberingForm').action = button.getAttribute('data-delete-url');
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteDocumentNumberingModal')).show();
+            }
+        </script>

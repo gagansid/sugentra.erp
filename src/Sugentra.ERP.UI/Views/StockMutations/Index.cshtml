@@ -1,0 +1,211 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Inventory.StockMutationResponse>
+@{
+    ViewData["Title"] = "Stock Mutations";
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-arrow-left-right-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Stock Mutations", null)
+    });
+    var hasAdvancedFilter = !string.IsNullOrEmpty(ViewBag.Status as string)
+        || !string.IsNullOrEmpty(ViewBag.MutationType as string)
+        || ViewBag.WarehouseId != null || ViewBag.DateFrom != null || ViewBag.DateTo != null;
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Stock Mutations</h5>
+    </div>
+    <!-- _ShowEntries partial's own <form>, avoiding invalid nested <form> elements -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 mb-2">
+        @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        <form method="get" id="stockMutationsFilterForm" class="d-flex align-items-center gap-2">
+            <input type="text" name="keyword" class="form-control form-control-sm"
+                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search number, vendor ref.." />
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-primary position-relative"
+                        id="stockMutationsFilterDropdown" data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside" aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    <i class="ri ri-filter-3-line me-1"></i>Filter
+                    @if (hasAdvancedFilter)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">Filter active</span>
+                        </span>
+                    }
+                </button>
+                <div class="dropdown-menu dropdown-menu-end w-px-500 p-0" aria-labelledby="stockMutationsFilterDropdown">
+                    <div class="card mb-0 shadow-none">
+                        <div class="card-header py-2">
+                            <h6 class="mb-3">Filter</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Mutation Type</label>
+                                    <select name="mutationType" class="form-select form-select-sm">
+                                        <option value="">All Types</option>
+                                        @foreach (var type in new[] { "Internal", "ToVendor", "FromVendor" })
+                                        {
+                                            <option value="@type" selected="@(type.Equals(ViewBag.MutationType) ? "selected" : null)">@type</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Warehouse</label>
+                                    <select name="warehouseId" class="form-select form-select-sm">
+                                        <option value="">All Warehouses</option>
+                                        @foreach (var warehouse in warehouses)
+                                        {
+                                            <option value="@warehouse.Id" selected="@(warehouse.Id.ToString().Equals(ViewBag.WarehouseId?.ToString()) ? "selected" : null)">@warehouse.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Date From</label>
+                                    <input name="dateFrom" type="text" class="form-control form-control-sm stock-mutation-date-flatpickr"
+                                           autocomplete="off"
+                                           value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Date To</label>
+                                    <input name="dateTo" type="text" class="form-control form-control-sm stock-mutation-date-flatpickr"
+                                           autocomplete="off"
+                                           value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Status</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">All Status</option>
+                                        <option value="Draft" selected="@("Draft".Equals(ViewBag.Status) ? "selected" : null)">Draft
+                                        </option>
+                                        <option value="Approved" selected="@("Approved".Equals(ViewBag.Status) ? "selected" : null)">
+                                            Approved</option>
+                                        <option value="Completed" selected="@("Completed".Equals(ViewBag.Status) ? "selected" : null)">
+                                            Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (User.HasPermission("StockMutation_Create"))
+            {
+                <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add New</a>
+            }
+        </form>
+    </div>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 60px;">No</th>
+                            <th>Number</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th class="col-fit">Status</th>
+                            <th class="text-center" style="width: 110px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-border-bottom-0">
+                        @if (Model.Items.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-muted text-center">No stock mutations recorded.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            var rowNo = (Model.Page - 1) * Model.PageSize;
+                            @foreach (var mutation in Model.Items)
+                            {
+                                rowNo++;
+                                <tr>
+                                    <td class="text-center">@rowNo</td>
+                                    <td><a asp-action="Detail" asp-route-id="@mutation.Id">@mutation.MutationNumber</a></td>
+                                    <td>@mutation.MutationType</td>
+                                    <td>@mutation.MutationDate.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-label-@(mutation.Status switch
+                                                                       {
+                                                                           "Draft" => "secondary",
+                                                                           "Approved" => "info",
+                                                                           "Completed" => "success",
+                                                                           _ => "secondary"
+                                                                       })">@mutation.Status</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            @if (mutation.Status == "Draft" && User.HasPermission("StockMutation_Edit"))
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@mutation.Id" class="btn btn-icon btn-text-secondary"
+                                                   data-bs-toggle="tooltip" title="Edit"><i class="ri ri-edit-line icon-14px"></i></a>
+                                            }
+                                            @if (mutation.Status == "Draft" && User.HasPermission("StockMutation_Delete"))
+                                            {
+                                                <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                        title="Delete" onclick="showDeleteStockMutationModal(this)"
+                                                        data-name="@mutation.MutationNumber"
+                                                        data-delete-url="@Url.Action("Delete", new { id = mutation.Id })"><i
+                                                    class="ri ri-delete-bin-line icon-14px"></i></button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+            </div>
+
+            <div class="modal fade" id="deleteStockMutationModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="deleteStockMutationForm" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete Stock Mutation</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">Are you sure you want to delete <strong id="deleteStockMutationName"></strong>?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                        data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function showDeleteStockMutationModal(button) {
+                    document.getElementById('deleteStockMutationName').textContent = button.getAttribute('data-name');
+                    document.getElementById('deleteStockMutationForm').action = button.getAttribute('data-delete-url');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteStockMutationModal')).show();
+                }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.querySelectorAll('.stock-mutation-date-flatpickr').forEach(function (input) {
+                        flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
+                    });
+                });
+            </script>

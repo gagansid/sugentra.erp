@@ -1,0 +1,13 @@
+@model Sugentra.ERP.UI.Models.Approvals.ApprovalFlowDefinitionResponse
+@{
+    ViewData["Title"] = "Add Approval Flow";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-git-branch-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approval Flows", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Add", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+@await Html.PartialAsync("_Form", Model)

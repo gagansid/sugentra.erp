@@ -23,15 +23,14 @@ public abstract class Repository<TEntity>(IDbConnectionFactory connectionFactory
     {
         using var connection = ConnectionFactory.CreateConnection();
         var sql = $"SELECT * FROM {TableName} WHERE Id = @Id AND IsDeleted = 0";
-        return await connection.QuerySingleOrDefaultAsync<TEntity>(sql, new { Id = id });
+        return await connection.QuerySingleAsync<TEntity>(sql, new { Id = id });
     }
 
     public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync()
     {
         using var connection = ConnectionFactory.CreateConnection();
         var sql = $"SELECT * FROM {TableName} WHERE IsDeleted = 0";
-        var rows = await connection.QueryAsync<TEntity>(sql);
-        return rows.ToList();
+        return await connection.QueryListAsync<TEntity>(sql);
     }
 
     public virtual async Task<long> AddAsync(TEntity entity)
@@ -41,7 +40,7 @@ public abstract class Repository<TEntity>(IDbConnectionFactory connectionFactory
         var sql = $"INSERT INTO {TableName} ({columns}) OUTPUT INSERTED.Id VALUES ({parameters})";
 
         using var connection = ConnectionFactory.CreateConnection();
-        var newId = await connection.ExecuteScalarAsync<long>(sql, entity);
+        var newId = await connection.QueryScalarAsync<long>(sql, entity);
         entity.Id = newId;
         return newId;
     }
@@ -52,14 +51,14 @@ public abstract class Repository<TEntity>(IDbConnectionFactory connectionFactory
         var sql = $"UPDATE {TableName} SET {assignments} WHERE Id = @Id";
 
         using var connection = ConnectionFactory.CreateConnection();
-        await connection.ExecuteAsync(sql, entity);
+        await connection.ExecuteCommandAsync(sql, entity);
     }
 
     public virtual async Task SoftDeleteAsync(long id, long deletedBy)
     {
-        const string sql = "UPDATE {0} SET IsDeleted = 1, DeletedAt = SYSUTCDATETIME(), DeletedBy = @DeletedBy WHERE Id = @Id";
+        const string sql = "UPDATE {0} SET IsDeleted = 1, DeletedAt = GETDATE(), DeletedBy = @DeletedBy WHERE Id = @Id";
         using var connection = ConnectionFactory.CreateConnection();
-        await connection.ExecuteAsync(string.Format(sql, TableName), new { Id = id, DeletedBy = deletedBy });
+        await connection.ExecuteCommandAsync(string.Format(sql, TableName), new { Id = id, DeletedBy = deletedBy });
     }
 
     private static string ResolveTableName()
@@ -70,7 +69,7 @@ public abstract class Repository<TEntity>(IDbConnectionFactory connectionFactory
 
     private static string[] ResolveWritableColumns()
     {
-        // All public instance properties except Id (identity, never written directly).
+        // Id (identity) is auto-generated and excluded from writable columns.
         return typeof(TEntity)
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.Name != nameof(BaseAuditableEntity.Id) && p.CanWrite)

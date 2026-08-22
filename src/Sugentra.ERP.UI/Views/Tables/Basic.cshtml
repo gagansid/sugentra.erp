@@ -1,0 +1,291 @@
+@{
+    ViewData["Title"] = "Tables";
+}
+
+<h4 class="mb-1">Table Styles</h4>
+<p class="mb-6">Plain Bootstrap table variants used across the app (no DataTables JS) — reference sample data only.</p>
+
+<!-- Table Basic -->
+<div class="card mb-6">
+    <h5 class="card-header">Table Basic</h5>
+    <div class="table-responsive text-nowrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                <tr>
+                    <td>ITM-001</td>
+                    <td>Raw Rattan Core</td>
+                    <td>Raw Material</td>
+                    <td><span class="badge bg-label-success">Active</span></td>
+                    <td><a href="javascript:void(0);" class="btn btn-sm btn-icon btn-text-secondary"><i
+                        class="ri ri-edit-line"></i></a></td>
+                    </tr>
+                    <tr>
+                        <td>ITM-002</td>
+                        <td>Woven Rattan Panel</td>
+                        <td>Semi Finished</td>
+                        <td><span class="badge bg-label-info">Scheduled</span></td>
+                        <td><a href="javascript:void(0);" class="btn btn-sm btn-icon btn-text-secondary"><i
+                            class="ri ri-edit-line"></i></a></td>
+                        </tr>
+                        <tr>
+                            <td>ITM-003</td>
+                            <td>Rattan Lounge Chair</td>
+                            <td>Finished Good</td>
+                            <td><span class="badge bg-label-secondary">Inactive</span></td>
+                            <td><a href="javascript:void(0);" class="btn btn-sm btn-icon btn-text-secondary"><i
+                                class="ri ri-edit-line"></i></a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Striped rows -->
+            <div class="card mb-6">
+                <h5 class="card-header">Striped rows</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr>
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td><span class="badge bg-label-success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td><span class="badge bg-label-info">Scheduled</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-003</td>
+                                <td>Rattan Lounge Chair</td>
+                                <td>Finished Good</td>
+                                <td><span class="badge bg-label-secondary">Inactive</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bordered Table -->
+            <div class="card mb-6">
+                <h5 class="card-header">Bordered Table</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr>
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td><span class="badge bg-label-success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td><span class="badge bg-label-info">Scheduled</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Hoverable rows -->
+            <div class="card mb-6">
+                <h5 class="card-header">Hoverable rows</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr>
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td><span class="badge bg-label-success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td><span class="badge bg-label-info">Scheduled</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-003</td>
+                                <td>Rattan Lounge Chair</td>
+                                <td>Finished Good</td>
+                                <td><span class="badge bg-label-secondary">Inactive</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Small Table -->
+            <div class="card mb-6">
+                <h5 class="card-header">Small Table</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr>
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td><span class="badge bg-label-success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td><span class="badge bg-label-info">Scheduled</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Small + Hoverable (combined, matches the style used on this app's own list pages) -->
+            <div class="card mb-6">
+                <h5 class="card-header">Small &amp; Hoverable (used across this app)</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr>
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td><span class="badge bg-label-success">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td><span class="badge bg-label-info">Scheduled</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Table Dark -->
+            <div class="card mb-6">
+                <h5 class="card-header">Table Dark</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-dark">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr>
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td>Active</td>
+                            </tr>
+                            <tr>
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td>Scheduled</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Contextual Classes -->
+            <div class="card">
+                <h5 class="card-header">Contextual Classes</h5>
+                <div class="table-responsive text-nowrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            <tr class="table-primary">
+                                <td>ITM-001</td>
+                                <td>Raw Rattan Core</td>
+                                <td>Raw Material</td>
+                                <td>Active</td>
+                            </tr>
+                            <tr class="table-success">
+                                <td>ITM-002</td>
+                                <td>Woven Rattan Panel</td>
+                                <td>Semi Finished</td>
+                                <td>Scheduled</td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td>ITM-003</td>
+                                <td>Rattan Lounge Chair</td>
+                                <td>Finished Good</td>
+                                <td>Pending</td>
+                            </tr>
+                            <tr class="table-danger">
+                                <td>ITM-004</td>
+                                <td>Discontinued Frame</td>
+                                <td>Finished Good</td>
+                                <td>Inactive</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>

@@ -1,0 +1,64 @@
+@model Sugentra.ERP.UI.Models.Settings.SystemParameter
+@{
+    ViewData["Title"] = "System Parameter";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-sliders-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Administration", Url.Action("Index", "Workspace", new { id = "SystemAdministration" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Parameters", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row mb-3">
+                        <label asp-for="ParamCategory" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="ParamCategory" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="ParamKey" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="ParamKey" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="ParamValue" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="ParamValue" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Description" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Description" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                        <button type="submit" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

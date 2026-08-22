@@ -1,0 +1,67 @@
+@* Shared First/Previous/Next/Last/Refresh/Edit/Back navigation header for entity Detail pages, mirrors the
+   icon-button style established in AuditLogs/ErrorLogs Detail views. ViewData contract: CurrentId (long, required),
+   EditRouteId (long?, optional — omit or leave null to hide the Edit button), CanEdit (bool). Adjacent ids come
+   from ViewBag.FirstId/PreviousId/NextId/LastId (set by the calling controller's Detail action). *@
+@model Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel
+@{
+    var currentId = (long)ViewData["CurrentId"]!;
+    var canEdit = ViewData["CanEdit"] as bool? ?? false;
+    var editRouteId = ViewData["EditRouteId"] as long?;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="mb-0">
+        @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", Model)
+    </div>
+    <div class="d-flex align-items-center gap-1">
+        @if (ViewBag.FirstId is long firstId && firstId != currentId)
+        {
+            <a asp-action="Detail" asp-route-id="@firstId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="First">&laquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="First">&laquo;</button>
+        }
+        @if (ViewBag.PreviousId is long previousId)
+        {
+            <a asp-action="Detail" asp-route-id="@previousId" class="btn btn-icon btn-label-secondary"
+               data-bs-toggle="tooltip" data-bs-placement="top" title="Previous">&lsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Previous">&lsaquo;</button>
+        }
+        @if (ViewBag.NextId is long nextId)
+        {
+            <a asp-action="Detail" asp-route-id="@nextId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Next">&rsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Next">&rsaquo;</button>
+        }
+        @if (ViewBag.LastId is long lastId && lastId != currentId)
+        {
+            <a asp-action="Detail" asp-route-id="@lastId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Last">&raquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Last">&raquo;</button>
+        }
+        <a asp-action="Detail" asp-route-id="@currentId" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip"
+           data-bs-placement="top" title="Refresh"><i class="ri ri-refresh-line icon-14px"></i></a>
+        @if (canEdit && editRouteId is not null)
+        {
+            <a asp-action="Edit" asp-route-id="@editRouteId" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Edit"><i class="ri ri-pencil-line icon-14px"></i></a>
+        }
+        <a asp-action="Index" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+           title="Back to List"><i class="ri ri-arrow-go-back-line icon-14px"></i></a>
+    </div>
+</div>

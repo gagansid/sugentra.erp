@@ -1,0 +1,135 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Settings.EmailTemplate>
+@{
+    ViewData["Title"] = "Email Templates";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-mail-settings-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Administration", Url.Action("Index", "Workspace", new { id =
+"SystemAdministration" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Email Templates", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Email Templates</h5>
+        @if (User.HasPermission("EmailTemplate_Create"))
+        {
+            <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add Data</a>
+        }
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <div>
+            @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="text" name="keyword" class="form-control form-control-sm" style="max-width: 220px;"
+                   value="@ViewBag.Keyword" placeholder="Search..." />
+            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Reset</a>
+        </form>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>From</th>
+                    <th>Subject</th>
+                    <th class="col-fit">Status</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-muted text-center">No email templates configured.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var template in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@template.Code</td>
+                            <td>@template.Name</td>
+                            <td>@template.FromEmail</td>
+                            <td>@template.Subject</td>
+                            <td>
+                                @if (template.IsActive)
+                                {
+                                    <span class="badge bg-primary">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-label-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (User.HasPermission("EmailTemplate_Edit") || User.HasPermission("EmailTemplate_Delete"))
+                                {
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        @if (User.HasPermission("EmailTemplate_Edit"))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@template.Id" class="btn btn-icon btn-text-secondary"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Edit"><i
+                                                class="ri ri-edit-line icon-14px"></i></a>
+                                            }
+                                            @if (User.HasPermission("EmailTemplate_Delete"))
+                                            {
+                                                <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                        data-bs-placement="top" title="Delete" onclick="showDeleteEmailTemplateModal(this)"
+                                                        data-name="@template.Name"
+                                                        data-delete-url="@Url.Action("Delete", new { id = template.Id })"><i
+                                                    class="ri ri-delete-bin-line icon-14px"></i></button>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        </div>
+
+        <div class="modal fade" id="deleteEmailTemplateModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="deleteEmailTemplateForm" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="modal-header">
+                            <h5 class="modal-title">Delete Email Template</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-0">Are you sure you want to delete <strong id="deleteEmailTemplateName"></strong>?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                    data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function showDeleteEmailTemplateModal(button) {
+                document.getElementById('deleteEmailTemplateName').textContent = button.getAttribute('data-name');
+                document.getElementById('deleteEmailTemplateForm').action = button.getAttribute('data-delete-url');
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteEmailTemplateModal')).show();
+            }
+        </script>
+

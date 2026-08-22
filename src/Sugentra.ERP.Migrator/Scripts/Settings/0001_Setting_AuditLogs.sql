@@ -9,17 +9,16 @@ BEGIN
         Action        NVARCHAR(20)   NOT NULL,
         OldValues     NVARCHAR(MAX)  NULL,
         NewValues     NVARCHAR(MAX)  NULL,
-        ChangedBy     BIGINT         NOT NULL,
-        ChangedAt     DATETIME2      NOT NULL CONSTRAINT DF_Setting_AuditLogs_ChangedAt DEFAULT (SYSUTCDATETIME()),
+        ChangedBy     BIGINT         NULL,
+        ChangedAt     DATETIME2      NOT NULL CONSTRAINT DF_Setting_AuditLogs_ChangedAt DEFAULT (GETDATE()),
 
-        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Setting_AuditLogs_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Setting_AuditLogs_CreatedAt DEFAULT (GETDATE()),
         CreatedBy     BIGINT         NULL,
         UpdatedAt     DATETIME2      NULL,
         UpdatedBy     BIGINT         NULL,
         IsDeleted     BIT            NOT NULL CONSTRAINT DF_Setting_AuditLogs_IsDeleted DEFAULT (0),
         DeletedAt     DATETIME2      NULL,
         DeletedBy     BIGINT         NULL,
-        RowVersion    ROWVERSION     NOT NULL,
 
         CONSTRAINT FK_Setting_AuditLogs_ChangedBy FOREIGN KEY (ChangedBy) REFERENCES Identity_Users (Id)
     );

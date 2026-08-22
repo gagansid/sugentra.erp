@@ -1,0 +1,258 @@
+@model Sugentra.ERP.UI.Models.Inventory.GoodsReceiptResponse
+@{
+    ViewData["Title"] = "Edit Goods Receipt";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-truck-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Goods Receipts", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.ReceiptNumber, null)
+    });
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">@ViewData["Title"]</h5>
+    </div>
+    <div class="card-body">
+        <form id="receiptForm" method="post" novalidate>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Receipt Number</label>
+                <div class="col-md-4 col-sm-8"><input class="form-control form-control-sm" value="@Model.ReceiptNumber" readonly /></div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Status</label>
+                <div class="col-md-4 col-sm-8 d-flex align-items-center">
+                    <span class="badge bg-label-@(Model.Status switch
+                                                   {
+                                                       "Draft" => "secondary",
+                                                       "Reject" => "danger",
+                                                       "Pending" => "warning",
+                                                       var s when s.StartsWith("Waiting Approval - ") => "warning",
+                                                       "Approve" or "Post" or "Posted" => "primary",
+                                                       _ => "secondary"
+                                                   })">@Model.Status</span>
+                </div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Warehouse</label>
+                <div class="col-md-4 col-sm-8">
+                    <select name="warehouseId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                            data-style="btn-default" data-width="100%" required>
+                        @foreach (var w in warehouses)
+                        {
+                            <option value="@w.Id" selected="@(w.Id == Model.WarehouseId ? "selected" : null)">@w.Code - @w.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Vendor Reference</label>
+                <div class="col-md-4 col-sm-8"><input name="vendorReference" class="form-control form-control-sm" value="@Model.VendorReference" /></div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Receipt Date</label>
+                <div class="col-md-4 col-sm-8">
+                    <div class="input-group input-group-sm receipt-date-group">
+                        <input name="receiptDate" type="text"
+                               class="form-control form-control-sm receipt-date-flatpickr"
+                               autocomplete="off" value="@Model.ReceiptDate.ToString("yyyy-MM-dd HH:mm")"
+                               required />
+                        <span class="input-group-text receipt-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                    </div>
+                </div>
+                </div>
+                <div class="row g-2">
+                    <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Notes</label>
+                    <div class="col-md-4 col-sm-8"><textarea name="notes" class="form-control form-control-sm" rows="4">@Model.Notes</textarea>
+                    </div>
+                </div>
+
+            <h6 class="mb-3">Lines</h6>
+            <div id="lines">
+                @foreach (var line in Model.Lines)
+                {
+                    <div class="row g-2 mb-2 line-row">
+                        <div class="col-md-2">
+                            <select name="batchId" class="selectpicker form-control form-control-sm gr-select batch-select"
+                                    data-live-search="true" data-style="btn-default" data-width="100%" required>
+                                <option value="">-- Select Batch --</option>
+                                @foreach (var batch in batches)
+                                {
+                                    <option value="@batch.Id" data-item-id="@batch.ItemId"
+                                            selected="@(batch.Id == line.BatchId ? "selected" : null)">@batch.Code</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">Batch is required.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="itemId" class="selectpicker form-control form-control-sm gr-select item-select"
+                                    data-live-search="true" data-style="btn-default" data-width="100%" disabled>
+                                <option value="">-- Select batch first --</option>
+                                @foreach (var item in items)
+                                {
+                                    <option value="@item.Id" selected="@(item.Id == line.ItemId ? "selected" : null)">@item.Code - @item.Name</option>
+                                }
+                            </select>
+                            <input type="hidden" name="itemId" class="item-hidden" value="@line.ItemId" />
+                        </div>
+                        <div class="col-md-3">
+                            <input name="quantity" type="number" step="0.01" class="form-control form-control-sm"
+                                   value="@line.Quantity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" required />
+                            <div class="invalid-feedback">Quantity is required.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm has-validation unit-cost-group">
+                                <input name="unitCost" type="number" step="0.01" class="form-control form-control-sm"
+                                       value="@line.UnitCost.ToString(System.Globalization.CultureInfo.InvariantCulture)" required />
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-line" data-bs-toggle="tooltip"
+                                        title="Remove">
+                                    <i class="ri ri-delete-bin-line icon-14px"></i>
+                                </button>
+                            </div>
+                            <div class="invalid-feedback">Unit cost is required.</div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button type="button" id="addLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Line</button>
+        </form>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+        <button type="submit" form="receiptForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Self-heals against double-wrapping the same <select> (bootstrap-select always
+        // wraps on init; calling it twice on one element without destroying the old
+        // wrapper first creates a duplicated menu) — e.g. bfcache restores re-running this script.
+        // Scoped to .gr-select, not .selectpicker: bootstrap-select strips the "selectpicker"
+        // class from the element after its first init, so a clone of an already-initialized
+        // row (see addLine below) would silently match nothing if we selected on that class.
+        function initSelectPickers($scope) {
+            $scope.find('select.gr-select').each(function () {
+                var $select = $(this);
+                if ($select.closest('.bootstrap-select').length) {
+                    $select.selectpicker('destroy');
+                }
+                $select.selectpicker();
+            });
+        }
+
+        // selectpicker('refresh') duplicates the rendered title text in this bootstrap-select build
+        // (it re-scans options into an internal cache without clearing the previous entries first),
+        // so re-render by destroying and re-initializing the widget instead.
+        function rerenderSelectPicker($select) {
+            $select.selectpicker('destroy');
+            $select.selectpicker();
+        }
+
+        $(function () {
+            initSelectPickers($(document));
+            $('.receipt-date-flatpickr').each(function () {
+                // append to body so the popup calendar doesn't shift the layout on focus
+                var picker = flatpickr(this, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true, allowInput: true, appendTo: document.body });
+                $(this).closest('.receipt-date-group').find('.receipt-date-toggle').on('click', function () {
+                    picker.open();
+                });
+            });
+        });
+
+        function syncItemFromBatch(row) {
+            var batchSelect = row.querySelector('select.batch-select');
+            var itemSelect = row.querySelector('select.item-select');
+            var itemHidden = row.querySelector('.item-hidden');
+            var selectedOption = batchSelect.options[batchSelect.selectedIndex];
+            var itemId = selectedOption ? (selectedOption.getAttribute('data-item-id') || '') : '';
+            $(itemSelect).val(itemId);
+            rerenderSelectPicker($(itemSelect));
+            itemHidden.value = itemId;
+        }
+
+        // A batch already picked in another line can't be picked again (one batch = one line).
+        function refreshBatchOptions() {
+            var batchSelects = document.querySelectorAll('select.batch-select');
+            var usedValues = Array.from(batchSelects).map(function (s) { return s.value; }).filter(Boolean);
+            batchSelects.forEach(function (select) {
+                Array.from(select.options).forEach(function (option) {
+                    if (!option.value) return;
+                    option.disabled = usedValues.includes(option.value) && option.value !== select.value;
+                });
+                rerenderSelectPicker($(select));
+            });
+        }
+
+        document.getElementById('addLine').addEventListener('click', function () {
+            var lines = document.getElementById('lines');
+            var clone = lines.firstElementChild.cloneNode(true);
+            // cloneNode copies the already-rendered bootstrap-select wrapper markup (not the jQuery
+            // plugin instance) and the ids bootstrap-select assigned; drop both before re-initializing,
+            // since a duplicate id makes the plugin cross-wire the toggle rendering between rows.
+            clone.querySelectorAll('.bootstrap-select').forEach(function (wrapper) {
+                wrapper.replaceWith(wrapper.querySelector('select'));
+            });
+            clone.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+            clone.querySelectorAll('input:not(.item-hidden)').forEach(function (i) { i.value = ''; });
+            clone.querySelector('.item-hidden').value = '';
+            clone.querySelector('select.batch-select').value = '';
+            clone.querySelector('select.item-select').value = '';
+            lines.appendChild(clone);
+            initSelectPickers($(clone));
+            refreshBatchOptions();
+        });
+
+        $('#lines').on('change', '.batch-select', function (e) {
+            syncItemFromBatch(e.target.closest('.line-row'));
+            refreshBatchOptions();
+        });
+
+        document.getElementById('lines').addEventListener('click', function (e) {
+            var btn = e.target.closest('.remove-line');
+            if (!btn) return;
+            var lines = document.getElementById('lines');
+            var row = btn.closest('.line-row');
+            if (lines.children.length > 1) {
+                row.remove();
+            } else {
+                row.querySelectorAll('input:not(.item-hidden)').forEach(function (i) { i.value = ''; });
+                row.querySelector('.item-hidden').value = '';
+                $(row).find('select.batch-select, select.item-select').val('');
+                rerenderSelectPicker($(row).find('select.batch-select, select.item-select'));
+            }
+            refreshBatchOptions();
+        });
+
+        refreshBatchOptions();
+
+        document.getElementById('receiptForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                field.classList.toggle('is-invalid', !isFieldValid);
+                valid = valid && isFieldValid;
+            });
+            document.querySelectorAll('.item-hidden').forEach(function (hidden) {
+                var isValid = !!hidden.value;
+                hidden.closest('.line-row').querySelector('select.item-select').classList.toggle('is-invalid', !isValid);
+                valid = valid && isValid;
+            });
+            if (!valid) { event.preventDefault(); event.stopPropagation(); }
+        });
+    </script>
+}

@@ -1,0 +1,228 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Identity.RolePermissionListItemDto>
+@{
+    long roleId = ViewBag.RoleId;
+    string roleName = ViewBag.RoleName;
+    ViewData["Title"] = "Role Permissions";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Roles", Url.Action("Index", "Roles")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem($"Permissions: {roleName}", null)
+    });
+
+    var modules = (List<Sugentra.ERP.UI.Models.Settings.Module>)ViewBag.Modules;
+    string? module = ViewBag.Module;
+    string? code = ViewBag.Code;
+    string? description = ViewBag.Description;
+    bool? isAssigned = ViewBag.IsAssigned;
+    var canManagePermissions = User.HasPermission("Permission_Assign");
+    var rowNo = (Model.Page - 1) * Model.PageSize;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="mb-0">
+        @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+    </div>
+    <div class="d-flex align-items-center gap-1">
+        <a asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName" asp-route-page="@Model.Page"
+           asp-route-pageSize="@Model.PageSize" asp-route-module="@module" asp-route-code="@code"
+           asp-route-description="@description" asp-route-isAssigned="@isAssigned" class="btn btn-icon btn-label-dark"
+           data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i
+            class="ri ri-refresh-line icon-14px"></i></a>
+            <a asp-action="Index" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Back to Roles"><i class="ri ri-arrow-go-back-line icon-14px"></i></a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h5 class="card-header">Permissions for role: @roleName</h5>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pe-4">
+            <div class="w-25">
+                <form method="get" class="d-flex align-items-center gap-2 px-4 pt-4 mb-2">
+                    <input type="hidden" name="id" value="@roleId" />
+                    <input type="hidden" name="name" value="@roleName" />
+                    <input type="hidden" name="page" value="1" />
+                    <input type="hidden" name="module" value="@module" />
+                    <input type="hidden" name="code" value="@code" />
+                    <input type="hidden" name="description" value="@description" />
+                    <input type="hidden" name="isAssigned" value="@isAssigned" />
+                    <label class="mb-0">Show</label>
+                    <select name="pageSize" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                        @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+                        {
+                            <option value="@size" selected="@(size == Model.PageSize ? "selected" : null)">@size</option>
+                        }
+                    </select>
+                    <label class="mb-0">entries</label>
+                </form>
+            </div>
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="id" value="@roleId" />
+                <input type="hidden" name="name" value="@roleName" />
+                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                <select name="module" class="form-select form-select-sm" style="max-width: 140px;">
+                    <option value="">All Modules</option>
+                    @foreach (var m in modules)
+                    {
+                        <option value="@m.Code"
+                                selected="@(string.Equals(m.Code, module, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                            @m.Name</option>
+                        }
+                    </select>
+                    <input type="text" name="code" value="@code" placeholder="Code" class="form-control form-control-sm"
+                           style="max-width: 130px;" />
+                    <input type="text" name="description" value="@description" placeholder="Description"
+                           class="form-control form-control-sm" style="max-width: 150px;" />
+                    <select name="isAssigned" class="form-select form-select-sm" style="max-width: 140px;">
+                        <option value="">All Status</option>
+                        <option value="true" selected="@(isAssigned == true ? "selected" : null)">Assigned</option>
+                        <option value="false" selected="@(isAssigned == false ? "selected" : null)">Not Assigned</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+                    <a asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName"
+                       class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                    @if (canManagePermissions)
+                    {
+                        <button type="submit" form="updatePermissionsForm"
+                                class="btn btn-sm btn-primary btn-filter-action">Update</button>
+                    }
+                </form>
+            </div>
+
+            <form id="updatePermissionsForm" asp-action="UpdatePermissions" asp-controller="Roles" method="post">
+                <input type="hidden" name="id" value="@roleId" />
+                <input type="hidden" name="name" value="@roleName" />
+                <input type="hidden" name="page" value="@Model.Page" />
+                <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                <input type="hidden" name="module" value="@module" />
+                <input type="hidden" name="code" value="@code" />
+                <input type="hidden" name="description" value="@description" />
+                <input type="hidden" name="isAssigned" value="@isAssigned" />
+                <input type="hidden" name="assignIds" id="permAssignIds" />
+                <input type="hidden" name="revokeIds" id="permRevokeIds" />
+
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Module</th>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th class="col-fit">Status</th>
+                                <th class="text-center">Permission</th>
+                                <th class="text-end">Modified At</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            @if (Model.Items.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-muted text-center">No permissions found.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var permission in Model.Items)
+                                {
+                                    rowNo++;
+                                    <tr data-permission-id="@permission.Id"
+                                        data-original="@(permission.IsAssigned ? "assigned" : "none")">
+                                        <td>@rowNo</td>
+                                        <td>@(permission.Module ?? "-")</td>
+                                        <td>@permission.Code</td>
+                                        <td>@(permission.Description ?? "-")</td>
+                                        <td>
+                                            @if (permission.IsAssigned)
+                                            {
+                                                <span class="badge bg-label-primary">Assigned</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-label-secondary">Not Assigned</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input perm-assigned" @(permission.IsAssigned ?
+                                                                            "checked" : null) @(canManagePermissions ? "" : "disabled") />
+                                        </td>
+                                        <td class="text-end">@(permission.ModifiedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <div class="paging-footer d-flex justify-content-between align-items-center flex-wrap gap-2 p-4 border-top">
+                <span class="text-muted">
+                    Showing @(Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1)
+                    to @Math.Min(Model.Page * Model.PageSize, Model.TotalCount)
+                    of @Model.TotalCount entries
+                </span>
+                @if (Model.TotalPages > 1)
+                {
+                    var visiblePages = 3;
+                    var windowStart = Math.Clamp(Model.Page - 1, 1, Math.Max(1, Model.TotalPages - visiblePages + 1));
+                    var windowEnd = Math.Min(windowStart + visiblePages - 1, Model.TotalPages);
+
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName"
+                                   asp-route-page="1" asp-route-pageSize="@Model.PageSize" asp-route-module="@module"
+                                   asp-route-code="@code" asp-route-description="@description" asp-route-isAssigned="@isAssigned"
+                                   aria-label="First page">&laquo;</a>
+                            </li>
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName"
+                                   asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-module="@module" asp-route-code="@code" asp-route-description="@description"
+                                   asp-route-isAssigned="@isAssigned" aria-label="Previous page">&lsaquo;</a>
+                            </li>
+                            @for (var p = windowStart; p <= windowEnd; p++)
+                            {
+                                <li class="page-item @(p == Model.Page ? "active" : "")">
+                                    <a class="page-link" asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName"
+                                       asp-route-page="@p" asp-route-pageSize="@Model.PageSize" asp-route-module="@module"
+                                       asp-route-code="@code" asp-route-description="@description"
+                                       asp-route-isAssigned="@isAssigned">@p</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName"
+                                   asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-module="@module" asp-route-code="@code" asp-route-description="@description"
+                                   asp-route-isAssigned="@isAssigned" aria-label="Next page">&rsaquo;</a>
+                            </li>
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Permissions" asp-route-id="@roleId" asp-route-name="@roleName"
+                                   asp-route-page="@Model.TotalPages" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-module="@module" asp-route-code="@code" asp-route-description="@description"
+                                   asp-route-isAssigned="@isAssigned" aria-label="Last page">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('updatePermissionsForm').addEventListener('submit', function () {
+                var assignIds = [], revokeIds = [];
+                document.querySelectorAll('#updatePermissionsForm tr[data-permission-id]').forEach(function (row) {
+                    var id = row.getAttribute('data-permission-id');
+                    var original = row.getAttribute('data-original');
+                    var current = row.querySelector('.perm-assigned').checked ? 'assigned' : 'none';
+                    if (current === original) { return; }
+
+                    if (current === 'assigned') { assignIds.push(id); }
+                    else { revokeIds.push(id); }
+                });
+
+                document.getElementById('permAssignIds').value = assignIds.join(',');
+                document.getElementById('permRevokeIds').value = revokeIds.join(',');
+            });
+        </script>

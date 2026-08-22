@@ -7,14 +7,13 @@ BEGIN
         RoleId        BIGINT         NOT NULL,
         PermissionId  BIGINT         NOT NULL,
 
-        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Identity_RolePermissions_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Identity_RolePermissions_CreatedAt DEFAULT (GETDATE()),
         CreatedBy     BIGINT         NULL,
         UpdatedAt     DATETIME2      NULL,
         UpdatedBy     BIGINT         NULL,
         IsDeleted     BIT            NOT NULL CONSTRAINT DF_Identity_RolePermissions_IsDeleted DEFAULT (0),
         DeletedAt     DATETIME2      NULL,
         DeletedBy     BIGINT         NULL,
-        RowVersion    ROWVERSION     NOT NULL,
 
         CONSTRAINT FK_Identity_RolePermissions_Role FOREIGN KEY (RoleId) REFERENCES Identity_Roles (Id),
         CONSTRAINT FK_Identity_RolePermissions_Permission FOREIGN KEY (PermissionId) REFERENCES Identity_Permissions (Id),

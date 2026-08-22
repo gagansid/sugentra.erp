@@ -1,0 +1,124 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Identity.UserSessionDto>
+@{
+    var userId = (long)(ViewData["UserId"] ?? 0L);
+}
+
+<div class="card">
+    <h5 class="card-header">Login History</h5>
+
+    <div class="show-entries d-flex justify-content-between align-items-center flex-wrap gap-2 pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <form method="get" asp-action="Detail" asp-controller="Users" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="id" value="@userId" />
+            <input type="hidden" name="sessionPage" value="1" />
+            <label class="mb-0">Show</label>
+            <select name="sessionPageSize" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+                {
+                    <option value="@size" selected="@(size == Model.PageSize ? "selected" : null)">@size</option>
+                }
+            </select>
+            <label class="mb-0">entries</label>
+        </form>
+    </div>
+
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Device / Browser</th>
+                    <th>IP Address</th>
+                    <th>Issued At</th>
+                    <th>Expires At</th>
+                    <th class="col-fit">Status</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-muted text-center">No sessions found.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var session in Model.Items)
+                    {
+                        var (statusLabel, statusColor) = session switch
+                        {
+                            { RevokedAt: not null } => ("Revoked", "secondary"),
+                            _ when session.ExpiresAt <= DateTime.UtcNow => ("Expired", "warning"),
+                            _ => ("Active", "primary")
+                        };
+                        <tr>
+                            <td class="text-truncate" style="max-width: 320px;" title="@session.DeviceInfo">@(session.DeviceInfo
+                                                                                        ?? "-")</td>
+                                <td>@(session.IpAddress ?? "-")</td>
+                                <td>@session.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@session.ExpiresAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td><span class="badge bg-label-@statusColor">@statusLabel</span></td>
+                                <td class="text-center">
+                                    @if (session.RevokedAt is null && User.HasPermission("User_Update"))
+                                    {
+                                        <form asp-action="RevokeSession" asp-route-id="@userId" asp-route-sessionId="@session.Id"
+                                              method="post" onsubmit="return confirm('Force logout this session?');">
+                                            <button type="submit" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                    data-bs-placement="top" title="Force Logout"><i
+                                                class="ri ri-shut-down-line icon-14px"></i></button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="paging-footer d-flex justify-content-between align-items-center flex-wrap gap-2 p-4 border-top">
+                <span class="text-muted">
+                    Showing @(Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1)
+                    to @Math.Min(Model.Page * Model.PageSize, Model.TotalCount)
+                    of @Model.TotalCount entries
+                </span>
+                @if (Model.TotalPages > 1)
+                {
+                    var visiblePages = 3;
+                    var windowStart = Math.Clamp(Model.Page - 1, 1, Math.Max(1, Model.TotalPages - visiblePages + 1));
+                    var windowEnd = Math.Min(windowStart + visiblePages - 1, Model.TotalPages);
+
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                   asp-route-sessionPage="1" asp-route-sessionPageSize="@Model.PageSize"
+                                   aria-label="First page">&laquo;</a>
+                            </li>
+                            <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                   asp-route-sessionPage="@(Model.Page - 1)" asp-route-sessionPageSize="@Model.PageSize"
+                                   aria-label="Previous page">&lsaquo;</a>
+                            </li>
+                            @for (var p = windowStart; p <= windowEnd; p++)
+                            {
+                                <li class="page-item @(p == Model.Page ? "active" : "")">
+                                    <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                       asp-route-sessionPage="@p" asp-route-sessionPageSize="@Model.PageSize">@p</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                   asp-route-sessionPage="@(Model.Page + 1)" asp-route-sessionPageSize="@Model.PageSize"
+                                   aria-label="Next page">&rsaquo;</a>
+                            </li>
+                            <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                   asp-route-sessionPage="@Model.TotalPages" asp-route-sessionPageSize="@Model.PageSize"
+                                   aria-label="Last page">&raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>

@@ -1,0 +1,134 @@
+@{
+    ViewData["Title"] = "Add Price List";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-database-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Master Data", Url.Action("Index", "Workspace", new { id = "MasterData" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Price Lists", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var currencies = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Currency>)ViewBag.Currencies;
+    var partners = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.BusinessPartnerResponse>)ViewBag.BusinessPartners;
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">@ViewData["Title"]</h5>
+    </div>
+    <div class="card-body">
+        <form id="priceListForm" method="post" novalidate>
+            <div class="row g-2 mb-3">
+                <label class="col-sm-3 col-form-label col-form-label-sm">Name</label>
+                <div class="col-sm-9">
+                    <input name="name" class="form-control form-control-sm"
+                           placeholder="e.g. General Price List (Sales)" required />
+                    <div class="invalid-feedback">Name is required.</div>
+                </div>
+            </div>
+            <div class="row g-2 mb-3">
+                <label class="col-sm-3 col-form-label col-form-label-sm">Type</label>
+                <div class="col-sm-9">
+                    <select name="type" class="form-select form-select-sm">
+                        <option value="Sales">Sales</option>
+                        <option value="Purchase">Purchase</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-2 mb-3">
+                <label class="col-sm-3 col-form-label col-form-label-sm">Currency</label>
+                <div class="col-sm-9">
+                    <select name="currencyId" class="form-select form-select-sm">
+                        @foreach (var currency in currencies)
+                        {
+                            <option value="@currency.Id">@currency.Code - @currency.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="row g-2 mb-3">
+                <label class="col-sm-3 col-form-label col-form-label-sm">Business Partner</label>
+                <div class="col-sm-9">
+                    <select name="businessPartnerId" class="form-select form-select-sm">
+                        <option value="">General (all partners)</option>
+                        @foreach (var partner in partners)
+                        {
+                            <option value="@partner.Id">@partner.Code - @partner.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <h6 class="mb-3">Items</h6>
+            <div id="lines">
+                <div class="row g-2 mb-2 line-row">
+                    <div class="col-md-5">
+                        <select name="itemId" class="form-select form-select-sm">
+                            @foreach (var item in items)
+                            {
+                                <option value="@item.Id">@item.Code - @item.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input name="price" type="number" step="0.01" class="form-control form-control-sm"
+                               placeholder="Price" required />
+                        <div class="invalid-feedback">Price is required.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <input name="effectiveDate" type="date" class="form-control form-control-sm"
+                               value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" required />
+                        <div class="invalid-feedback">Effective date is required.</div>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-center">
+                        <button type="button" class="btn btn-icon btn-text-danger remove-line" data-bs-toggle="tooltip"
+                                title="Remove"><i class="ri ri-delete-bin-line icon-14px"></i></button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" id="addLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Item</button>
+        </form>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+        <button type="submit" form="priceListForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('addLine').addEventListener('click', function () {
+            var lines = document.getElementById('lines');
+            var clone = lines.firstElementChild.cloneNode(true);
+            clone.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+            lines.appendChild(clone);
+        });
+
+        document.getElementById('lines').addEventListener('click', function (e) {
+            var btn = e.target.closest('.remove-line');
+            if (!btn) return;
+            var lines = document.getElementById('lines');
+            var row = btn.closest('.line-row');
+            if (lines.children.length > 1) {
+                row.remove();
+            } else {
+                row.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+            }
+        });
+
+        document.getElementById('priceListForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                field.classList.toggle('is-invalid', !isFieldValid);
+                valid = valid && isFieldValid;
+            });
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    </script>
+}
+

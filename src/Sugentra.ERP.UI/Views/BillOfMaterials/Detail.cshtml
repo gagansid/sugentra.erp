@@ -1,0 +1,93 @@
+@model Sugentra.ERP.UI.Models.MasterData.BillOfMaterialResponse
+@{
+    ViewData["Title"] = "Bill of Materials Detail";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var uoms = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.UnitOfMeasurement>)ViewBag.UnitsOfMeasurement;
+    var product = items.FirstOrDefault(i => i.Id == Model.ItemId);
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-database-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Master Data", Url.Action("Index", "Workspace", new { id = "MasterData" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Bill of Materials", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", User.HasPermission("MasterData_Edit") } })
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Bill of Materials Detail: @Model.Name</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless table-hover mb-4 detail-info-table">
+            <tbody>
+                <tr>
+                    <td class="fw-medium">Product</td>
+                    <td>@(product is null ? Model.ItemId.ToString() : $"{product.Code} - {product.Name}")</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Name</td>
+                    <td>@Model.Name</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Description</td>
+                    <td>@(Model.Description ?? "-")</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Status</td>
+                    <td>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-primary">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-label-secondary">Inactive</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h6 class="mb-3">Components</h6>
+        @if (Model.Lines.Count == 0)
+        {
+            <p class="text-muted">No components recorded.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Component</th>
+                            <th>Quantity</th>
+                            <th>UoM</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var lineNumber = 0;
+                        }
+                        @foreach (var line in Model.Lines)
+                        {
+                            lineNumber++;
+                            var component = items.FirstOrDefault(i => i.Id == line.ComponentItemId);
+                            var uom = uoms.FirstOrDefault(u => u.Id == line.UnitOfMeasurementId);
+                            <tr>
+                                <td class="text-center">@lineNumber</td>
+                                <td>@(component is null ? line.ComponentItemId.ToString() : $"{component.Code} -                            {component.Name}")</td>
+                                <td>@line.Quantity</td>
+                                <td>@(uom?.Code ?? "-")</td>
+                                <td>@(line.Notes ?? "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

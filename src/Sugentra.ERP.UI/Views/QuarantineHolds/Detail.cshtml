@@ -1,0 +1,72 @@
+@model Sugentra.ERP.UI.Models.Inventory.QuarantineHold
+@{
+    ViewData["Title"] = "Quarantine Hold Detail";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-cross-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Quarantine Holds", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Quarantine Hold</h5>
+        @if (User.HasPermission("QuarantineHold_Edit"))
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-primary"><i
+                class="ri ri-edit-line me-1"></i>Edit</a>
+            }
+        </div>
+        <div class="card-body">
+            <table class="table table-borderless table-hover mb-0 detail-info-table">
+                <tbody>
+                    <tr>
+                        <td>Item</td>
+                        <td class="fw-bold">@(items.FirstOrDefault(i => i.Id == Model.ItemId)?.Name)</td>
+                    </tr>
+                    <tr>
+                        <td>Batch</td>
+                        <td>@(batches.FirstOrDefault(b => b.Id == Model.BatchId)?.Code)</td>
+                    </tr>
+                    <tr>
+                        <td>Warehouse</td>
+                        <td>@(warehouses.FirstOrDefault(w => w.Id == Model.WarehouseId)?.Name)</td>
+                    </tr>
+                    <tr>
+                        <td>Hold Reason</td>
+                        <td>@Model.HoldReason</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td>
+                            <span class="badge bg-label-@(Model.Status switch
+                                                           {
+                                                               "OnHold" => "warning",
+                                                               "Released" => "success",
+                                                               "Rejected" => "danger",
+                                                               _ => "secondary"
+                                                           })">@Model.Status</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Placed At</td>
+                        <td>@Model.PlacedAt.ToString("dd MMM yyyy HH:mm")</td>
+                    </tr>
+                    <tr>
+                        <td>Released At</td>
+                        <td>@(Model.ReleasedAt?.ToString("dd MMM yyyy HH:mm"))</td>
+                    </tr>
+                    <tr>
+                        <td>Notes</td>
+                        <td>@Model.Notes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>

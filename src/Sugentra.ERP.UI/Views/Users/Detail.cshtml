@@ -1,0 +1,202 @@
+@model Sugentra.ERP.UI.Models.Identity.UserDetailViewModel
+@{
+    ViewData["Title"] = "User Detail";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Users", Url.Action("Index", "Users")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.User.Username, null)
+    });
+
+    var (statusLabel, statusColor) = Model.User.IsActive ? ("Active", "primary") : ("Inactive", "warning");
+    var activeTab = ViewBag.ActiveTab as string;
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-4 col-lg-3 mb-4">
+        <div class="card" id="userProfileCard">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-center mb-4">
+                    <span class="avatar avatar-xl">
+                        <i class="ri ri-user-3-line" style="font-size: 3.5rem;"></i>
+                    </span>
+                </div>
+                <h5 class="mb-1">@Model.User.FullName</h5>
+                <span class="badge bg-label-@statusColor mb-4">@statusLabel</span>
+
+                <div class="text-start mt-2">
+                    <hr />
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">Username:</span>
+                        <span>@Model.User.Username</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">Email:</span>
+                        <span class="text-break">
+                            @Model.User.Email
+                            @if (Model.User.EmailVerifiedAt is not null)
+                            {
+                                <i class="ri ri-checkbox-circle-fill text-success" data-bs-toggle="tooltip"
+                                   title="Email verified"></i>
+                            }
+                            else
+                            {
+                                <i class="ri ri-error-warning-line text-muted" data-bs-toggle="tooltip"
+                                   title="Email not verified"></i>
+                            }
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">Phone:</span>
+                        <span>
+                            @(Model.User.PhoneNumber ?? "-")
+                            @if (Model.User.PhoneNumber is not null)
+                            {
+                                @if (Model.User.PhoneVerifiedAt is not null)
+                                {
+                                    <i class="ri ri-checkbox-circle-fill text-success" data-bs-toggle="tooltip"
+                                       title="Phone verified"></i>
+                                }
+                                else
+                                {
+                                    <i class="ri ri-error-warning-line text-muted" data-bs-toggle="tooltip"
+                                       title="Phone not verified"></i>
+                                }
+                            }
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">Employee Id:</span>
+                        <span>@(Model.User.EmployeeId ?? "-")</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="fw-medium">Roles:</span>
+                        <span class="d-flex flex-wrap justify-content-end gap-1">
+                            @if (Model.RolesPermissions.Roles.Count == 0)
+                            {
+                                <span class="text-muted">None</span>
+                            }
+                            else
+                            {
+                                foreach (var role in Model.RolesPermissions.Roles)
+                                {
+                                    <span class="badge bg-label-info">@role.Name</span>
+                                }
+                            }
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">Last Login:</span>
+                        <span>@(Model.User.LastLoginAt?.ToString("yyyy-MM-dd HH:mm") ?? "Never")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium">Created At:</span>
+                        <span>@Model.User.CreatedAt.ToString("yyyy-MM-dd")</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center gap-2 mt-4">
+                    @if (User.HasPermission("User_Update"))
+                    {
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#editUserModal">Edit</button>
+                    }
+                    @if (User.HasPermission("User_ChangePassword"))
+                    {
+                        <button type="button" class="btn btn-label-primary btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#changePasswordModal">Change Password</button>
+                    }
+                    <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8 col-lg-9">
+        <div class="nav-align-top">
+            <ul class="nav nav-pills flex-column flex-md-row mb-4 gap-2 gap-lg-0" role="tablist">
+                <li class="nav-item">
+                    <button type="button" class="nav-link @(activeTab is null or "roles-permissions" ? "active" : "")"
+                            role="tab" data-bs-toggle="tab" data-bs-target="#tab-roles-permissions">
+                        <i class="icon-base ri ri-shield-keyhole-line icon-sm me-2"></i>Roles &amp; Permissions
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link @(activeTab == "sessions" ? "active" : "")" role="tab"
+                            data-bs-toggle="tab" data-bs-target="#tab-sessions">
+                        <i class="icon-base ri ri-device-line icon-sm me-2"></i>Login History
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link @(activeTab == "audit-log" ? "active" : "")" role="tab"
+                            data-bs-toggle="tab" data-bs-target="#tab-audit-log">
+                        <i class="icon-base ri ri-history-line icon-sm me-2"></i>Audit Log
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content p-0">
+            <div class="tab-pane fade @(activeTab is null or "roles-permissions" ? "show active" : "")"
+                 id="tab-roles-permissions" role="tabpanel">
+                @await Html.PartialAsync("_DetailRolesPermissions", Model.RolesPermissions, new
+                ViewDataDictionary(ViewData) { { "UserId", Model.User.Id }, { "AllRoles", Model.AllRoles }, {
+                "PermissionCatalog", Model.PermissionCatalog }, { "PermissionModules", Model.PermissionModules }, {
+                "PermModule", Model.PermModule }, { "PermCode", Model.PermCode } })
+            </div>
+            <div class="tab-pane fade @(activeTab == "sessions" ? "show active" : "")" id="tab-sessions"
+                 role="tabpanel">
+                @await Html.PartialAsync("_DetailSessions", Model.Sessions, new ViewDataDictionary(ViewData) { {
+      "UserId", Model.User.Id } })
+            </div>
+            <div class="tab-pane fade @(activeTab == "audit-log" ? "show active" : "")" id="tab-audit-log"
+                 role="tabpanel">
+                @await Html.PartialAsync("_DetailAuditLog", Model.AuditLogs, new ViewDataDictionary(ViewData) { {
+      "UserId", Model.User.Id } })
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    var editModel = ViewData["EditModel"] as Sugentra.ERP.UI.Models.Identity.EditUserViewModel ?? new
+Sugentra.ERP.UI.Models.Identity.EditUserViewModel
+    {
+        Id = Model.User.Id,
+        Username = Model.User.Username,
+        Email = Model.User.Email,
+        FullName = Model.User.FullName,
+        IsActive = Model.User.IsActive,
+        PhoneNumber = Model.User.PhoneNumber,
+        EmployeeId = Model.User.EmployeeId
+    };
+}
+@await Html.PartialAsync("_EditUserModal", editModel)
+
+@if ((bool?)ViewData["OpenEditModal"] == true)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        });
+    </script>
+}
+
+@{
+    var changePasswordModel = ViewData["ChangePasswordModel"] as Sugentra.ERP.UI.Models.Identity.ChangePasswordViewModel
+        ?? new Sugentra.ERP.UI.Models.Identity.ChangePasswordViewModel { Id = Model.User.Id };
+}
+@await Html.PartialAsync("_ChangePasswordUserModal", changePasswordModel)
+
+@if ((bool?)ViewData["OpenChangePasswordModal"] == true)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+        });
+    </script>
+}
+

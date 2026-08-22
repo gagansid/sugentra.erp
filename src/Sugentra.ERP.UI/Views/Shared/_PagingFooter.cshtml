@@ -1,0 +1,54 @@
+@model Sugentra.ERP.UI.Models.Layout.PagingInfo
+@{
+    var baseRouteData = Context.Request.Query
+        .Where(kv => !string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase)
+                  && !string.Equals(kv.Key, "pageSize", StringComparison.OrdinalIgnoreCase))
+        .ToDictionary(kv => kv.Key, kv => kv.Value.ToString());
+    baseRouteData["pageSize"] = Model.PageSize.ToString();
+
+    Dictionary<string, string> RouteDataFor(int page)
+    {
+        var dict = new Dictionary<string, string>(baseRouteData) { ["page"] = page.ToString() };
+        return dict;
+    }
+
+    var start = Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var end = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
+
+    const int visiblePages = 3;
+    var windowStart = Math.Clamp(Model.Page - 1, 1, Math.Max(1, Model.TotalPages - visiblePages + 1));
+    var windowEnd = Math.Min(windowStart + visiblePages - 1, Model.TotalPages);
+}
+<div class="paging-footer d-flex justify-content-between align-items-center flex-wrap gap-2 p-4 border-top">
+    <span class="text-muted">Showing @start to @end of @Model.TotalCount entries</span>
+    @if (Model.TotalPages > 1)
+    {
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-all-route-data="RouteDataFor(1)"
+                       aria-label="First page">&laquo;</a>
+                </li>
+                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-all-route-data="RouteDataFor(Math.Max(1, Model.Page - 1))"
+                       aria-label="Previous page">&lsaquo;</a>
+                </li>
+                @for (var p = windowStart; p <= windowEnd; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-all-route-data="RouteDataFor(p)">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index"
+                       asp-all-route-data="RouteDataFor(Math.Min(Model.TotalPages, Model.Page + 1))"
+                       aria-label="Next page">&rsaquo;</a>
+                </li>
+                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-all-route-data="RouteDataFor(Model.TotalPages)"
+                       aria-label="Last page">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

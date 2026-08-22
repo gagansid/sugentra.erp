@@ -1,0 +1,75 @@
+﻿@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var appName = Configuration["AppName"] ?? "Sugentra ERP";
+    var title = ViewData["Title"] as string;
+    var hideSidebar = ViewData["HideSidebar"] is true;
+}
+<!DOCTYPE html>
+<html lang="en" class="layout-navbar-fixed @(hideSidebar ? "" : "layout-menu-fixed")" dir="ltr" data-skin="default"
+      data-bs-theme="light" data-assets-path="/" data-template="vertical-menu-template">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(string.IsNullOrEmpty(title) ? appName : $"{title} | {appName}")</title>
+    <link rel="icon" type="image/png" href="~/img/favicon/favicon.png" />
+
+    @await Html.PartialAsync("Sections/_Styles")
+    @RenderSection("VendorStyles", required: false)
+    @RenderSection("PageStyles", required: false)
+    @await Html.PartialAsync("Sections/_ScriptsIncludes")
+</head>
+
+<body>
+    <div class="layout-wrapper layout-content-navbar @(hideSidebar ? "layout-without-menu" : "")">
+        <div class="layout-container">
+
+            @if (!hideSidebar)
+            {
+                @await Component.InvokeAsync("SidebarMenu")
+            }
+
+            <div class="layout-page">
+                @await Component.InvokeAsync("Navbar", new { showBrand = hideSidebar })
+
+                <div class="content-wrapper">
+                    <div class="container-xxl flex-grow-1 container-p-y @(hideSidebar ? "px-4 px-lg-5" : "")">
+                        @if (TempData["SuccessMessage"] is string successMessage)
+                        {
+                            <div class="alert alert-primary alert-dismissible" role="alert">
+                                @successMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+                        @if (TempData["ErrorMessage"] is string errorMessage)
+                        {
+                            <div class="alert alert-danger alert-dismissible" role="alert">
+                                @errorMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+                        @RenderBody()
+                    </div>
+
+                    <footer class="content-footer footer bg-footer-theme">
+                        <div class="container-xxl">
+                            <div
+                                class="footer-container d-flex align-items-center justify-content-between py-4 flex-md-row flex-column">
+                                <div>&#169; @DateTime.UtcNow.Year @appName</div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("Sections/_Scripts")
+    @RenderSection("VendorScripts", required: false)
+    <script src="~/js/main.js"></script>
+    @RenderSection("PageScripts", required: false)
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>
+

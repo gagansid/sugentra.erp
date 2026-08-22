@@ -1,0 +1,59 @@
+@model Sugentra.ERP.UI.Models.Identity.EditUserViewModel
+@{
+    ViewData["Title"] = "Edit User";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Users", Url.Action("Index", "Users", new { moduleCode = "Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.Username, null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<h4 class="mb-4">Edit User: @Model.Username</h4>
+
+<div class="card">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+             style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Username" />
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Employee Id</label>
+                    <input asp-for="EmployeeId" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mt-2">
+                        <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                        <label asp-for="IsActive" class="form-check-label">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary btn-filter-action">Save</button>
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-filter-action">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

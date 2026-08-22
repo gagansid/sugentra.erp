@@ -1,0 +1,142 @@
+@model Sugentra.ERP.UI.Models.Settings.EmailHistoryDetailDto
+@{
+    ViewData["Title"] = "Email History Detail";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-mail-settings-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Administration", Url.Action("Index", "Workspace", new { id =
+"SystemAdministration" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Email History", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+    <div class="d-flex align-items-center gap-1">
+        @if (ViewBag.FirstId is long firstId && firstId != Model.Id)
+        {
+            <a asp-action="Detail" asp-route-id="@firstId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="First">&laquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="First">&laquo;</button>
+        }
+        @if (ViewBag.PreviousId is long previousId)
+        {
+            <a asp-action="Detail" asp-route-id="@previousId" class="btn btn-icon btn-label-secondary"
+               data-bs-toggle="tooltip" data-bs-placement="top" title="Previous">&lsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Previous">&lsaquo;</button>
+        }
+        @if (ViewBag.NextId is long nextId)
+        {
+            <a asp-action="Detail" asp-route-id="@nextId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Next">&rsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Next">&rsaquo;</button>
+        }
+        @if (ViewBag.LastId is long lastId && lastId != Model.Id)
+        {
+            <a asp-action="Detail" asp-route-id="@lastId" class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip"
+               data-bs-placement="top" title="Last">&raquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Last">&raquo;</button>
+        }
+        <a asp-action="Detail" asp-route-id="@Model.Id" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip"
+           data-bs-placement="top" title="Refresh"><i class="ri ri-refresh-line icon-14px"></i></a>
+        <a asp-action="Index" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+           title="Back"><i class="ri ri-arrow-go-back-line icon-14px"></i></a>
+    </div>
+</div>
+
+<div class="card">
+    <h5 class="card-header">Email History Detail</h5>
+    <div class="card-body">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <label class="form-label text-muted">From</label>
+                <div><strong>@Model.FromEmail @(Model.FromName is null ? "" : $"({Model.FromName})")</strong></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted">To</label>
+                <div><strong>@Model.ToEmail</strong></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted">Status</label>
+                <div><span
+                    class="badge bg-label-@(Model.Status == "Sent" ? "primary" : "danger")">@Model.Status</span>
+                </div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.CcEmail))
+            {
+                <div class="col-md-4">
+                    <label class="form-label text-muted">Cc</label>
+                    <div><strong>@Model.CcEmail</strong></div>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.BccEmail))
+            {
+                <div class="col-md-4">
+                    <label class="form-label text-muted">Bcc</label>
+                    <div><strong>@Model.BccEmail</strong></div>
+                </div>
+            }
+            <div class="col-md-4">
+                <label class="form-label text-muted">Template Code</label>
+                <div><strong>@(Model.TemplateCode ?? "-")</strong></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted">Source</label>
+                <div><strong>@(Model.SourceModule ?? "-") @(Model.SourceReferenceId is null ? "" :
+                                            $"#{Model.SourceReferenceId}")</strong></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-muted">Sent At</label>
+                    <div><strong>@Model.SentAt.ToString("yyyy-MM-dd HH:mm:ss")</strong></div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+                {
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Error Message</label>
+                        <div class="alert alert-danger mb-0">@Model.ErrorMessage</div>
+                    </div>
+                }
+                <div class="col-md-12">
+                    <label class="form-label text-muted">Subject</label>
+                    <div><strong>@Model.Subject</strong></div>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label text-muted">Body</label>
+                    <div class="border rounded p-3">@Html.Raw(Model.BodyHtml)</div>
+                </div>
+                @if (Model.Attachments.Count > 0)
+                {
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Attachments</label>
+                        <ul class="list-group">
+                            @foreach (var attachment in Model.Attachments)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>@attachment.FileName</span>
+                                    <span class="text-muted small">@(attachment.FileSize / 1024) KB</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+

@@ -1,0 +1,186 @@
+@model Sugentra.ERP.UI.Models.Approvals.ApprovalFlowDefinitionResponse
+@{
+    var isEdit = Model.Id > 0;
+    var allRoles = (ViewData["AllRoles"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.RoleListItemDto>) ?? [];
+    var allUsers = (ViewData["AllUsers"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.UserListItemDto>) ?? [];
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">@(isEdit ? "Edit" : "Add") Approval Flow</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.Id">
+            @Html.AntiForgeryToken()
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Document Type</label>
+                    <input type="text" name="documentType" class="form-control" value="@Model.DocumentType" required placeholder="e.g. GoodsReceipt" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" value="@Model.Name" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Min Amount</label>
+                    <input type="number" step="0.01" name="minAmount" class="form-control" value="@Model.MinAmount" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Max Amount</label>
+                    <input type="number" step="0.01" name="maxAmount" class="form-control" value="@Model.MaxAmount" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Currency Id</label>
+                    <input type="number" name="currencyId" class="form-control" value="@Model.CurrencyId" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Warehouse Id</label>
+                    <input type="number" name="warehouseId" class="form-control" value="@Model.WarehouseId" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Priority</label>
+                    <input type="number" name="priority" class="form-control" value="@Model.Priority" />
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <input type="checkbox" name="isActive" value="true" class="form-check-input" id="isActive" checked="@(Model.IsActive ? "checked" : null)" />
+                        <input type="hidden" name="isActive" value="false" />
+                        <label class="form-check-label" for="isActive">Active</label>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="mb-2">Approval Levels</h6>
+            <p class="text-muted small">Pick Role(s) and/or User(s) eligible to approve at that level. A level needs at least one of the two.</p>
+            <div id="levelsContainer"></div>
+            <button type="button" id="addLevelBtn" class="btn btn-sm btn-label-primary mb-4">
+                <i class="ri ri-add-line me-1"></i>Add Level
+            </button>
+
+            <div>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-label-dark">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<template id="levelRowTemplate">
+    <div class="row g-2 align-items-end mb-2 level-row border rounded p-2 mx-0">
+        <div class="col-md-1">
+            <label class="form-label small mb-0">Level #</label>
+            <input type="number" name="levelNumber" class="form-control form-control-sm level-number" required />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0">Level Name</label>
+            <input type="text" name="levelName" class="form-control form-control-sm" required />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-0">Require All?</label>
+            <select name="requireAllApprovers" class="form-select form-select-sm">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small mb-0">Role(s)</label>
+            <select class="form-select form-select-sm role-ids-select" multiple>
+                @foreach (var role in allRoles)
+                {
+                    <option value="@role.Id">@role.Name</option>
+                }
+            </select>
+            <input type="hidden" name="roleIds" class="role-ids-hidden" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small mb-0">User(s)</label>
+            <select class="form-select form-select-sm user-ids-select" multiple>
+                @foreach (var user in allUsers)
+                {
+                    <option value="@user.Id">@user.FullName</option>
+                }
+            </select>
+            <input type="hidden" name="userIds" class="user-ids-hidden" />
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-icon btn-label-danger remove-level-btn"><i class="ri ri-close-line"></i></button>
+        </div>
+    </div>
+</template>
+
+<link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+<script src="~/vendor/libs/select2/select2.js" defer></script>
+
+@* Plain inline script (not @section Scripts): this view is rendered via Html.PartialAsync, and sections
+   defined inside a partial are silently ignored rather than surfaced by the parent's layout. *@
+<script>
+    (function () {
+            const levelsContainer = document.getElementById('levelsContainer');
+            const template = document.getElementById('levelRowTemplate');
+            const addLevelBtn = document.getElementById('addLevelBtn');
+            if (!levelsContainer || !template || !addLevelBtn) {
+                return;
+            }
+
+            function addLevelRow(level) {
+                const clone = template.content.cloneNode(true);
+                const row = clone.querySelector('.level-row');
+                row.querySelector('.level-number').value = level?.levelNumber ?? (levelsContainer.children.length + 1);
+                row.querySelector('[name="levelName"]').value = level?.name ?? '';
+                row.querySelector('[name="requireAllApprovers"]').value = (level?.requireAllApprovers ?? true) ? 'true' : 'false';
+                row.querySelector('.role-ids-hidden').value = level?.roleIds ?? '';
+                row.querySelector('.user-ids-hidden').value = level?.userIds ?? '';
+                row.querySelector('.remove-level-btn').addEventListener('click', () => row.remove());
+                levelsContainer.appendChild(row);
+                enhanceMultiSelect(row, '.role-ids-select', '.role-ids-hidden', 'Select role(s)');
+                enhanceMultiSelect(row, '.user-ids-select', '.user-ids-hidden', 'Select user(s)');
+            }
+
+            // select2 needs jQuery, which loads at the bottom of the shared layout after this script runs on
+            // initial page load — no-ops until then; the window 'load' sweep below catches rows added too early.
+            function enhanceMultiSelect(row, selectSelector, hiddenSelector, placeholder) {
+                if (typeof $ === 'undefined' || !$.fn.select2) return;
+                const $select = $(row.querySelector(selectSelector));
+                if ($select.data('select2')) return;
+
+                $select.select2({ width: '100%', placeholder: placeholder });
+
+                const hiddenInput = row.querySelector(hiddenSelector);
+                const preselected = hiddenInput.value;
+                if (preselected) {
+                    $select.val(preselected.split(',').filter(Boolean)).trigger('change');
+                }
+
+                $select.on('change', function () {
+                    hiddenInput.value = ($select.val() || []).join(',');
+                });
+            }
+
+            addLevelBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                addLevelRow(null);
+            });
+
+            const existingLevels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model.Levels ?? []).Select(l => new
+            {
+                levelNumber = l.LevelNumber,
+                name = l.Name,
+                requireAllApprovers = l.RequireAllApprovers,
+                roleIds = string.Join(",", (l.Approvers ?? []).Where(a => a.RoleId.HasValue).Select(a => a.RoleId)),
+                userIds = string.Join(",", (l.Approvers ?? []).Where(a => a.UserId.HasValue).Select(a => a.UserId))
+            })));
+
+            if (existingLevels.length > 0) {
+                existingLevels.forEach(addLevelRow);
+            } else {
+                addLevelRow(null);
+            }
+
+            window.addEventListener('load', function () {
+                levelsContainer.querySelectorAll('.level-row').forEach(function (row) {
+                    enhanceMultiSelect(row, '.role-ids-select', '.role-ids-hidden', 'Select role(s)');
+                    enhanceMultiSelect(row, '.user-ids-select', '.user-ids-hidden', 'Select user(s)');
+                });
+            });
+        })();
+    </script>

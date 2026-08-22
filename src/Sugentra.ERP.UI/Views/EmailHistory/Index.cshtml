@@ -1,0 +1,90 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Settings.EmailHistoryListItemDto>
+@{
+    ViewData["Title"] = "Email History";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-mail-settings-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Administration", Url.Action("Index", "Workspace", new { id =
+"SystemAdministration" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Email History", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <h5 class="card-header">Email History</h5>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <div>
+            @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="text" name="toEmail" class="form-control form-control-sm" style="max-width: 180px;"
+                   value="@ViewBag.ToEmail" placeholder="To Email" />
+            <input type="text" name="templateCode" class="form-control form-control-sm" style="max-width: 160px;"
+                   value="@ViewBag.TemplateCode" placeholder="Template Code" />
+            <select name="status" class="form-select form-select-sm" style="max-width: 140px;">
+                <option value="">All Status</option>
+                <option value="Sent" selected="@("Sent".Equals(ViewBag.Status) ? "selected" : null)">Sent</option>
+                <option value="Failed" selected="@("Failed".Equals(ViewBag.Status) ? "selected" : null)">Failed</option>
+            </select>
+            <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
+            <span class="text-muted small">to</span>
+            <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
+            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Reset</a>
+        </form>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>To</th>
+                    <th>Subject</th>
+                    <th>Template</th>
+                    <th>Source</th>
+                    <th class="col-fit">Status</th>
+                    <th class="text-center col-fit">Attachments</th>
+                    <th class="col-fit">Sent At</th>
+                    <th class="text-center" style="width: 110px;">Detail</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="9" class="text-muted text-center">No email history entries found.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var entry in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@entry.ToEmail</td>
+                            <td>@entry.Subject</td>
+                            <td>@(entry.TemplateCode ?? "-")</td>
+                            <td>@(entry.SourceModule ?? "-")</td>
+                            <td>
+                                <span
+                                class="badge bg-label-@(entry.Status == "Sent" ? "primary" : "danger")">@entry.Status</span>
+                            </td>
+                            <td class="text-center">@entry.AttachmentCount</td>
+                            <td>@entry.SentAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="text-center">
+                                <a asp-action="Detail" asp-route-id="@entry.Id" class="btn btn-icon btn-text-secondary"
+                                   data-bs-toggle="tooltip" data-bs-placement="top" title="View Detail"><i
+                                    class="ri ri-file-search-line icon-14px"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+    </div>

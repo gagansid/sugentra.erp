@@ -1,0 +1,51 @@
+@model Sugentra.ERP.UI.Models.Identity.CreateRoleRequest
+@{
+    ViewData["Title"] = "Add Role";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Roles", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form asp-action="Create" method="post">
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Name</label>
+                        <div class="col-sm-9">
+                            <input name="Name" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Description</label>
+                        <div class="col-sm-9">
+                            <input name="Description" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Active</label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input class="form-check-input" type="checkbox" name="IsActive" value="true" checked />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-filter-action">Cancel</a>
+                        <button type="submit" class="btn btn-primary btn-filter-action">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

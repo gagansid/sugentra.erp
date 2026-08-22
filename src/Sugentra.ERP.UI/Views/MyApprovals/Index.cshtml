@@ -1,0 +1,59 @@
+@model List<Sugentra.ERP.UI.Models.Approvals.ApprovalInboxItem>
+@{
+    ViewData["Title"] = "My Approvals";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-inbox-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("My Approvals", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">My Approvals</h5>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Document Type</th>
+                    <th>Document Number</th>
+                    <th>Current Level</th>
+                    <th>Requested At</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-muted text-center">No approvals pending on you.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = 0;
+                    @foreach (var item in Model)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@item.DocumentType</td>
+                            <td>@item.DocumentNumber</td>
+                            <td>@item.LevelName</td>
+                            <td>@item.RequestedAt.ToLocalTime().ToString("g")</td>
+                            <td class="text-center">
+                                <a asp-action="Details" asp-route-id="@item.RequestId" class="btn btn-sm btn-icon btn-label-primary" title="Review">
+                                    <i class="ri ri-eye-line"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

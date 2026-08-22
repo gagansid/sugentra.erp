@@ -1,0 +1,178 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Settings.AuditLogListItemDto>
+@{
+    ViewData["Title"] = "Audit Log";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-history-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Audit Log", Url.Action("Index", "Workspace", new { id = "AuditLog" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Audit Log", null)
+    });
+    var modules = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.AuditLogModuleOptionDto>)ViewBag.Modules;
+    var menus = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.AuditLogMenuOptionDto>)ViewBag.Menus;
+}
+
+@await Html.PartialAsync(partialViewName: "~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+<style>
+    /* mobile: filter fields stack full-width, one per row */
+    .audit-filter-form {
+        width: 100%;
+    }
+
+    .audit-filter-form .filter-field {
+        width: 100%;
+    }
+
+    .audit-filter-form .filter-date {
+        width: 50%;
+        min-width: 0;
+    }
+
+    /* Filter/Clear stay compact and inline with "Show entries" at every width */
+    .audit-filter-form-actions .btn {
+        width: 80px;
+        max-width: 80px;
+    }
+
+    @@media (min-width: 576px) {
+
+        /* desktop: fixed compact widths, row right-aligned via justify-content-end */
+        .audit-filter-form .filter-module,
+        .audit-filter-form .filter-menu,
+        .audit-filter-form .filter-action {
+            width: 150px;
+        }
+
+        .audit-filter-form .filter-date {
+            width: 150px;
+        }
+
+        .audit-filter-form .filter-date-group {
+            width: auto;
+        }
+    }
+</style>
+
+<div class="card">
+    <h5 class="card-header">Audit Log</h5>
+    <div class="pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <form method="get" id="auditLogFilterForm" class="audit-filter-form">
+            <div class="d-flex flex-wrap align-items-center gap-2 justify-content-end w-100 mb-2">
+                <select name="module" class="form-select form-select-sm filter-field filter-module">
+                    <option value="">All Modules</option>
+                    @foreach (var m in modules)
+                    {
+                        <option value="@m.Code"
+                                selected="@(string.Equals(m.Code, (string?)ViewBag.Module, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                            @m.Name</option>
+                        }
+                    </select>
+                    <select name="menu" class="form-select form-select-sm filter-field filter-menu">
+                        <option value="">All Menus</option>
+                        @foreach (var m in menus)
+                        {
+                            <option value="@m.Code"
+                                    selected="@(string.Equals(m.Code, (string?)ViewBag.Menu, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                                @m.Name</option>
+                            }
+                        </select>
+                        <select name="actionType" class="form-select form-select-sm filter-field filter-action">
+                            <option value="">All Actions</option>
+                            <option value="Create" selected="@("Create".Equals(ViewBag.Action) ? "selected" : null)">Create
+                            </option>
+                            <option value="Update" selected="@("Update".Equals(ViewBag.Action) ? "selected" : null)">Update
+                            </option>
+                            <option value="SoftDelete" selected="@("SoftDelete".Equals(ViewBag.Action) ? "selected" : null)">
+                                Delete</option>
+                            </select>
+                            <div class="d-flex gap-2 filter-field filter-date-group">
+                                <input type="text" name="fromDate"
+                                       class="form-control form-control-sm filter-date audit-log-flatpickr" placeholder="From date"
+                                       autocomplete="off" value="@ViewBag.FromDate" />
+                                <input type="text" name="toDate"
+                                       class="form-control form-control-sm filter-date audit-log-flatpickr" placeholder="To date"
+                                       autocomplete="off" value="@ViewBag.ToDate" />
+                            </div>
+                        </div>
+                    </form>
+                    <!-- Filter/Clear live outside the form (via the form= attribute) so they can sit beside the -->
+                    <!-- _ShowEntries partial's own <form>, avoiding invalid nested <form> elements -->
+                    <div class="d-flex flex-row justify-content-between align-items-center gap-2">
+                        <div class="flex-shrink-0">
+                            @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+                        </div>
+                        <div class="d-flex gap-2 audit-filter-form-actions">
+                            <button type="submit" form="auditLogFilterForm"
+                                    class="btn btn-sm btn-primary btn-filter-action flex-fill">Apply</button>
+                            <a asp-action="Index"
+                               class="btn btn-sm btn-label-dark waves-effect btn-filter-action flex-fill">Clear</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 60px;">No</th>
+                                <th>Module</th>
+                                <th>Menu</th>
+                                <th>Action</th>
+                                <th>Changed By</th>
+                                <th>Changed At</th>
+                                <th class="text-center">Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-border-bottom-0">
+                            @if (Model.Items.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-muted text-center">No audit log entries found.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                var rowNo = (Model.Page - 1) * Model.PageSize + 1;
+                                @foreach (var log in Model.Items)
+                                {
+                                    <tr>
+                                        <td class="text-center">@rowNo</td>
+                                        <td>@log.ModuleName</td>
+                                        <td>@log.MenuName</td>
+                                        <td>
+                                            <span
+                                            class="badge bg-label-@(log.Action == "Create" ? "success" : log.Action == "SoftDelete" ? "danger" : "warning")">@log.Action</span>
+                                        </td>
+                                        <td>@(log.ChangedByName ?? "-")</td>
+                                        <td>@log.ChangedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        <td class="text-center">
+                                            <a asp-action="Detail" asp-route-id="@log.Id" class="btn btn-icon btn-text-secondary"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="View Detail"><i
+                                                class="ri ri-file-search-line icon-14px"></i></a>
+                                            </td>
+                                        </tr>
+                                        rowNo++;
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+                </div>
+
+                @section Scripts {
+                    <script>
+                        document.querySelectorAll('.audit-log-flatpickr').forEach(function (el) {
+                            // append to body so the popup calendar doesn't grow the flex row and shift the layout on focus
+                            flatpickr(el, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
+                        });
+                    </script>
+                }

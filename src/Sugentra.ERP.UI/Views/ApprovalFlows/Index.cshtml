@@ -1,0 +1,81 @@
+@model List<Sugentra.ERP.UI.Models.Approvals.ApprovalFlowDefinitionResponse>
+@{
+    ViewData["Title"] = "Approval Flows";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-git-branch-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approval Flows", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Approval Flows</h5>
+        @if (User.HasPermission("ApprovalFlow_Create"))
+        {
+            <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add Flow</a>
+        }
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Document Type</th>
+                    <th>Name</th>
+                    <th>Amount Range</th>
+                    <th>Priority</th>
+                    <th>Levels</th>
+                    <th class="col-fit">Status</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="8" class="text-muted text-center">No approval flows configured.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = 0;
+                    @foreach (var flow in Model)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@flow.DocumentType</td>
+                            <td>@flow.Name</td>
+                            <td>@(flow.MinAmount?.ToString("N0") ?? "-") — @(flow.MaxAmount?.ToString("N0") ?? "-")</td>
+                            <td>@flow.Priority</td>
+                            <td>@flow.Levels.Count</td>
+                            <td>
+                                <span class="badge bg-label-@(flow.IsActive ? "success" : "secondary")">@(flow.IsActive ? "Active" : "Inactive")</span>
+                            </td>
+                            <td class="text-center">
+                                @if (User.HasPermission("ApprovalFlow_Edit"))
+                                {
+                                    <a asp-action="Edit" asp-route-id="@flow.Id" class="btn btn-sm btn-icon btn-label-primary" title="Edit">
+                                        <i class="ri ri-pencil-line"></i>
+                                    </a>
+                                }
+                                @if (User.HasPermission("ApprovalFlow_Delete"))
+                                {
+                                    <form method="post" asp-action="Delete" asp-route-id="@flow.Id" class="d-inline" onsubmit="return confirm('Delete this approval flow?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-icon btn-label-danger" title="Delete">
+                                            <i class="ri ri-delete-bin-line"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,25 @@
+@model Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0">
+        @for (var i = 0; i < Model.Items.Count; i++)
+        {
+            var item = Model.Items[i];
+            var isFirst = i == 0;
+            var isLast = i == Model.Items.Count - 1;
+            <li class="breadcrumb-item @(isLast ? "active" : "")" aria-current="@(isLast ? "page" : null)">
+                @if (isFirst)
+                {
+                    <i class="icon-base ri @Model.Icon me-1"></i>
+                }
+                @if (!isLast && item.Url is not null)
+                {
+                    <a href="@item.Url">@item.Text</a>
+                }
+                else
+                {
+                    @item.Text
+                }
+            </li>
+        }
+    </ol>
+</nav>

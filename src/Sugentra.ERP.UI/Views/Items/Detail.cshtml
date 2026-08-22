@@ -1,0 +1,79 @@
+@model Sugentra.ERP.UI.Models.MasterData.Item
+@{
+    ViewData["Title"] = "Item Detail";
+    var uom = ((IReadOnlyList<Sugentra.ERP.UI.Models.Settings.UnitOfMeasurement>)ViewBag.UnitsOfMeasurement)
+      .FirstOrDefault(u => u.Id == Model.UnitOfMeasurementId);
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-database-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Master Data", Url.Action("Index", "Workspace", new { id = "MasterData" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Items", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", User.HasPermission("MasterData_Edit") } })
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Item Detail: @Model.Name</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-hover mb-0 detail-info-table">
+                    <tbody>
+                        <tr>
+                            <td class="fw-medium">Code</td>
+                            <td>@Model.Code</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Name</td>
+                            <td>@Model.Name</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Category</td>
+                            <td>@Model.Category</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Grade</td>
+                            <td>@(Model.Grade ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Unit of Measurement</td>
+                            <td>@(uom is null ? "-" : $"{uom.Code} - {uom.Name}")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Standard Price</td>
+                            <td>@Model.StandardPrice.ToString("N2")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Status</td>
+                            <td>
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-primary">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-label-secondary">Inactive</span>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <style>
+                                    /* narrow label column so value sits right next to it instead of spanning the full card width */
+                                    .detail-info-table td:first-child {
+                                        width: 160px;
+                                        white-space: nowrap;
+                                    }
+
+                                    .detail-info-table td {
+                                        padding-top: .5rem;
+                                        padding-bottom: .5rem;
+                                    }
+                </style>
+            </div>
+

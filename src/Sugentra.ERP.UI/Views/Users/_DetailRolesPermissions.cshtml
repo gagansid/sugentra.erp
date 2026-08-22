@@ -1,0 +1,263 @@
+@model Sugentra.ERP.UI.Models.Identity.UserRolesPermissionsResponse
+@{
+    var userId = (long)(ViewData["UserId"] ?? 0L);
+    var allRoles = (ViewData["AllRoles"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.RoleListItemDto>) ?? [];
+    var assignedRoleIds = Model.Roles.Select(r => r.Id).ToHashSet();
+    var originalRoleIdsCsv = string.Join(",", assignedRoleIds);
+
+    var permissionCatalog = (ViewData["PermissionCatalog"] as
+PagedResult<Sugentra.ERP.UI.Models.Identity.PermissionListItemDto>)
+        ?? new PagedResult<Sugentra.ERP.UI.Models.Identity.PermissionListItemDto>();
+    var permissionModules = (ViewData["PermissionModules"] as IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Module>) ?? [];
+    var permModule = ViewData["PermModule"] as string;
+    var permCode = ViewData["PermCode"] as string;
+    var allowOverrideCodes = Model.EffectivePermissions.Where(p => p.Source == "Allow Override").Select(p =>
+p.Code).ToHashSet();
+    var denyOverrideCodes = Model.DeniedOverrides.Select(p => p.Code).ToHashSet();
+    var roleGrantedCodes = Model.EffectivePermissions.Select(p => p.Code).ToHashSet();
+    var modifiedAtByCode = Model.EffectivePermissions.Concat(Model.DeniedOverrides)
+        .Where(p => p.Source != "Role" && p.ModifiedAt is not null)
+        .ToDictionary(p => p.Code, p => p.ModifiedAt!.Value);
+    var canManagePermissions = User.HasPermission("Permission_Assign");
+}
+
+<div id="rolesPermissionsSection">
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Assigned Roles</h5>
+    </div>
+    <div class="card-body">
+        @if (allRoles.Count == 0)
+        {
+            <p class="text-muted mb-0">No roles available.</p>
+        }
+        else
+        {
+            <form id="updateRolesForm" asp-action="UpdateRoles" asp-controller="Users" method="post"
+                  class="d-flex align-items-start gap-2">
+                <input type="hidden" name="id" value="@userId" />
+                <input type="hidden" name="originalRoleIds" value="@originalRoleIdsCsv" />
+                <select multiple name="roleIds" id="assignedRolesSelect" class="form-select"
+                    @(User.HasPermission("User_Update") ? "" : "disabled")>
+                    @foreach (var role in allRoles)
+                    {
+                        <option value="@role.Id" selected="@(assignedRoleIds.Contains(role.Id) ? "selected" : null)">@role.Name
+                        </option>
+                    }
+                </select>
+                @if (User.HasPermission("User_Update"))
+                {
+                    <button type="submit" class="btn btn-primary btn-sm btn-filter-action text-nowrap">Submit</button>
+                }
+            </form>
+        }
+    </div>
+</div>
+
+<div class="card mt-4">
+    <h5 class="card-header">Effective Permissions</h5>
+
+    <div class="show-entries d-flex justify-content-between align-items-center flex-wrap gap-2 pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <form method="get" asp-action="Detail" asp-controller="Users" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="id" value="@userId" />
+            <input type="hidden" name="permPage" value="1" />
+            <input type="hidden" name="permModule" value="@permModule" />
+            <input type="hidden" name="permCode" value="@permCode" />
+            <label class="mb-0">Show</label>
+            <select name="permPageSize" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+                {
+                    <option value="@size" selected="@(size == permissionCatalog.PageSize ? "selected" : null)">@size</option>
+                }
+            </select>
+            <label class="mb-0">entries</label>
+        </form>
+
+        <form method="get" asp-action="Detail" asp-controller="Users" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="id" value="@userId" />
+            <input type="hidden" name="permPageSize" value="@permissionCatalog.PageSize" />
+            <select name="permModule" class="form-select form-select-sm" style="max-width: 160px;">
+                <option value="">All Modules</option>
+                @foreach (var m in permissionModules)
+                {
+                    <option value="@m.Code" selected="@(string.Equals(m.Code, permModule, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@m.Name</option>
+                }
+            </select>
+            <input type="text" name="permCode" value="@permCode" placeholder="Code" class="form-control form-control-sm" style="max-width: 160px;" />
+            <button type="submit" class="btn btn-primary btn-sm btn-filter-action">Filter</button>
+            <a asp-action="Detail" asp-controller="Users" asp-route-id="@userId" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Clear</a>
+            @if (canManagePermissions)
+            {
+                <button type="submit" form="updatePermissionsForm" class="btn btn-primary btn-sm btn-filter-action">Update</button>
+            }
+        </form>
+    </div>
+
+    <form id="updatePermissionsForm" asp-action="UpdatePermissions" asp-controller="Users" method="post">
+        <input type="hidden" name="id" value="@userId" />
+        <input type="hidden" name="permPage" value="@permissionCatalog.Page" />
+        <input type="hidden" name="permPageSize" value="@permissionCatalog.PageSize" />
+        <input type="hidden" name="permModule" value="@permModule" />
+        <input type="hidden" name="permCode" value="@permCode" />
+        <input type="hidden" name="allowIds" id="permAllowIds" />
+        <input type="hidden" name="denyIds" id="permDenyIds" />
+        <input type="hidden" name="removeIds" id="permRemoveIds" />
+
+        <div class="table-responsive text-nowrap">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Code</th>
+                        <th>Description</th>
+                        <th class="text-center">Allow</th>
+                        <th class="text-center">Deny</th>
+                        <th class="text-end">Modified</th>
+                    </tr>
+                </thead>
+                <tbody class="table-border-bottom-0">
+                    @if (permissionCatalog.Items.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-muted text-center">No permissions found.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var permission in permissionCatalog.Items)
+                        {
+                            var overrideState = allowOverrideCodes.Contains(permission.Code) ? "allow"
+                                : denyOverrideCodes.Contains(permission.Code) ? "deny" : "none";
+                            var visualState = overrideState != "none" ? overrideState
+                                : roleGrantedCodes.Contains(permission.Code) ? "allow" : "none";
+                            <tr data-permission-id="@permission.Id" data-original="@visualState" data-override-original="@overrideState">
+                                <td>@(permission.Module ?? "-")</td>
+                                <td>@permission.Code</td>
+                                <td>@(permission.Description ?? "-")</td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input perm-allow" @(visualState == "allow" ? "checked" : null)
+                                           @(canManagePermissions ? "" : "disabled") />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input perm-deny" @(visualState == "deny" ? "checked" : null)
+                                           @(canManagePermissions ? "" : "disabled") />
+                                </td>
+                                <td class="text-end">@(modifiedAtByCode.TryGetValue(permission.Code, out var modifiedAt) ? modifiedAt.ToString("yyyy-MM-dd HH:mm") : "-")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="paging-footer d-flex justify-content-between align-items-center flex-wrap gap-2 p-4 border-top">
+            <span class="text-muted">
+                Showing @(permissionCatalog.TotalCount == 0 ? 0 : (permissionCatalog.Page - 1) * permissionCatalog.PageSize + 1)
+                to @Math.Min(permissionCatalog.Page * permissionCatalog.PageSize, permissionCatalog.TotalCount)
+                of @permissionCatalog.TotalCount entries
+            </span>
+            @if (permissionCatalog.TotalPages > 1)
+            {
+                var visiblePages = 3;
+                var windowStart = Math.Clamp(permissionCatalog.Page - 1, 1, Math.Max(1, permissionCatalog.TotalPages - visiblePages + 1));
+                var windowEnd = Math.Min(windowStart + visiblePages - 1, permissionCatalog.TotalPages);
+
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(permissionCatalog.Page == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                               asp-route-permPage="1" asp-route-permPageSize="@permissionCatalog.PageSize"
+                               asp-route-permModule="@permModule" asp-route-permCode="@permCode"
+                               aria-label="First page">&laquo;</a>
+                        </li>
+                        <li class="page-item @(permissionCatalog.Page == 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                               asp-route-permPage="@(permissionCatalog.Page - 1)"
+                               asp-route-permPageSize="@permissionCatalog.PageSize" asp-route-permModule="@permModule"
+                               asp-route-permCode="@permCode" aria-label="Previous page">&lsaquo;</a>
+                        </li>
+                        @for (var p = windowStart; p <= windowEnd; p++)
+                        {
+                            <li class="page-item @(p == permissionCatalog.Page ? "active" : "")">
+                                <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                   asp-route-permPage="@p" asp-route-permPageSize="@permissionCatalog.PageSize"
+                                   asp-route-permModule="@permModule" asp-route-permCode="@permCode">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(permissionCatalog.Page == permissionCatalog.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                               asp-route-permPage="@(permissionCatalog.Page + 1)"
+                               asp-route-permPageSize="@permissionCatalog.PageSize" asp-route-permModule="@permModule"
+                               asp-route-permCode="@permCode" aria-label="Next page">&rsaquo;</a>
+                        </li>
+                        <li class="page-item @(permissionCatalog.Page == permissionCatalog.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                               asp-route-permPage="@permissionCatalog.TotalPages"
+                               asp-route-permPageSize="@permissionCatalog.PageSize" asp-route-permModule="@permModule"
+                               asp-route-permCode="@permCode" aria-label="Last page">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </form>
+</div>
+</div>
+
+<link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
+<script src="~/vendor/libs/select2/select2.js" defer></script>
+<script>
+    // jQuery/select2 load after this partial in the layout's script section, so init on window load.
+    window.addEventListener('load', function () {
+        var $assigned = $('#assignedRolesSelect');
+        $assigned.select2({ width: '100%', placeholder: 'Select role(s)' });
+
+        $('#updateRolesForm').on('submit', function (e) {
+            if (($assigned.val() || []).length === 0) {
+                e.preventDefault();
+                alert('A user must have at least one role.');
+            }
+        });
+
+        // Allow/Deny checkboxes are mutually exclusive per row.
+        document.querySelectorAll('#updatePermissionsForm .perm-allow').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                if (cb.checked) {
+                    cb.closest('tr').querySelector('.perm-deny').checked = false;
+                }
+            });
+        });
+        document.querySelectorAll('#updatePermissionsForm .perm-deny').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                if (cb.checked) {
+                    cb.closest('tr').querySelector('.perm-allow').checked = false;
+                }
+            });
+        });
+
+        // Only permissions whose Allow/Deny state actually changed get submitted.
+        document.getElementById('updatePermissionsForm').addEventListener('submit', function () {
+            var allowIds = [], denyIds = [], removeIds = [];
+            document.querySelectorAll('#updatePermissionsForm tr[data-permission-id]').forEach(function (row) {
+                var id = row.getAttribute('data-permission-id');
+                var visualOriginal = row.getAttribute('data-original');
+                var overrideOriginal = row.getAttribute('data-override-original');
+                var current = row.querySelector('.perm-allow').checked ? 'allow'
+                    : row.querySelector('.perm-deny').checked ? 'deny' : 'none';
+                if (current === visualOriginal) { return; }
+
+                if (current === 'allow') { allowIds.push(id); }
+                else if (current === 'deny') { denyIds.push(id); }
+                // Unchecked with no existing override means it was only granted via role - explicitly deny it.
+                else if (overrideOriginal === 'none') { denyIds.push(id); }
+                else { removeIds.push(id); }
+            });
+
+            document.getElementById('permAllowIds').value = allowIds.join(',');
+            document.getElementById('permDenyIds').value = denyIds.join(',');
+            document.getElementById('permRemoveIds').value = removeIds.join(',');
+        });
+    });
+</script>

@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["HideSidebar"] = true;
+
+    // Rotates daily (deterministic by day-of-year) so the message feels fresh without random flicker on refresh.
+    string[] welcomeMessages =
+    [
+        "Have a productive day at work. Let's get things done!",
+        "Great to see you again. Let's make today productive!",
+        "Ready to pick up where you left off?",
+        "New day, new tasks to tackle. Let's get started!",
+        "Your workspace is all set. Let's dive in!",
+        "Keep up the great work, the team is counting on you!",
+        "Let's make today count!"
+    ];
+    var welcomeMessage = welcomeMessages[DateTime.UtcNow.DayOfYear % welcomeMessages.Length];
+}
+
+<div class="mb-5">
+    <h4 class="mb-1">Welcome back, <strong>@User.Identity!.Name</strong> <span>&#128075;</span></h4>
+    <p class="mb-0 text-body-secondary">@welcomeMessage</p>
+</div>
+
+<div class="mt-5 mb-3">
+    <h5 class="mb-1">Modules</h5>
+    <p class="mb-0 text-body-secondary">Select a module to get started.</p>
+</div>
+
+<div id="module-hub" class="d-flex flex-wrap gap-4">
+    <!-- Skeleton placeholders shown while GET /Dashboard/GetActiveModules is in flight -->
+    @for (var i = 0; i < 5; i++)
+    {
+        <div class="module-tile module-tile-skeleton placeholder-glow">
+            <span class="placeholder module-tile-box"></span>
+            <span class="placeholder col-8"></span>
+        </div>
+    }
+</div>
+
+<div id="module-hub-error" class="alert alert-danger d-none" role="alert"></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const hub = document.getElementById('module-hub');
+            const errorBox = document.getElementById('module-hub-error');
+
+            function hexToRgba(hex, opacity) {
+                const clean = (hex || '').replace('#', '');
+                const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+                const value = parseInt(full, 16);
+                if (full.length !== 6 || Number.isNaN(value)) {
+                    return null;
+                }
+                const r = (value >> 16) & 255, g = (value >> 8) & 255, b = value & 255;
+                return `rgba(${r}, ${g}, ${b}, ${opacity ?? 1})`;
+            }
+
+            function moduleVisual(m) {
+                // A module can define an Icon, an ImageUrl, or both — image takes priority when present,
+                // icon is the lightweight fallback (see docs/plan.md's deferred Icon-vs-ImageUrl decision).
+                if (m.imageUrl) {
+                    return `<img src="${m.imageUrl}" alt="${m.name}" class="module-tile-image" />`;
+                }
+                const color = hexToRgba(m.color, m.colorOpacity);
+                const style = color ? ` style="color: ${color};"` : '';
+                return `<i class="icon-base ri ${m.icon || 'ri-apps-2-line'} module-tile-icon"${style}></i>`;
+            }
+
+            function renderModules(modules) {
+                hub.innerHTML = '';
+                if (!modules || modules.length === 0) {
+                    hub.innerHTML = '<p class="text-muted">No modules available.</p>';
+                    return;
+                }
+                modules.forEach(function (m) {
+                    const tile = document.createElement('a');
+                    tile.href = m.route || '#';
+                    tile.className = 'module-tile';
+                    const boxBg = hexToRgba(m.backgroundColor, m.backgroundOpacity);
+                    const boxStyle = boxBg ? ` style="background-color: ${boxBg};"` : '';
+                    const nameStyle = m.textColor ? ` style="color: ${m.textColor};"` : '';
+                    tile.innerHTML = `
+                                                                                    <span class="module-tile-box"${boxStyle}>${moduleVisual(m)}</span>
+                                                                                    <p class="module-tile-name"${nameStyle}>${m.name}</p>`;
+                    hub.appendChild(tile);
+                });
+            }
+
+            fetch('/Dashboard/GetActiveModules')
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(renderModules)
+                .catch(function (err) {
+                    hub.innerHTML = '';
+                    errorBox.textContent = 'Failed to load modules: ' + err.message;
+                    errorBox.classList.remove('d-none');
+                });
+        })();
+    </script>
+}

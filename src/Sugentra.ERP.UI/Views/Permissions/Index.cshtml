@@ -1,0 +1,66 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Identity.PermissionListItemDto>
+@{
+    ViewData["Title"] = "Permissions";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Permissions", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <h5 class="card-header">Permissions</h5>
+    <div class="alert alert-primary mx-4">Permissions are read-only here — managed via database seed scripts
+        and assigned to roles from the Roles page.</div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pe-4">
+            <div class="w-25">
+                @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+            </div>
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="text" name="code" class="form-control form-control-sm" style="max-width: 160px;"
+                       value="@ViewBag.Code" placeholder="Code" />
+                <select name="module" class="form-select form-select-sm" style="max-width: 160px;">
+                    <option value="">All Modules</option>
+                    @foreach (var m in (List<Sugentra.ERP.UI.Models.Settings.Module>)ViewBag.Modules)
+                    {
+                        <option value="@m.Code"
+                                selected="@(string.Equals(m.Code, ViewBag.Module as string, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                            @m.Name</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+                    <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Reset</a>
+                </form>
+            </div>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 60px;">No</th>
+                            <th>Code</th>
+                            <th>Module</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-border-bottom-0">
+                        @{
+                            var rowNo = (Model.Page - 1) * Model.PageSize;
+                        }
+                        @foreach (var permission in Model.Items)
+                        {
+                            rowNo++;
+                            <tr>
+                                <td class="text-center">@rowNo</td>
+                                <td>@permission.Code</td>
+                                <td>@permission.Module</td>
+                                <td>@permission.Description</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        </div>

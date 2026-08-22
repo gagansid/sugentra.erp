@@ -1,0 +1,16 @@
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="authentication-wrapper authentication-basic container-p-y p-4 p-sm-0">
+    <div class="authentication-inner py-6">
+        <div class="card p-md-7 p-1 text-center">
+            <div class="card-body mt-1">
+                <h4 class="mb-1">Access Denied</h4>
+                <p class="mb-5">You don't have permission to access this page.</p>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>

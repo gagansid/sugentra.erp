@@ -1,0 +1,229 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Identity.UserListItemDto>
+@{
+    ViewData["Title"] = "Users";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Users", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Users</h5>
+        <div class="d-flex gap-2">
+            <a asp-action="Export" asp-route-username="@ViewBag.Username" asp-route-fullName="@ViewBag.FullName"
+               asp-route-email="@ViewBag.Email" asp-route-status="@ViewBag.Status"
+               class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Export CSV"><i class="ri ri-download-2-line me-1"></i>Export</a>
+            @if (User.HasPermission("User_Create"))
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                        data-bs-target="#importUsersModal"><i class="ri ri-upload-2-line me-1"></i>Import</button>
+            }
+            <a asp-action="Index"
+               asp-all-route-data="@(new Dictionary<string, string?> { ["username"] = ViewBag.Username, ["fullName"] = ViewBag.FullName, ["email"] = ViewBag.Email, ["status"] = ViewBag.Status })"
+               class="btn btn-sm btn-icon btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Refresh"><i class="ri ri-refresh-line"></i></a>
+            @if (User.HasPermission("User_Create"))
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#createUserModal"><i class="ri ri-add-line me-1"></i>Add User</button>
+            }
+        </div>
+    </div>
+    @{
+        var showEntries = Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model);
+    }
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pe-4">
+        <div class="w-25">
+            @await Html.PartialAsync("_ShowEntries", showEntries)
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2 filter-form">
+            <input type="text" name="username" class="form-control form-control-sm" style="max-width: 160px;"
+                   value="@ViewBag.Username" placeholder="Username" />
+            <input type="text" name="fullName" class="form-control form-control-sm" style="max-width: 160px;"
+                   value="@ViewBag.FullName" placeholder="Full Name" />
+            <input type="text" name="email" class="form-control form-control-sm" style="max-width: 160px;"
+                   value="@ViewBag.Email" placeholder="Email" />
+            <select name="status" class="form-select form-select-sm" style="max-width: 140px;">
+                <option value="" selected="@(string.IsNullOrEmpty((string?)ViewBag.Status) ? "selected" : null)">All
+                    Status</option>
+                    <option value="Active" selected="@((string?)ViewBag.Status == "Active" ? "selected" : null)">Active
+                    </option>
+                    <option value="Inactive" selected="@((string?)ViewBag.Status == "Inactive" ? "selected" : null)">
+                        Inactive</option>
+                        <option value="Locked" selected="@((string?)ViewBag.Status == "Locked" ? "selected" : null)">Locked
+                        </option>
+                        <option value="Banned" selected="@((string?)ViewBag.Status == "Banned" ? "selected" : null)">Banned
+                        </option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+                    <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Reset</a>
+                </form>
+            </div>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 60px;">No</th>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th class="col-fit">Status</th>
+                            <th class="text-center" style="width: 150px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-border-bottom-0">
+                        @{
+                            var rowNo = (Model.Page - 1) * Model.PageSize;
+                        }
+                        @foreach (var user in Model.Items)
+                        {
+                            rowNo++;
+                            // Precedence matches usp_Identity_User_GetPaged's @Status filter: Banned > Locked > Inactive > Active.
+                            var (statusLabel, statusColor) = user switch
+                            {
+                                { IsBanned: true } => ("Banned", "danger"),
+                                { LockoutEnd: not null } when user.LockoutEnd > DateTime.Now => ("Locked", "dark"),
+                                { IsActive: false } => ("Inactive", "warning"),
+                                _ => ("Active", "primary")
+                            };
+                            <tr>
+                                <td class="text-center">@rowNo</td>
+                                <td>@user.Username</td>
+                                <td>@user.FullName</td>
+                                <td>@user.Email</td>
+                                <td>
+                                    <span class="badge bg-label-@statusColor">@statusLabel</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a asp-action="Detail" asp-route-id="@user.Id" class="btn btn-icon btn-text-secondary"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="View Detail"><i
+                                            class="ri ri-eye-line icon-14px"></i></a>
+                                            @if (User.HasPermission("User_Unlock"))
+                                            {
+                                                <button type="button" class="btn btn-icon btn-text-secondary" data-bs-toggle="tooltip"
+                                                        data-bs-placement="top" title="Unlock" data-unlock-username="@user.Username"
+                                                        data-unlock-url="@Url.Action("Unlock", "Users", new { id = user.Id })"
+                                                        onclick="showUnlockUserModal(this)"><i
+                                                    class="ri ri-lock-unlock-line icon-14px"></i></button>
+                                                }
+                                                @if (User.HasPermission("User_Delete") && user.IsActive)
+                                                {
+                                                    <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                            data-bs-placement="top" title="Delete" data-deactivate-username="@user.Username"
+                                                            data-deactivate-url="@Url.Action("Deactivate", "Users", new { id = user.Id })"
+                                                            onclick="showDeactivateUserModal(this)"><i
+                                                        class="ri ri-delete-bin-line icon-14px"></i></button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+                    </div>
+
+                    @await Html.PartialAsync("_CreateUserModal", new Sugentra.ERP.UI.Models.Identity.CreateUserViewModel())
+
+                    <div class="modal fade" id="unlockUserModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form id="unlockUserForm" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Unlock User</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-0">Are you sure you want to unlock <strong id="unlockUserName"></strong>?</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                                data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary btn-filter-action">Unlock</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="deactivateUserModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form id="deactivateUserForm" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Delete User</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure you want to delete <strong id="deactivateUserName"></strong>? This action
+                                            deactivates the user account.</p>
+                                            <label class="form-label">Type <strong>delete</strong> to confirm</label>
+                                            <input type="text" id="deactivateConfirmInput" class="form-control" autocomplete="off" />
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                                    data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" id="deactivateConfirmBtn" class="btn btn-danger btn-filter-action"
+                                                    disabled>Delete</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" id="importUsersModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form asp-action="Import" method="post" enctype="multipart/form-data">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Import Users</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="mb-2">Upload a CSV file with columns: Username, Email, Password, FullName, PhoneNumber,
+                                                EmployeeId.</p>
+                                                <a asp-action="ImportTemplate" class="mb-3 d-inline-block"><i
+                                                    class="ri ri-file-download-line me-1"></i>Download
+                                                    template</a>
+                                                    <input type="file" name="file" accept=".csv" class="form-control" required />
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                                            data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary btn-filter-action">Import</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    function showUnlockUserModal(button) {
+                                        document.getElementById('unlockUserForm').action = button.dataset.unlockUrl;
+                                        document.getElementById('unlockUserName').textContent = button.dataset.unlockUsername;
+                                        bootstrap.Modal.getOrCreateInstance(document.getElementById('unlockUserModal')).show();
+                                    }
+
+                                    function showDeactivateUserModal(button) {
+                                        document.getElementById('deactivateUserForm').action = button.dataset.deactivateUrl;
+                                        document.getElementById('deactivateUserName').textContent = button.dataset.deactivateUsername;
+                                        var input = document.getElementById('deactivateConfirmInput');
+                                        input.value = '';
+                                        document.getElementById('deactivateConfirmBtn').disabled = true;
+                                        bootstrap.Modal.getOrCreateInstance(document.getElementById('deactivateUserModal')).show();
+                                    }
+
+                                    document.getElementById('deactivateConfirmInput').addEventListener('input', function () {
+                                        document.getElementById('deactivateConfirmBtn').disabled = this.value.trim().toLowerCase() !== 'delete';
+                                    });
+                                </script>

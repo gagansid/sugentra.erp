@@ -1,0 +1,197 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Settings.AuditLogListItemDto>
+@{
+    var userId = (long)(ViewData["UserId"] ?? 0L);
+    var auditModules = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.AuditLogModuleOptionDto>)(ViewData["AuditModules"] ??
+Array.Empty<Sugentra.ERP.UI.Models.Settings.AuditLogModuleOptionDto>());
+    var auditMenus = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.AuditLogMenuOptionDto>)(ViewData["AuditMenus"] ??
+Array.Empty<Sugentra.ERP.UI.Models.Settings.AuditLogMenuOptionDto>());
+    var auditModule = ViewData["AuditModule"] as string;
+    var auditMenu = ViewData["AuditMenu"] as string;
+    var auditAction = ViewData["AuditAction"] as string;
+    var auditFromDate = ViewData["AuditFromDate"] as string;
+    var auditToDate = ViewData["AuditToDate"] as string;
+}
+
+<div class="card">
+    <h5 class="card-header">Audit Log — changes to this user record and changes made by this user</h5>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <div>
+            <form method="get" asp-action="Detail" asp-controller="Users" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="id" value="@userId" />
+                <input type="hidden" name="tab" value="audit-log" />
+                <input type="hidden" name="auditPage" value="1" />
+                <label class="mb-0">Show</label>
+                <select name="auditPageSize" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+                    {
+                        <option value="@size" selected="@(size == Model.PageSize ? "selected" : null)">@size</option>
+                    }
+                </select>
+                <label class="mb-0">entries</label>
+            </form>
+        </div>
+        <form method="get" asp-action="Detail" asp-controller="Users" class="d-flex flex-column gap-2">
+            <input type="hidden" name="id" value="@userId" />
+            <input type="hidden" name="tab" value="audit-log" />
+            <input type="hidden" name="auditPage" value="1" />
+            <input type="hidden" name="auditPageSize" value="@Model.PageSize" />
+            <div class="d-grid align-items-center gap-2" style="grid-template-columns: 140px 160px 140px 70px 70px;">
+                <select name="auditModule" class="form-select form-select-sm">
+                    <option value="">All Modules</option>
+                    @foreach (var m in auditModules)
+                    {
+                        <option value="@m.Code"
+                                selected="@(string.Equals(m.Code, auditModule, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                            @m.Name</option>
+                        }
+                    </select>
+                    <select name="auditMenu" class="form-select form-select-sm">
+                        <option value="">All Menus</option>
+                        @foreach (var m in auditMenus)
+                        {
+                            <option value="@m.Code"
+                                    selected="@(string.Equals(m.Code, auditMenu, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                                @m.Name</option>
+                            }
+                        </select>
+                        <select name="auditAction" class="form-select form-select-sm">
+                            <option value="">All Actions</option>
+                            <option value="Create" selected="@("Create".Equals(auditAction) ? "selected" : null)">Create
+                            </option>
+                            <option value="Update" selected="@("Update".Equals(auditAction) ? "selected" : null)">Update
+                            </option>
+                            <option value="Deactivate" selected="@("Deactivate".Equals(auditAction) ? "selected" : null)">
+                                Deactivate
+                            </option>
+                            <option value="Unlock" selected="@("Unlock".Equals(auditAction) ? "selected" : null)">Unlock
+                            </option>
+                            <option value="AccountLocked" selected="@("AccountLocked".Equals(auditAction) ? "selected" : null)">
+                                AccountLocked
+                            </option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Filter</button>
+                        <a asp-action="Detail" asp-controller="Users" asp-route-id="@userId" asp-route-tab="audit-log"
+                           asp-route-auditPageSize="@Model.PageSize"
+                           class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                    </div>
+                    <div class="d-grid align-items-center gap-2" style="grid-template-columns: 140px 160px 140px 70px 70px;">
+                        <label class="mb-0 text-muted text-nowrap small">Changed At</label>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="date" name="auditFromDate" class="form-control form-control-sm"
+                                   value="@auditFromDate" />
+                            <span class="text-muted small">to</span>
+                        </div>
+                        <input type="date" name="auditToDate" class="form-control form-control-sm" value="@auditToDate" />
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive text-nowrap">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Module</th>
+                            <th>Menu</th>
+                            <th>Action</th>
+                            <th>Changed At</th>
+                            <th class="text-center">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-border-bottom-0">
+                        @if (Model.Items.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-muted text-center">No audit log entries found.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            var rowNo = (Model.Page - 1) * Model.PageSize + 1;
+                            @foreach (var log in Model.Items)
+                            {
+                                <tr>
+                                    <td>@rowNo</td>
+                                    <td>@log.ModuleName</td>
+                                    <td>@log.MenuName</td>
+                                    <td>
+                                        <span
+                                        class="badge bg-label-@(log.Action == "Create" ? "success" : log.Action == "SoftDelete" ? "danger" : "warning")">@log.Action</span>
+                                    </td>
+                                    <td>@log.ChangedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    <td class="text-center">
+                                        <a asp-controller="AuditLogs" asp-action="Detail" asp-route-id="@log.Id" asp-route-source="user"
+                                           asp-route-userId="@userId" class="btn btn-icon btn-text-secondary" data-bs-toggle="tooltip"
+                                           data-bs-placement="top" title="View Detail"><i
+                                            class="ri ri-file-search-line icon-14px"></i></a>
+                                        </td>
+                                    </tr>
+                                    rowNo++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="paging-footer d-flex justify-content-between align-items-center flex-wrap gap-2 p-4 border-top">
+                    <span class="text-muted">
+                        Showing @(Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1)
+                        to @Math.Min(Model.Page * Model.PageSize, Model.TotalCount)
+                        of @Model.TotalCount entries
+                    </span>
+                    @if (Model.TotalPages > 1)
+                    {
+                        var visiblePages = 3;
+                        var windowStart = Math.Clamp(Model.Page - 1, 1, Math.Max(1, Model.TotalPages - visiblePages + 1));
+                        var windowEnd = Math.Min(windowStart + visiblePages - 1, Model.TotalPages);
+
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                    <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                       asp-route-tab="audit-log" asp-route-auditPage="1" asp-route-auditPageSize="@Model.PageSize"
+                                       asp-route-auditModule="@auditModule" asp-route-auditMenu="@auditMenu"
+                                       asp-route-auditAction="@auditAction" asp-route-auditFromDate="@auditFromDate"
+                                       asp-route-auditToDate="@auditToDate" aria-label="First page">&laquo;</a>
+                                </li>
+                                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                    <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                       asp-route-tab="audit-log" asp-route-auditPage="@(Model.Page - 1)"
+                                       asp-route-auditPageSize="@Model.PageSize" asp-route-auditModule="@auditModule"
+                                       asp-route-auditMenu="@auditMenu" asp-route-auditAction="@auditAction"
+                                       asp-route-auditFromDate="@auditFromDate" asp-route-auditToDate="@auditToDate"
+                                       aria-label="Previous page">&lsaquo;</a>
+                                </li>
+                                @for (var p = windowStart; p <= windowEnd; p++)
+                                {
+                                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                                        <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                           asp-route-tab="audit-log" asp-route-auditPage="@p" asp-route-auditPageSize="@Model.PageSize"
+                                           asp-route-auditModule="@auditModule" asp-route-auditMenu="@auditMenu"
+                                           asp-route-auditAction="@auditAction" asp-route-auditFromDate="@auditFromDate"
+                                           asp-route-auditToDate="@auditToDate">@p</a>
+                                    </li>
+                                }
+                                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                       asp-route-tab="audit-log" asp-route-auditPage="@(Model.Page + 1)"
+                                       asp-route-auditPageSize="@Model.PageSize" asp-route-auditModule="@auditModule"
+                                       asp-route-auditMenu="@auditMenu" asp-route-auditAction="@auditAction"
+                                       asp-route-auditFromDate="@auditFromDate" asp-route-auditToDate="@auditToDate"
+                                       aria-label="Next page">&rsaquo;</a>
+                                </li>
+                                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link" asp-action="Detail" asp-controller="Users" asp-route-id="@userId"
+                                       asp-route-tab="audit-log" asp-route-auditPage="@Model.TotalPages"
+                                       asp-route-auditPageSize="@Model.PageSize" asp-route-auditModule="@auditModule"
+                                       asp-route-auditMenu="@auditMenu" asp-route-auditAction="@auditAction"
+                                       asp-route-auditFromDate="@auditFromDate" asp-route-auditToDate="@auditToDate"
+                                       aria-label="Last page">&raquo;</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+

@@ -7,14 +7,13 @@ BEGIN
         UserId        BIGINT         NOT NULL,
         RoleId        BIGINT         NOT NULL,
 
-        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Identity_UserRoles_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Identity_UserRoles_CreatedAt DEFAULT (GETDATE()),
         CreatedBy     BIGINT         NULL,
         UpdatedAt     DATETIME2      NULL,
         UpdatedBy     BIGINT         NULL,
         IsDeleted     BIT            NOT NULL CONSTRAINT DF_Identity_UserRoles_IsDeleted DEFAULT (0),
         DeletedAt     DATETIME2      NULL,
         DeletedBy     BIGINT         NULL,
-        RowVersion    ROWVERSION     NOT NULL,
 
         CONSTRAINT FK_Identity_UserRoles_User FOREIGN KEY (UserId) REFERENCES Identity_Users (Id),
         CONSTRAINT FK_Identity_UserRoles_Role FOREIGN KEY (RoleId) REFERENCES Identity_Roles (Id),

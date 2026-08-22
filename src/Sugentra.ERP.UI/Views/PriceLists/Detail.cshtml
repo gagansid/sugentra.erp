@@ -1,0 +1,108 @@
+@model Sugentra.ERP.UI.Models.MasterData.PriceListResponse
+@{
+    ViewData["Title"] = "Price List Detail";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var currencies = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Currency>)ViewBag.Currencies;
+    var partners = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.BusinessPartnerResponse>)ViewBag.BusinessPartners;
+    var currency = currencies.FirstOrDefault(c => c.Id == Model.CurrencyId);
+    var partner = partners.FirstOrDefault(p => p.Id == Model.BusinessPartnerId);
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-database-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Master Data", Url.Action("Index", "Workspace", new { id = "MasterData" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Price Lists", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", User.HasPermission("MasterData_Edit") } })
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Price List Detail: @Model.Name</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless table-hover mb-4 detail-info-table">
+            <tbody>
+                <tr>
+                    <td class="fw-medium">Name</td>
+                    <td>@Model.Name</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Type</td>
+                    <td>@Model.Type</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Currency</td>
+                    <td>@(currency is null ? "-" : $"{currency.Code} - {currency.Name}")</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Business Partner</td>
+                    <td>@(partner is null ? "General (all partners)" : $"{partner.Code} - {partner.Name}")</td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Status</td>
+                    <td>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-primary">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-label-secondary">Inactive</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <style>
+                    /* narrow label column so value sits right next to it instead of spanning the full card width */
+                    .detail-info-table td:first-child {
+                        width: 160px;
+                        white-space: nowrap;
+                    }
+
+                    .detail-info-table td {
+                        padding-top: .5rem;
+                        padding-bottom: .5rem;
+                    }
+        </style>
+
+        <h6 class="mb-3">Items</h6>
+        @if (Model.Lines.Count == 0)
+        {
+            <p class="text-muted">No items recorded.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Item</th>
+                            <th>Price</th>
+                            <th>Effective Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var lineNumber = 0;
+                        }
+                        @foreach (var line in Model.Lines)
+                        {
+                            lineNumber++;
+                            var item = items.FirstOrDefault(i => i.Id == line.ItemId);
+                            <tr>
+                                <td class="text-center">@lineNumber</td>
+                                <td>@(item is null ? line.ItemId.ToString() : $"{item.Code} - {item.Name}")</td>
+                                <td>@line.Price.ToString("N2")</td>
+                                <td>@line.EffectiveDate.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>

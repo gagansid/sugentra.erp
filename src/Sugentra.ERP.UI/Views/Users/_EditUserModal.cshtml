@@ -1,0 +1,149 @@
+@model Sugentra.ERP.UI.Models.Identity.EditUserViewModel
+@{
+    var serverErrors = ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+}
+
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editUserForm" asp-action="Edit" asp-controller="Users" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="editUserErrors" class="alert alert-danger mb-3 @(serverErrors.Count == 0 ? "d-none" : "")"
+                         role="alert">
+                        @if (serverErrors.Count == 1)
+                        {
+                            @serverErrors[0]
+                        }
+                        else if (serverErrors.Count > 1)
+                        {
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var error in serverErrors)
+                                {
+                                    <li class="position-relative ps-3">
+                                        <span
+                                        class="position-absolute top-50 start-0 translate-middle-y bg-danger rounded-circle"
+                                        style="width:5px;height:5px;"></span>
+                                        @error
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="row mb-3">
+                        <label asp-for="Username" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Username" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Email" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Email" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="FullName" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="FullName" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="PhoneNumber" class="col-sm-3 col-form-label col-form-label-sm">Phone No</label>
+                        <div class="col-sm-9">
+                            <input asp-for="PhoneNumber" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="EmployeeId" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="EmployeeId" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-1">
+                        <label asp-for="IsActive" class="col-sm-3 col-form-label col-form-label-sm">Active</label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-dark waves-effect btn-sm btn-filter-action"
+                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm btn-filter-action">
+                        <span class="spinner-border spinner-border-sm d-none" id="editUserSpinner"></span>
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById('editUserForm');
+        if (!form || form.dataset.bound === 'true') { return; }
+        form.dataset.bound = 'true';
+
+        var errorBox = document.getElementById('editUserErrors');
+        var spinner = document.getElementById('editUserSpinner');
+
+        function renderErrors(errors) {
+            if (!errors || errors.length === 0) {
+                errorBox.classList.add('d-none');
+                errorBox.innerHTML = '';
+                return;
+            }
+
+            if (errors.length === 1) {
+                errorBox.innerHTML = errors[0];
+            } else {
+                var items = errors.map(function (e) { return '<li>' + e + '</li>'; }).join('');
+                errorBox.innerHTML = '<ul class="list-unstyled mb-0">' + items + '</ul>';
+                errorBox.querySelectorAll('li').forEach(function (li) {
+                    li.style.position = 'relative';
+                    li.style.paddingLeft = '1.1rem';
+                    li.insertAdjacentHTML('afterbegin', '<span style="position:absolute;left:0;top:0.5em;width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;"></span>');
+                });
+            }
+
+            errorBox.classList.remove('d-none');
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            spinner.classList.remove('d-none');
+            renderErrors(null);
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form)
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        window.location.reload();
+                        return;
+                    }
+                    renderErrors(data.errors);
+                })
+                .catch(function () {
+                    renderErrors(['Failed to reach the server. Please try again.']);
+                })
+                .finally(function () {
+                    spinner.classList.add('d-none');
+                });
+        });
+    })();
+</script>
+

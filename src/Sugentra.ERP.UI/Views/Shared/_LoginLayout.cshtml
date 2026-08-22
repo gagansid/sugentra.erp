@@ -1,0 +1,31 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var appName = Configuration["AppName"] ?? "Sugentra ERP";
+    var title = ViewData["Title"] as string;
+}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-skin="default" data-bs-theme="light" data-assets-path="/"
+      data-template="vertical-menu-template">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(string.IsNullOrEmpty(title) ? appName : $"{title} | {appName}")</title>
+    <link rel="icon" type="image/png" href="~/img/favicon/favicon.png" />
+
+    @await Html.PartialAsync("Sections/_Styles")
+    <link rel="stylesheet" href="~/vendor/css/pages/page-auth.css" />
+    @await Html.PartialAsync("Sections/_ScriptsIncludes")
+</head>
+
+<body>
+    <div class="position-relative">
+        @RenderBody()
+    </div>
+
+    @await Html.PartialAsync("Sections/_Scripts")
+    <script src="~/js/main.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

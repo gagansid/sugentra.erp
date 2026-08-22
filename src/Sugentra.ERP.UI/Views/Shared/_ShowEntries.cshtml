@@ -1,0 +1,26 @@
+@model Sugentra.ERP.UI.Models.Layout.PagingInfo
+@{
+    var otherQuery = Context.Request.Query
+        .Where(kv => !string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase)
+                  && !string.Equals(kv.Key, "pageSize", StringComparison.OrdinalIgnoreCase));
+}
+<div class="show-entries d-flex align-items-center gap-2 px-4">
+    <form method="get" class="d-flex align-items-center gap-2">
+        @foreach (var kv in otherQuery)
+        {
+            foreach (var v in kv.Value)
+            {
+                <input type="hidden" name="@kv.Key" value="@v" />
+            }
+        }
+        <input type="hidden" name="page" value="1" />
+        <label class="mb-0">Show</label>
+        <select name="pageSize" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+            @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+            {
+                <option value="@size" selected="@(size == Model.PageSize ? "selected" : null)">@size</option>
+            }
+        </select>
+        <label class="mb-0">entries</label>
+    </form>
+</div>

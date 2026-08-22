@@ -1,0 +1,125 @@
+@model Sugentra.ERP.UI.Models.Settings.Menu
+@{
+    ViewData["Title"] = "Menu";
+    var modules = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Module>)ViewBag.Modules;
+    var parentCandidates = (List<Sugentra.ERP.UI.Models.Settings.Menu>)ViewBag.ParentCandidates;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-settings-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Settings", Url.Action("Index", "Workspace", new { id = "Settings" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Menus", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row mb-3">
+                        <label asp-for="ModuleId" class="col-sm-3 col-form-label col-form-label-sm">Module</label>
+                        <div class="col-sm-9">
+                            <select asp-for="ModuleId" class="form-select form-select-sm" id="moduleSelect">
+                                @foreach (var m in modules)
+                                {
+                                    <option value="@m.Id">@m.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="ParentId" class="col-sm-3 col-form-label col-form-label-sm">Parent Menu</label>
+                        <div class="col-sm-9">
+                            <select asp-for="ParentId" class="form-select form-select-sm" id="parentSelect">
+                                <option value="">— None (top-level) —</option>
+                                @foreach (var p in parentCandidates)
+                                {
+                                    <option value="@p.Id" data-module-id="@p.ModuleId">@p.ModuleName / @p.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Name" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Name" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Icon" class="col-sm-3 col-form-label col-form-label-sm">Icon</label>
+                        <div class="col-sm-9">
+                            <input asp-for="Icon" class="form-control form-control-sm"
+                                   placeholder="e.g. ri-group-line" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Controller" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Controller" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Action" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Action" class="form-control form-control-sm"
+                                   value="@(Model.Action ?? "Index")" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="RequiredPermission" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="RequiredPermission" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="SortOrder" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="SortOrder" type="number" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                <label class="form-check-label" asp-for="IsActive">Active</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+                        <a asp-action="Index"
+                           class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                        <button type="submit" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Only offer parent menus that belong to the currently selected module.
+        (function () {
+            var moduleSelect = document.getElementById('moduleSelect');
+            var parentSelect = document.getElementById('parentSelect');
+            var allOptions = Array.prototype.slice.call(parentSelect.querySelectorAll('option[data-module-id]'));
+
+            function filterParents() {
+                var currentModuleId = moduleSelect.value;
+                allOptions.forEach(function (opt) {
+                    opt.hidden = opt.dataset.moduleId !== currentModuleId;
+                });
+            }
+
+            moduleSelect.addEventListener('change', filterParents);
+            filterParents();
+        })();
+    </script>
+}

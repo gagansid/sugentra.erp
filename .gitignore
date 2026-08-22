@@ -13,3 +13,8 @@ obj/
 
 ## Secrets - never commit real connection strings/credentials
 appsettings.*.local.json
+
+## User-uploaded content (logos, documents, images uploaded through the app) - keep folder, not contents
+src/Sugentra.ERP.UI/wwwroot/uploads/**
+!src/Sugentra.ERP.UI/wwwroot/uploads/**/
+!src/Sugentra.ERP.UI/wwwroot/uploads/**/.gitkeep

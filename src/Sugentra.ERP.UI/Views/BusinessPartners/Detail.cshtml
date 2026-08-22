@@ -1,0 +1,214 @@
+@model Sugentra.ERP.UI.Models.MasterData.BusinessPartnerResponse
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Business Partner Detail";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-database-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Master Data", Url.Action("Index", "Workspace", new { id = "MasterData" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Business Partners", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Detail", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", User.HasPermission("MasterData_Edit") } })
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Business Partner Detail: @Model.Name</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-4 mb-2">
+            <div class="col-md-6">
+                <h6 class="mb-3">General</h6>
+                <table class="table table-borderless table-hover mb-0 detail-info-table">
+                    <tbody>
+                        <tr>
+                            <td class="fw-medium">Code</td>
+                            <td>@Model.Code</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Name</td>
+                            <td>@Model.Name</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Type</td>
+                            <td>@Model.PartnerType</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Logo</td>
+                            <td>
+                                <div class="border rounded d-flex align-items-center justify-content-center"
+                                     style="inline-size:92px;block-size:86px;">
+                                    @if (Model.LogoUrl is not null)
+                                    {
+                                        <img src="@(Configuration["Api:BaseUrl"] + Model.LogoUrl)" alt="Logo"
+                                             style="max-width:100%;max-height:100%;object-fit:contain;" />
+                                    }
+                                    else
+                                    {
+                                        <i class="ri ri-image-line text-muted"></i>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Status</td>
+                            <td>
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-primary">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-label-secondary">Inactive</span>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col-md-6">
+                <h6 class="mb-3">Tax Identity</h6>
+                <table class="table table-borderless table-hover mb-0 detail-info-table">
+                    <tbody>
+                        <tr>
+                            <td class="fw-medium">Taxpayer Type</td>
+                            <td>@(Model.TaxpayerType ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">NPWP (Tax ID)</td>
+                            <td>@(Model.TaxId ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">NIK</td>
+                            <td>@(Model.Nik ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">NITKU</td>
+                            <td>@(Model.Nitku ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Registered Name</td>
+                            <td>@(Model.TaxRegisteredName ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Registered Address</td>
+                            <td>@(Model.TaxAddress ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">SKT Number</td>
+                            <td>@(Model.SktNumber ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">KLU Code</td>
+                            <td>@(Model.KluCode ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">PKP</td>
+                            <td>@(Model.IsPkp ? "VAT-registered" : "-")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <style>
+                    /* narrow label column so value sits right next to it instead of spanning the full card width */
+                    .detail-info-table td:first-child {
+                        width: 160px;
+                        white-space: nowrap;
+                    }
+
+                    .detail-info-table td {
+                        padding-top: .5rem;
+                        padding-bottom: .5rem;
+                    }
+        </style>
+
+        <hr class="my-4" />
+
+        <h6 class="mb-3">Addresses</h6>
+        @if (Model.Addresses.Count == 0)
+        {
+            <p class="text-muted">No addresses recorded.</p>
+        }
+        else
+        {
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Type</th>
+                            <th>Address</th>
+                            <th>City</th>
+                            <th>Postal</th>
+                            <th>Province</th>
+                            <th>Country</th>
+                            <th>Primary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var addressNo = 0;
+                        }
+                        @foreach (var a in Model.Addresses)
+                        {
+                            addressNo++;
+                            <tr>
+                                <td class="text-center">@addressNo</td>
+                                <td>@a.AddressType</td>
+                                <td>@a.Address</td>
+                                <td>@a.City</td>
+                                <td>@a.PostalCode</td>
+                                <td>@a.Province</td>
+                                <td>@a.Country</td>
+                                <td>@(a.IsPrimary ? "Yes" : "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <h6 class="mb-3">Contacts (Email, Phone, WhatsApp, Fax)</h6>
+        @if (Model.Contacts.Count == 0)
+        {
+            <p class="text-muted">No contacts recorded.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Type</th>
+                            <th>PIC Name</th>
+                            <th>Value</th>
+                            <th>Primary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var contactNo = 0;
+                        }
+                        @foreach (var c in Model.Contacts)
+                        {
+                            contactNo++;
+                            <tr>
+                                <td class="text-center">@contactNo</td>
+                                <td>@c.ContactType</td>
+                                <td>@c.ContactName</td>
+                                <td>@c.Value</td>
+                                <td>@(c.IsPrimary ? "Yes" : "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,122 @@
+@model Sugentra.ERP.UI.Models.Settings.DocumentNumbering
+@{
+    ViewData["Title"] = "Document Numbering";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-settings-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Settings", Url.Action("Index", "Workspace", new { id = "Settings" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Document Numbering", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Create Document Numbering</h5>
+            </div>
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form id="documentNumberingForm" method="post" novalidate>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row g-2 mb-3">
+                        <label asp-for="DocumentType" class="col-sm-4 col-form-label col-form-label-sm">Document
+                            Type</label>
+                            <div class="col-sm-8">
+                                <input asp-for="DocumentType" class="form-control form-control-sm"
+                                       placeholder="e.g. StockMutation" required />
+                                <div class="invalid-feedback">Document Type is required.</div>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <label asp-for="Prefix" class="col-sm-4 col-form-label col-form-label-sm">Prefix</label>
+                            <div class="col-sm-8">
+                                <input asp-for="Prefix" class="form-control form-control-sm" placeholder="e.g. MUT/" />
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <label asp-for="Suffix" class="col-sm-4 col-form-label col-form-label-sm">Suffix</label>
+                            <div class="col-sm-8">
+                                <input asp-for="Suffix" class="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <label asp-for="NumberLength" class="col-sm-4 col-form-label col-form-label-sm">Number
+                                Length</label>
+                                <div class="col-sm-8">
+                                    <input asp-for="NumberLength" type="number" min="1" class="form-control form-control-sm"
+                                           required />
+                                    <div class="invalid-feedback">Number Length is required.</div>
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <label asp-for="ResetPeriod" class="col-sm-4 col-form-label col-form-label-sm">Reset
+                                    Period</label>
+                                    <div class="col-sm-8">
+                                        <select asp-for="ResetPeriod" class="form-select form-select-sm">
+                                            <option value="Never">Never</option>
+                                            <option value="Daily">Daily</option>
+                                            <option value="Weekly">Weekly</option>
+                                            <option value="Monthly">Monthly</option>
+                                            <option value="Yearly">Yearly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <label asp-for="FormatTemplate" class="col-sm-4 col-form-label col-form-label-sm">Format
+                                        Numbering</label>
+                                        <div class="col-sm-8">
+                                            <input asp-for="FormatTemplate" class="form-control form-control-sm"
+                                                   placeholder="e.g. {Prefix}{Year}/{Number}" />
+                                            <table class="form-text mb-0"
+                                                   style="font-family: var(--bs-font-monospace); font-size: .75rem;">
+                                                <tr>
+                                                    <td class="pe-2">Tokens</td>
+                                                    <td>: {Prefix} {Suffix} {Number}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="pe-2">Year</td>
+                                                    <td>: {Year}=2026, {YY}=26</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="pe-2">Month</td>
+                                                    <td>: {Month}/{MM}=08, {M}=8, {MonthShort}=Aug, {MonthName}=August,
+                                                        {MonthRoman}=VIII</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="pe-2">Day</td>
+                                                        <td>: {Day}/{DD}=05, {D}=5, {DayShort}=Mon, {DayName}=Monday</td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="card-footer d-flex justify-content-end gap-2">
+                                    <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                                    <button type="submit" form="documentNumberingForm"
+                                            class="btn btn-primary btn-sm btn-filter-action">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @section Scripts {
+                        <script>
+                            document.getElementById('documentNumberingForm').addEventListener('submit', function (event) {
+                                var valid = true;
+                                this.querySelectorAll('[required]').forEach(function (field) {
+                                    var isFieldValid = field.checkValidity();
+                                    field.classList.toggle('is-invalid', !isFieldValid);
+                                    valid = valid && isFieldValid;
+                                });
+                                if (!valid) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }
+                            });
+                        </script>
+                    }

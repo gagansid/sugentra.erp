@@ -1,0 +1,37 @@
+@model Sugentra.ERP.UI.Models.Approvals.ApprovalRoleCategoryResponse
+@{
+    ViewData["Title"] = "Add Approval Role Category";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Role Categories", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Add", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Add Approval Role Category</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Role Id</label>
+                    <input type="number" name="roleId" class="form-control" required placeholder="Identity Role Id" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Document Type</label>
+                    <input type="text" name="documentType" class="form-control" required placeholder="e.g. GoodsReceipt" />
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-label-dark">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

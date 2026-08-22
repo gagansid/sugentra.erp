@@ -8,14 +8,13 @@ BEGIN
         PermissionId  BIGINT         NOT NULL,
         IsAllowed     BIT            NOT NULL,
 
-        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Identity_UserPermissions_CreatedAt DEFAULT (SYSUTCDATETIME()),
+        CreatedAt     DATETIME2      NOT NULL CONSTRAINT DF_Identity_UserPermissions_CreatedAt DEFAULT (GETDATE()),
         CreatedBy     BIGINT         NULL,
         UpdatedAt     DATETIME2      NULL,
         UpdatedBy     BIGINT         NULL,
         IsDeleted     BIT            NOT NULL CONSTRAINT DF_Identity_UserPermissions_IsDeleted DEFAULT (0),
         DeletedAt     DATETIME2      NULL,
         DeletedBy     BIGINT         NULL,
-        RowVersion    ROWVERSION     NOT NULL,
 
         CONSTRAINT FK_Identity_UserPermissions_User FOREIGN KEY (UserId) REFERENCES Identity_Users (Id),
         CONSTRAINT FK_Identity_UserPermissions_Permission FOREIGN KEY (PermissionId) REFERENCES Identity_Permissions (Id),

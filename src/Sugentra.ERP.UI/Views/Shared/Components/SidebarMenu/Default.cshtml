@@ -1,0 +1,100 @@
+@model IReadOnlyList<Sugentra.ERP.UI.Models.Layout.MenuModuleGroupDto>
+@{
+  string CurrentController() => ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+
+  bool ContainsCurrentController(IEnumerable<Sugentra.ERP.UI.Models.Layout.MenuNodeDto> items) =>
+      items.Any(i => i.Controller == CurrentController() || ContainsCurrentController(i.Children));
+
+  // Fully DB-driven from Setting_Menus/Setting_Modules. If the current page belongs to a "workspace" module
+  // (HasWorkspace = true, i.e. Setting_Modules.Route is set - Identity/MasterData/Settings), the sidebar
+  // narrows down to just that module's items + a "back to modules" link, instead of listing every group at
+  // once - this is the module-workspace pattern (Odoo apps / SAP Fiori launchpad style). WorkspaceController
+  // (the module landing page) sets ViewData["ModuleCode"] explicitly since it has no menu item of its own to
+  // match by controller name; every other page falls back to controller matching.
+  var moduleCodeOverride = ViewData["ModuleCode"] as string;
+  var activeModuleGroup = moduleCodeOverride is not null
+      ? Model.FirstOrDefault(g => g.ModuleCode == moduleCodeOverride)
+      : Model.FirstOrDefault(g => g.HasWorkspace && ContainsCurrentController(g.Items));
+}
+
+<aside id="layout-menu" class="layout-menu menu-vertical menu">
+  <div class="app-brand demo">
+    <a asp-controller="Dashboard" asp-action="Index" class="app-brand-link">
+      @if (!string.IsNullOrEmpty((string?)ViewBag.LogoUrl))
+      {
+        <img src="@ViewBag.LogoUrl" alt="@ViewBag.CompanyName" style="block-size: 28px; inline-size: auto;" />
+      }
+      else
+      {
+        <span class="app-brand-text demo menu-text fw-semibold ms-2">@(ViewBag.CompanyName ?? "Sugentra ERP")</span>
+      }
+    </a>
+    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
+      <i class="icon-base ri ri-close-line icon-20px"></i>
+    </a>
+  </div>
+
+  <div class="menu-inner-shadow"></div>
+
+  @if (activeModuleGroup is not null)
+  {
+    // Drives Workspace/{moduleCode}/{controller} link generation for module-scoped items below (see Program.cs
+    // "workspace-module" route + _MenuNode.cshtml) so the URL stays under the module the user drilled into.
+    ViewData["CurrentModuleCode"] = activeModuleGroup.ModuleCode;
+    <ul class="menu-inner py-1">
+      <li class="menu-item mb-2 @(CurrentController() == "Workspace" ? "active" : "")">
+        <a asp-controller="Workspace" asp-action="Index" asp-route-id="@activeModuleGroup.ModuleCode" class="menu-link">
+          <i class="menu-icon icon-base ri ri-home-smile-line"></i>
+          <div>Dashboard</div>
+        </a>
+      </li>
+      <li class="menu-header small text-uppercase">
+        <span class="menu-header-text">@activeModuleGroup.ModuleName</span>
+      </li>
+      @foreach (var item in activeModuleGroup.Items)
+      {
+        @await Html.PartialAsync("~/Views/Shared/Components/SidebarMenu/_MenuNode.cshtml", item)
+      }
+    </ul>
+  }
+  else
+  {
+    <ul class="menu-inner py-1">
+      <li class="menu-item @(CurrentController() == "Dashboard" ? "active" : "")">
+        <a asp-controller="Dashboard" asp-action="Index" class="menu-link">
+          <i class="menu-icon icon-base ri ri-home-smile-line"></i>
+          <div>Dashboard</div>
+        </a>
+      </li>
+
+      @foreach (var group in Model)
+      {
+        var groupActive = ContainsCurrentController(group.Items);
+        <li class="menu-item @(groupActive ? "active open" : "")">
+          <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon icon-base ri @group.ModuleIcon"></i>
+            <div>@group.ModuleName</div>
+          </a>
+          <ul class="menu-sub">
+            @foreach (Sugentra.ERP.UI.Models.Layout.MenuNodeDto item in group.Items)
+            {
+              @await Html.PartialAsync(partialViewName: "~/Views/Shared/Components/SidebarMenu/_MenuNode.cshtml", item)
+            }
+          </ul>
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="sidebar-footer">
+    @if (activeModuleGroup is not null)
+    {
+      <a asp-controller="Dashboard" asp-action="Index" class="menu-link sidebar-back-link">
+        <i class="menu-icon icon-base ri ri-arrow-left-line"></i>
+        <div>Back to Modules</div>
+      </a>
+    }
+    <div class="sidebar-version">Sugentra ERP v1.0.0</div>
+  </div>
+</aside>
+

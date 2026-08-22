@@ -1,0 +1,172 @@
+@model Sugentra.ERP.UI.Models.Settings.CompanyProfile
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = "Company Profile";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-settings-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Settings", Url.Action("Index", "Workspace", new { id = "Settings" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Company Profile", null)
+    });
+    var canEdit = User.HasPermission("CompanyProfile_Edit");
+    var apiBaseUrl = Configuration["Api:BaseUrl"];
+    string ImageUrl(string? url) => string.IsNullOrWhiteSpace(url) ? string.Empty : $"{apiBaseUrl}{url}";
+    var imageFields = new (string Field, string Label, string? Value, string BgClass)[]
+    {
+        ("LogoUrl", "Logo (Light)", Model.LogoUrl, ""),
+        ("LogoDarkUrl", "Logo (Dark)", Model.LogoDarkUrl, "bg-dark p-1"),
+        ("LogoSquareUrl", "Logo (Square)", Model.LogoSquareUrl, ""),
+        ("IconUrl", "Icon (Default)", Model.IconUrl, ""),
+        ("IconLightUrl", "Icon (Light)", Model.IconLightUrl, ""),
+        ("IconDarkUrl", "Icon (Dark)", Model.IconDarkUrl, "bg-dark p-1"),
+    };
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<form method="post" id="companyProfileForm">
+    <input type="hidden" asp-for="Id" />
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Company Profile</h5>
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                 style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="row mb-3">
+                        <label asp-for="CompanyName" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="CompanyName" class="form-control form-control-sm" required
+                                   disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="LegalName" class="col-sm-3 col-form-label col-form-label-sm">Legal Name</label>
+                        <div class="col-sm-9">
+                            <input asp-for="LegalName" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="TaxId" class="col-sm-3 col-form-label col-form-label-sm">NPWP</label>
+                        <div class="col-sm-9">
+                            <input asp-for="TaxId" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Address" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <textarea asp-for="Address" class="form-control form-control-sm" rows="2"
+                                      disabled="@(!canEdit)"></textarea>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="City" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="City" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Country" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Country" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="PhoneNumber" class="col-sm-3 col-form-label col-form-label-sm">Phone No</label>
+                        <div class="col-sm-9">
+                            <input asp-for="PhoneNumber" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Email" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Email" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                    <div class="row mb-0">
+                        <label asp-for="Website" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Website" class="form-control form-control-sm" disabled="@(!canEdit)" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 border-start">
+                    <h6 class="mb-3">Logo &amp; Icon</h6>
+                    @foreach (var image in imageFields)
+                    {
+                        <div class="row mb-3 align-items-center">
+                            <label class="col-sm-3 col-form-label col-form-label-sm">@image.Label</label>
+                            <div class="col-sm-9 d-flex align-items-center gap-2">
+                                <div class="border rounded d-flex align-items-center justify-content-center flex-shrink-0 @image.BgClass"
+                                     style="width:38px;height:38px;">
+                                    <img id="preview_@image.Field" src="@ImageUrl(image.Value)" alt="@image.Label preview"
+                                         style="max-width:100%;max-height:100%;object-fit:contain;display:@(string.IsNullOrWhiteSpace(image.Value) ? "none" : "inline-block")" />
+                                    @if (string.IsNullOrWhiteSpace(image.Value))
+                                    {
+                                        <i class="ri ri-image-line text-muted" id="placeholder_@image.Field"></i>
+                                    }
+                                </div>
+                                <input type="hidden" name="@image.Field" id="hidden_@image.Field" value="@image.Value" />
+                                @if (canEdit)
+                                {
+                                    <input type="file" class="form-control form-control-sm image-upload-input"
+                                           accept=".jpg,.jpeg,.png,.webp" data-field="@image.Field" />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        @if (canEdit)
+        {
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+            </div>
+        }
+    </div>
+</form>
+
+@if (canEdit)
+{
+    @section Scripts {
+        <script>
+            document.querySelectorAll('.image-upload-input').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    var file = input.files[0];
+                    if (!file) return;
+
+                    var field = input.dataset.field;
+                    var hiddenInput = document.getElementById('hidden_' + field);
+                    var formData = new FormData();
+                    formData.append('file', file);
+                    if (hiddenInput.value) formData.append('currentUrl', hiddenInput.value);
+
+                    fetch('@Url.Action("UploadImage", "CompanyProfile")', {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: formData
+                    })
+                        .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+                        .then(function (result) {
+                            if (!result.ok) {
+                                alert(result.data.message || 'Upload failed.');
+                                return;
+                            }
+
+                            var url = result.data.url;
+                            hiddenInput.value = url;
+                            var img = document.getElementById('preview_' + field);
+                            img.src = '@apiBaseUrl' + url;
+                            img.style.display = 'inline-block';
+                            var placeholder = document.getElementById('placeholder_' + field);
+                            if (placeholder) placeholder.style.display = 'none';
+                        })
+                        .catch(function () { alert('Upload failed.'); });
+                });
+            });
+        </script>
+    }
+}

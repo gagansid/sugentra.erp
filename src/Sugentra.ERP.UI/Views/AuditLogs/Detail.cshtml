@@ -1,0 +1,195 @@
+@model Sugentra.ERP.UI.Models.Settings.AuditLogListItemDto
+@using Microsoft.AspNetCore.Html
+@{
+    ViewData["Title"] = "Audit Log Detail";
+    var source = ViewBag.Source as string;
+    var userId = ViewBag.UserId as long?;
+    var isUserSource = string.Equals(source, "user", StringComparison.OrdinalIgnoreCase);
+    var breadcrumb = isUserSource
+        ? new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+        {
+            new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Text: "Identity & Access", Url.Action("Index", "Workspace", new { id =
+"Identity" })),
+            new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Text: "Users", Url.Action("Index", "Users")),
+            new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Text: "Audit Log", null)
+        })
+        : new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-history-line", new[]
+        {
+            new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Text: "Audit Log", Url.Action("Index", "Workspace", new { id =
+"AuditLog" })),
+            new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Text: "Audit Log", Url.Action("Index")),
+            new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Text: "Detail", null)
+        });
+
+    static List<string> FormatJsonLines(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<string> { "-" };
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var pretty = System.Text.Json.JsonSerializer.Serialize(doc.RootElement, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            return pretty.Split('\n').ToList();
+        }
+        catch
+        {
+            return new List<string> { json };
+        }
+    }
+
+    var oldLines = FormatJsonLines(Model.OldValues);
+    var newLines = FormatJsonLines(Model.NewValues);
+    var lineCount = Math.Max(oldLines.Count, newLines.Count);
+    var changedLines = new HashSet<int>();
+    for (var i = 0; i < lineCount; i++)
+    {
+        var o = i < oldLines.Count ? oldLines[i] : null;
+        var n = i < newLines.Count ? newLines[i] : null;
+        if (o != n)
+        {
+            changedLines.Add(i);
+        }
+    }
+
+    static IHtmlContent BuildDiffHtml(List<string> lines, HashSet<int> changedLines, int lineCount)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < lineCount; i++)
+        {
+            var line = i < lines.Count ? lines[i] : "";
+            var cls = changedLines.Contains(i) ? " bg-warning-subtle" : "";
+            sb.Append("<span class=\"d-block").Append(cls).Append("\">").Append(System.Net.WebUtility.HtmlEncode(line)).Append("</span>");
+        }
+        return new HtmlString(sb.ToString());
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="mb-0">
+        @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+    </div>
+    <div class="d-flex align-items-center gap-1">
+        @if (ViewBag.FirstId is long firstId && firstId != Model.Id)
+        {
+            <a asp-action="Detail" asp-route-id="@firstId" asp-route-source="@source" asp-route-userId="@userId"
+               class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="First">&laquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="First">&laquo;</button>
+        }
+        @if (ViewBag.PreviousId is long previousId)
+        {
+            <a asp-action="Detail" asp-route-id="@previousId" asp-route-source="@source" asp-route-userId="@userId"
+               class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Previous">&lsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Previous">&lsaquo;</button>
+        }
+        @if (ViewBag.NextId is long nextId)
+        {
+            <a asp-action="Detail" asp-route-id="@nextId" asp-route-source="@source" asp-route-userId="@userId"
+               class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Next">&rsaquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Next">&rsaquo;</button>
+        }
+        @if (ViewBag.LastId is long lastId && lastId != Model.Id)
+        {
+            <a asp-action="Detail" asp-route-id="@lastId" asp-route-source="@source" asp-route-userId="@userId"
+               class="btn btn-icon btn-label-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Last">&raquo;</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-icon btn-label-secondary" disabled data-bs-toggle="tooltip"
+                    data-bs-placement="top" title="Last">&raquo;</button>
+        }
+        <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-source="@source" asp-route-userId="@userId"
+           class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i
+            class="ri ri-refresh-line icon-14px"></i></a>
+            @if (isUserSource)
+            {
+                <a asp-controller="Users" asp-action="Detail" asp-route-id="@userId" asp-route-tab="audit-log"
+                   class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="Back to User"><i
+                    class="ri ri-arrow-go-back-line icon-14px"></i></a>
+                }
+        else
+                {
+                    <a asp-action="Index" class="btn btn-icon btn-label-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+                       title="Back to List"><i class="ri ri-arrow-go-back-line icon-14px"></i></a>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <h5 class="card-header">Audit Log Detail</h5>
+            <div class="card-body">
+                <h6 class="mb-3">Entry #@Model.Id</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="text-muted mb-1 fw-bold">Module</label>
+                        <div>@Model.ModuleName</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="text-muted mb-1 fw-bold">Menu</label>
+                        <div>@Model.MenuName</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="text-muted mb-1 fw-bold">Record Id</label>
+                        <div>@Model.RecordId</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="text-muted mb-1 fw-bold">Action</label>
+                        <div>
+                            <span
+                            class="badge bg-label-@(Model.Action == "Create" ? "success" : Model.Action == "SoftDelete" ? "danger" : "warning")">@Model.Action</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="text-muted mb-1 fw-bold">Changed By</label>
+                        <div>@(Model.ChangedByName ?? "-")</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="text-muted mb-1 fw-bold">Changed At</label>
+                        <div>@Model.ChangedAt.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <h5 class="card-header bg-label-danger">Old Value</h5>
+                    <div class="card-body">
+                        <pre class="small mb-0 pt-5"
+                             style="white-space: pre-wrap; word-break: break-word;">@BuildDiffHtml(oldLines, changedLines, lineCount)</pre>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <h5 class="card-header bg-label-success">New Value</h5>
+                    <div class="card-body">
+                        <pre class="small mb-0 pt-5"
+                             style="white-space: pre-wrap; word-break: break-word;">@BuildDiffHtml(newLines, changedLines, lineCount)</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+

@@ -1,0 +1,104 @@
+@model Sugentra.ERP.UI.Models.Inventory.GoodsReceiptResponse
+@{
+    ViewData["Title"] = "Goods Receipt Detail";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-truck-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Goods Receipts", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.ReceiptNumber, null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", Model.Status == "Draft" && User.HasPermission("GoodsReceipt_Edit") } })
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Goods Receipt Detail</h5>
+        <div class="d-flex gap-2">
+            @if (Model.Status == "Draft" && User.HasPermission("GoodsReceipt_Edit"))
+            {
+                <form method="post" asp-action="Post" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-primary"><i
+                        class="ri ri-check-double-line me-1"></i>Post</button>
+                    </form>
+                }
+            </div>
+        </div>
+            <div class="card-body">
+                <h6 class="mb-3">Information</h6>
+                <table class="table table-borderless table-hover mb-4 detail-info-table">
+                    <tbody>
+                        <tr>
+                            <td class="fw-medium">Receipt Number</td>
+                            <td class="fw-bold">@Model.ReceiptNumber</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Status</td>
+                            <td>
+                                <span class="badge bg-label-@(Model.Status switch
+                                                               {
+                                                                   "Draft" => "secondary",
+                                                                   "WaitingApproval" => "warning",
+                                                                   "Posted" => "primary",
+                                                                   _ => "secondary"
+                                                               })">@(Model.Status == "WaitingApproval"
+                                                                     ? $"Waiting Approval - {Model.CurrentApprovalLevel}"
+                                                                     : Model.Status)</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Warehouse</td>
+                            <td>@(warehouses.FirstOrDefault(w => w.Id == Model.WarehouseId)?.Name)</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Vendor Reference</td>
+                            <td>@Model.VendorReference</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Receipt Date</td>
+                            <td>@Model.ReceiptDate.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Notes</td>
+                            <td>@Model.Notes</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="mb-3">Lines</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th class="col-fit">No</th>
+                                <th>Batch</th>
+                                <th>Item</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Unit Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var lineNumber = 0;
+                            }
+                            @foreach (var line in Model.Lines)
+                            {
+                                lineNumber++;
+                                <tr>
+                                    <td>@lineNumber</td>
+                                    <td>@(batches.FirstOrDefault(b => b.Id == line.BatchId)?.Code)</td>
+                                    <td>@(items.FirstOrDefault(i => i.Id == line.ItemId)?.Name)</td>
+                                    <td class="text-end">@line.Quantity.ToString("N4")</td>
+                                    <td class="text-end">@line.UnitCost.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>

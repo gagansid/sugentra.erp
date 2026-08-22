@@ -1,0 +1,40 @@
+@model Sugentra.ERP.UI.Models.Layout.MenuNodeDto
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    // Pages that don't have their own menu entry (e.g. Audit Log detail reached from the Users tab) can set
+    // this to keep the menu item they logically belong to highlighted, instead of showing no active item.
+    var activeControllerOverride = ViewData["ActiveController"] as string;
+    var isActive = Model.Controller == (activeControllerOverride ?? currentController);
+    var hasChildren = Model.Children.Count > 0;
+    var currentModuleCode = ViewData["CurrentModuleCode"] as string;
+}
+<li class="menu-item @(isActive ? "active" : "") @(hasChildren ? "open" : "")">
+    @if (hasChildren)
+    {
+        <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon icon-base ri @Model.Icon"></i>
+            <div>@Model.Name</div>
+        </a>
+        <ul class="menu-sub">
+            @foreach (var child in Model.Children)
+            {
+                @await Html.PartialAsync("~/Views/Shared/Components/SidebarMenu/_MenuNode.cshtml", child)
+            }
+        </ul>
+    }
+    else if (currentModuleCode is not null)
+    {
+        <a asp-route-moduleCode="@currentModuleCode" asp-controller="@Model.Controller" asp-action="@Model.Action"
+           class="menu-link">
+            <i class="menu-icon icon-base ri @Model.Icon"></i>
+            <div>@Model.Name</div>
+        </a>
+    }
+    else
+    {
+        <a asp-controller="@Model.Controller" asp-action="@Model.Action" class="menu-link">
+            <i class="menu-icon icon-base ri @Model.Icon"></i>
+            <div>@Model.Name</div>
+        </a>
+    }
+</li>

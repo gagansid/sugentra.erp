@@ -1,0 +1,356 @@
+/* Custom styles goes here */
+
+/* Shrinks a table header/cell to fit its content instead of stretching - use on short,
+   fixed-vocabulary columns (e.g. Status) so their width stays uniform across all tables. */
+.col-fit {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* narrow label column so value sits right next to it instead of spanning the full card width */
+.detail-info-table td:first-child {
+    width: 160px;
+    white-space: nowrap;
+}
+
+.detail-info-table td {
+    padding-top: .2rem;
+    padding-bottom: .2rem;
+}
+
+/* Default primary color: #0D9394 - reuses the theme customizer's own "Success" swatch
+   (see TemplateCustomizer.COLORS in vendor/js/template-customizer.js) instead of an invented
+   hex, so the customizer's "Primary Color" picker stays visually consistent with its own presets.
+   Most theme components read var(--bs-primary)/--bs-primary-rgb, so overriding these
+   variables re-colors buttons, badges, links, borders, etc. app-wide. */
+:root,
+[data-bs-theme=light],
+[data-bs-theme=dark] {
+    --bs-primary: #0d9394;
+    --bs-primary-rgb: 13, 147, 148;
+    --bs-primary-text-emphasis: #063a3a;
+    --bs-primary-bg-subtle: #d7f0f0;
+    --bs-primary-border-subtle: #a3d9d9;
+    --bs-link-color: #0d9394;
+    --bs-link-color-rgb: 13, 147, 148;
+    --bs-link-hover-color: #0b7d7e;
+    --bs-link-hover-color-rgb: 11, 125, 126;
+}
+
+/* Denser sidebar: smaller text + tighter vertical padding so the menu doesn't run so tall,
+   especially now that module-scoped pages add extra rows (Back to Modules/Dashboard/header). */
+#layout-menu .menu-link {
+    padding-block: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+#layout-menu .menu-item .menu-icon {
+    inline-size: 1.125rem !important;
+    block-size: 1.125rem !important;
+    margin-inline-end: 0.5rem;
+}
+
+#layout-menu .menu-header {
+    padding-block: 0.5rem 0.25rem;
+    font-size: 0.6875rem;
+}
+
+#layout-menu .menu-sub .menu-link {
+    padding-block: 0.375rem;
+}
+
+/* Pins Back to Modules + version below the (scrollable) menu list, bottom-left of the sidebar. */
+#layout-menu {
+    display: flex;
+    flex-direction: column;
+}
+
+#layout-menu .menu-inner {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+#layout-menu .sidebar-footer {
+    margin-block-start: auto;
+    padding: 0.5rem 1.5rem 1rem;
+    border-block-start: 1px solid var(--bs-border-color);
+}
+
+#layout-menu .sidebar-footer .sidebar-back-link {
+    padding-inline: 0;
+    padding-block: 0.5rem;
+}
+
+#layout-menu .sidebar-version {
+    font-size: 0.6875rem;
+    color: var(--bs-secondary-color);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-width: 1px !important;
+}
+
+.form-control-sm,
+.form-select-sm,
+.btn-sm {
+    min-height: calc(1.375em + 0.883rem + calc(1px * 2)) !important;
+    border-radius: var(--bs-border-radius-sm) !important;
+}
+
+.bootstrap-select.form-control-sm .dropdown-toggle {
+    padding: 0.45rem 1rem !important;
+}
+
+.bootstrap-select .dropdown-toggle.show,
+.bootstrap-select .dropdown-toggle:focus,
+.bootstrap-select .dropdown-toggle:active {
+    border-width: 1px !important;
+    border-color: var(--bs-primary);
+    box-shadow: none;
+    padding: 0.45rem 1rem !important;
+    padding-inline: none !important;
+}
+
+input.form-control {
+    min-height: calc(1.375em + 0.883rem + calc(1px * 2)) !important;
+    padding-block: 0.4415rem !important;
+    border-radius: var(--bs-border-radius-sm) !important;
+}
+
+textarea.form-control {
+    padding-block: 0.4415rem !important;
+    border-radius: var(--bs-border-radius-sm) !important;
+}
+
+.dropdown-item {
+    padding: 0.4rem 1rem !important;
+    font-size: 0.7225rem !important;
+}
+
+.receipt-date-group .receipt-date-flatpickr {
+    border-inline-end: 0;
+    border-start-end-radius: 0 !important;
+    border-end-end-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.receipt-date-group .receipt-date-toggle {
+    border-inline-start: 0;
+    border-start-start-radius: 0 !important;
+    border-end-start-radius: 0 !important;
+    color: var(--bs-body-color);
+}
+
+.receipt-date-group:focus-within {
+    border-radius: var(--bs-border-radius-sm);
+    box-shadow: 0 0 0 1px var(--bs-primary);
+}
+
+.receipt-date-group:focus-within .receipt-date-flatpickr,
+.receipt-date-group:focus-within .receipt-date-toggle {
+    border-color: var(--bs-primary);
+}
+
+/* Goods Receipt Batch/Item selects live in narrow columns: bootstrap-select's default
+   float-based layout can't truncate long text there, which pushes the caret off past the
+   visible box. Flex layout fixes both the caret visibility/position and the text ellipsis. */
+.gr-select .dropdown-toggle {
+    display: flex !important;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.gr-select .dropdown-toggle .filter-option {
+    flex: 1 1 auto;
+    min-width: 0;
+    float: none !important;
+}
+
+.gr-select .dropdown-toggle .filter-option-inner-inner {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    float: none !important;
+}
+
+.bootstrap-select .dropdown-toggle .filter-option-inner-inner {
+    font-size: 0.7425rem !important;
+}
+
+.gr-select .dropdown-toggle::after {
+    /* position: static !important; */
+    margin: 0 !important;
+    flex-shrink: 0;
+    align-self: center;
+    line-height: 0;
+}
+
+.gr-select:not(.disabled) .dropdown-toggle,
+.gr-select:not(.disabled) .dropdown-toggle .filter-option-inner-inner {
+    color: var(--bs-body-color) !important;
+}
+
+.gr-select.disabled .dropdown-toggle {
+    background-color: var(--bs-secondary-bg, #eef1f4);
+}
+
+.unit-cost-group .form-control {
+    border-start-end-radius: 0 !important;
+    border-end-end-radius: 0 !important;
+}
+
+.unit-cost-group .remove-line {
+    border-start-start-radius: 0 !important;
+    border-end-start-radius: 0 !important;
+    padding-block: 0.4415rem !important;
+}
+
+.btn-filter-action {
+    width: 90px !important;
+    flex-shrink: 0;
+}
+
+
+.table-sm> :not(caption)>*>* {
+    padding: 0.4rem 1.25rem !important;
+}
+
+.table-sm thead> :not(caption)>*>* {
+    vertical-align: middle !important;
+}
+
+.table-sm tbody> :not(caption)>*>* {
+    vertical-align: middle !important;
+}
+
+.table-sm td:last-child,
+.table-sm th:last-child {
+    padding-inline-end: 1.25rem !important;
+}
+
+.table-sm .btn-icon {
+    padding: 0.1rem !important;
+    block-size: 1.5rem !important;
+    inline-size: 1.5rem !important;
+    line-height: 1;
+}
+
+.table-sm .btn-icon i {
+    font-size: 0.75rem !important;
+}
+
+
+
+
+
+
+
+/* Module hub grid (post-login landing page). Box size/border matches the theme's own
+   .nav-tabs-widget .nav-link component (see vendor/css/core.css), just applied to a plain
+   link/grid instead of a Bootstrap tab strip, with the label placed below the box. */
+.module-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.module-tile-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 92px;
+    block-size: 86px;
+    border: 2px dashed var(--bs-border-color);
+    border-radius: 0.625rem;
+    transition: border-color 0.15s ease;
+}
+
+.module-tile:hover .module-tile-box,
+.module-tile:focus .module-tile-box {
+    border-style: solid;
+    border-color: var(--bs-primary);
+}
+
+.module-tile-icon {
+    /* .icon-base pins width/height to --bs-icon-size (mask-image icons) — override explicitly */
+    inline-size: 2.25rem !important;
+    block-size: 2.25rem !important;
+    font-size: 2.25rem;
+    line-height: 1;
+    color: inherit;
+}
+
+.module-tile-image {
+    max-inline-size: 100%;
+    max-block-size: 100%;
+    object-fit: contain;
+}
+
+.module-tile-name {
+    margin: 0;
+    inline-size: 92px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-align: center;
+    color: inherit;
+    word-wrap: break-word;
+}
+
+/* App-wide compact text size for card content and tables (originally piloted on the User
+   Detail page's profile card + Effective Permissions table). !important since these are plain
+   Bootstrap classes (.card-body, .card-header h5, .table) the vendor CSS otherwise wins on. */
+.card-body,
+.table {
+    font-size: 0.8125rem !important;
+}
+
+.card-header h5,
+h5.card-header {
+    font-size: 1.05rem !important;
+}
+
+/* Show-entries controls + pagination footer ("Showing X to Y of Z entries", page numbers) —
+   shared across every list page via _ShowEntries.cshtml/_PagingFooter.cshtml. !important since
+   .pagination/.page-link's own font-size otherwise wins by source order. */
+.show-entries,
+.paging-footer,
+.pagination .page-link {
+    font-size: 0.8125rem !important;
+}
+
+/* Show-entries page-size select uses the app-wide .form-select-sm min-height rule above, which
+   feels oversized next to the .small label text here — shrink it back to a compact height. */
+.show-entries select.form-select-sm {
+    min-height: calc(1.575em + 0.6rem + calc(1px * 2)) !important;
+    padding-block: 0.2rem !important;
+}
+
+/* Approval Flow level-row Role(s)/User(s) select2 multi-selects — the theme sizes select2 via
+   CSS custom properties on .select2-container (not via classes/overridable padding), so match
+   the surrounding form-control-sm/form-select-sm height through those vars instead of fighting
+   the theme's own choice/remove-icon padding (which reserves inline-end space for the "x" — an
+   earlier version of this rule overrode that padding directly and caused the remove icon to
+   overlap the chip label). */
+#levelsContainer .select2-container {
+    --bs-select-height: calc(1.375em + 1.258rem + calc(1px * 2));
+    --bs-select-multiple-padding-x: 0.5rem;
+    --bs-select-multiple-padding-y: 0.35rem;
+    --bs-select-multiple-line-height: 1.25rem;
+}
+
+/* Remove-level button matches the row's field height (form-control-sm/select2) instead of the
+   default .btn-icon.btn-sm square, so it lines up with the rest of the row. */
+#levelsContainer .remove-level-btn.btn-icon {
+    block-size: calc(1.375em + 1.258rem + calc(1px * 2));
+    inline-size: calc(1.375em + 1.258rem + calc(1px * 2));
+}
+
+/* App-wide compact button text. !important since .btn's own font-size otherwise wins. */
+.btn {
+    font-size: 0.8125rem !important;
+}

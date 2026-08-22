@@ -1,0 +1,586 @@
+@model Sugentra.ERP.UI.Models.Settings.EmailTemplate
+@{
+    ViewData["Title"] = "Email Template";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-mail-settings-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("System Administration", Url.Action("Index", "Workspace", new { id =
+"SystemAdministration" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Email Templates", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/quill/typography.css" />
+    <link rel="stylesheet" href="~/vendor/libs/quill/editor.css" />
+    <link rel="stylesheet" href="~/vendor/libs/highlight/highlight-github.css" />
+    <style>
+        .code-editor-wrapper {
+            position: relative;
+        }
+
+        .code-editor-highlight,
+        .code-editor-input {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0.65rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            border-radius: 0.375rem;
+            /* Border must match on both layers - a border-width mismatch shrinks one box's content
+                                                           area relative to the other, so wrapped lines drift out of sync while scrolling. */
+            border: 1px solid transparent;
+        }
+
+        .code-editor-highlight {
+            position: absolute;
+            inset: 0;
+            overflow: auto;
+            background: #f8f9fa;
+            pointer-events: none;
+        }
+
+        .code-editor-input {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            color: transparent;
+            caret-color: #333;
+            border-color: var(--bs-border-color);
+            resize: none;
+        }
+
+        /* Bootstrap's reboot shrinks <code> to 87.5% font-size by default, which throws off
+                                                   wrapping/alignment against the textarea - force it back to the parent's size. */
+        .code-editor-highlight code {
+            font-size: inherit;
+            font-family: inherit;
+            line-height: inherit;
+        }
+
+        /* Matches Quill's .ql-editor look for the native contenteditable fallback used on
+                   table-based templates, so switching between the two feels the same. */
+        .raw-html-editor {
+            min-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0 0 0.375rem 0.375rem;
+            padding: 0.75rem;
+        }
+    </style>
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<form method="post" id="emailTemplateForm">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="BodyHtml" id="BodyHtmlHidden" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+         style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Email Template Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="row mb-3">
+                        <label asp-for="Code" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Code" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Name" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Name" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Description" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <textarea asp-for="Description" class="form-control form-control-sm" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="FromEmail" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="FromEmail" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="FromName" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="FromName" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="ReplyToEmail" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="ReplyToEmail" class="form-control form-control-sm" />
+                            <div class="form-check mt-2">
+                                <input asp-for="IsReplyToEnabled" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsReplyToEnabled" class="form-check-label">Use Reply-To</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Subject" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Subject" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="BodyText" class="col-sm-3 col-form-label col-form-label-sm">Body (Plain
+                            Text)</label>
+                            <div class="col-sm-9">
+                                <textarea asp-for="BodyText" class="form-control form-control-sm" rows="4"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label asp-for="IsActive" class="col-sm-3 col-form-label col-form-label-sm">Active</label>
+                            <div class="col-sm-9">
+                                <div class="form-check form-switch" id="isActiveSwitchWrapper">
+                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Body (HTML)</label>
+                            <div class="d-flex gap-2">
+                                <button type="button" id="previewHtmlBtn"
+                                        class="btn btn-sm btn-outline-secondary">Preview</button>
+                                <button type="button" id="beautifyHtmlBtn"
+                                        class="btn btn-sm btn-outline-secondary d-none">Beautify</button>
+                                <button type="button" id="toggleHtmlSourceBtn" class="btn btn-sm btn-outline-secondary">View
+                                    HTML</button>
+                                </div>
+                            </div>
+                            <div id="tableBasedHint" class="form-text mb-1 d-none">This template uses a table-based
+                                layout - you can still type directly below, just avoid deleting/rearranging the
+                                table structure itself.</div>
+                                <div id="quillWrapper" class="flex-grow-1 d-flex flex-column">
+                                    <div id="templateBodyEditor" class="flex-grow-1">@Html.Raw(Model.BodyHtml)</div>
+                                </div>
+                                <div id="htmlSourceWrapper" class="code-editor-wrapper flex-grow-1 d-none">
+                                    <pre id="templateBodySourceHighlight"
+                                         class="code-editor-highlight"><code class="language-xml"></code></pre>
+                                    <textarea id="templateBodySource" class="code-editor-input" spellcheck="false"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-end gap-2">
+                        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-filter-action">Cancel</a>
+                        <button type="submit" class="btn btn-primary btn-filter-action">Save</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="modal fade" id="previewHtmlModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Email Preview</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            @* Isolated iframe so the app's own CSS (Quill/Bootstrap) can't affect the rendered email markup. *@
+                            <iframe id="templateBodyPreviewFrame" style="width:100%;height:70vh;border:0;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Id > 0)
+            {
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Parameters</h5>
+                        @if (User.HasPermission("EmailTemplateParameter_Create"))
+                        {
+                            <button type="button" class="btn btn-sm btn-primary" id="addParameterBtn">Add Parameter</button>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <div id="parameterAlert" class="alert d-none" role="alert"></div>
+                        <p class="text-body-secondary">Runtime values referenced by this template's placeholders (e.g.
+                            <code>ExpiresMinutes</code>), editable here without a redeploy.
+                        </p>
+                        <table class="table table-sm table-hover" id="parametersTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Key</th>
+                                    <th>Type</th>
+                                    <th>Loop</th>
+                                    <th>Format</th>
+                                    <th>Default Value</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-border-bottom-0"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="parameterModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Parameter</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="paramId" />
+                                <div class="mb-3">
+                                    <label class="form-label">Key (Placeholder Name)</label>
+                                    <input type="text" class="form-control form-control-sm" id="paramKey" />
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Data Type</label>
+                                        <select class="form-select form-select-sm" id="paramDataType"></select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Format String</label>
+                                        <select class="form-select form-select-sm" id="paramFormatString"></select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Default Value</label>
+                                    <input type="text" class="form-control form-control-sm" id="paramDefaultValue" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <input type="text" class="form-control form-control-sm" id="paramDescription" />
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="paramIsLoop" />
+                                    <label class="form-check-label" for="paramIsLoop">Is Loop (represents a repeating
+                                        list)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="paramIsRequired" />
+                                        <label class="form-check-label" for="paramIsRequired">Required</label>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-label-dark" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary" id="saveParameterBtn">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="deleteParameterModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Parameter</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="mb-0">Are you sure you want to delete <strong id="deleteParameterKey"></strong>?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-danger btn-filter-action"
+                                            id="confirmDeleteParameterBtn">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @section VendorScripts {
+                    <script src="~/vendor/libs/quill/katex.js"></script>
+                    <script src="~/vendor/libs/quill/quill.js"></script>
+                    <script src="~/vendor/libs/highlight/highlight.js"></script>
+                    <script>
+                        // Captured before the editor can touch the DOM, so Preview always has an untouched fallback.
+                        const originalBodyHtml = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BodyHtml));
+
+                        // Quill reparses HTML into its own Delta model and re-renders from that, which mangles
+                        // <table> layouts even without any edits. Native contenteditable instead edits the existing
+                        // DOM nodes in place and leaves everything else untouched, so table-based templates (e.g.
+                        // the branded PASSWORD_RESET design) use that here to stay fully WYSIWYG-editable and safe.
+                        const isTableBased = /<table/i.test(originalBodyHtml);
+                        const templateBodyEditorEl = document.getElementById('templateBodyEditor');
+                        let quillInstance = null;
+
+                        if (isTableBased) {
+                            templateBodyEditorEl.classList.add('raw-html-editor');
+                            templateBodyEditorEl.setAttribute('contenteditable', 'true');
+                            document.getElementById('tableBasedHint').classList.remove('d-none');
+                        } else {
+                            quillInstance = new Quill('#templateBodyEditor', {
+                                modules: { toolbar: true },
+                                theme: 'snow'
+                            });
+                        }
+
+                        function getEditorHtml() {
+                            return quillInstance ? quillInstance.root.innerHTML : templateBodyEditorEl.innerHTML;
+                        }
+
+                        function setEditorHtml(html) {
+                            if (quillInstance) {
+                                quillInstance.root.innerHTML = html;
+                            } else {
+                                templateBodyEditorEl.innerHTML = html;
+                            }
+                        }
+
+                        const htmlSourceView = document.getElementById('templateBodySource');
+                        const htmlSourceHighlight = document.querySelector('#templateBodySourceHighlight code');
+                        const toggleHtmlSourceBtn = document.getElementById('toggleHtmlSourceBtn');
+                        const beautifyHtmlBtn = document.getElementById('beautifyHtmlBtn');
+                        const quillWrapper = document.getElementById('quillWrapper');
+                        const htmlSourceWrapper = document.getElementById('htmlSourceWrapper');
+                        let showingHtmlSource = false;
+
+                        function renderHighlightedSource() {
+                            htmlSourceHighlight.innerHTML = window.hljs
+                                ? window.hljs.highlight(htmlSourceView.value, { language: 'xml' }).value
+                                : htmlSourceView.value;
+                        }
+
+                        // Naive tag-based indenter (not a full HTML parser) - good enough for readability, not spec-perfect.
+                        function beautifyHtml(html) {
+                            const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+                            const lines = html.replace(/></g, '>\n<').trim().split('\n');
+                            let indent = 0;
+                            const result = [];
+                            lines.forEach(function (rawLine) {
+                                const line = rawLine.trim();
+                                if (!line) return;
+                                const isClosingTag = /^<\//.test(line);
+                                const tagName = (line.match(/^<\/?([a-zA-Z0-9-]+)/) || [])[1];
+                                const isSelfClosing = /\/>$/.test(line) || (tagName && voidTags.has(tagName.toLowerCase()));
+                                const isOpeningOnly = /^<[a-zA-Z][^>]*>$/.test(line) && !isClosingTag && !isSelfClosing;
+
+                                if (isClosingTag) indent = Math.max(indent - 1, 0);
+                                result.push('    '.repeat(indent) + line);
+                                if (isOpeningOnly) indent++;
+                            });
+                            return result.join('\n');
+                        }
+
+                        // Collapses beautify's indentation/newlines back out - feeding those into Quill's contenteditable
+                        // as-is gets misread as extra paragraph text, duplicating <p> tags on every editor<->source toggle.
+                        function minifyHtml(html) {
+                            return html.replace(/>\s+</g, '><').trim();
+                        }
+
+                        htmlSourceView.addEventListener('input', renderHighlightedSource);
+                        htmlSourceView.addEventListener('scroll', function () {
+                            htmlSourceHighlight.parentElement.scrollTop = this.scrollTop;
+                            htmlSourceHighlight.parentElement.scrollLeft = this.scrollLeft;
+                        });
+
+                        beautifyHtmlBtn.addEventListener('click', function () {
+                            htmlSourceView.value = beautifyHtml(htmlSourceView.value);
+                            renderHighlightedSource();
+                        });
+
+                        toggleHtmlSourceBtn.addEventListener('click', function () {
+                            showingHtmlSource = !showingHtmlSource;
+                            if (showingHtmlSource) {
+                                htmlSourceView.value = beautifyHtml(getEditorHtml());
+                                renderHighlightedSource();
+                                quillWrapper.classList.add('d-none');
+                                htmlSourceWrapper.classList.remove('d-none');
+                                beautifyHtmlBtn.classList.remove('d-none');
+                                toggleHtmlSourceBtn.textContent = 'View Editor';
+                            } else {
+                                setEditorHtml(minifyHtml(htmlSourceView.value));
+                                quillWrapper.classList.remove('d-none');
+                                htmlSourceWrapper.classList.add('d-none');
+                                beautifyHtmlBtn.classList.add('d-none');
+                                toggleHtmlSourceBtn.textContent = 'View HTML';
+                            }
+                        });
+
+                        document.getElementById('emailTemplateForm').addEventListener('submit', function () {
+                            document.getElementById('BodyHtmlHidden').value = showingHtmlSource
+                                ? minifyHtml(htmlSourceView.value)
+                                : getEditorHtml();
+                        });
+
+                        const previewHtmlBtn = document.getElementById('previewHtmlBtn');
+                        const previewHtmlModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('previewHtmlModal'));
+                        previewHtmlBtn.addEventListener('click', function () {
+                            const html = showingHtmlSource ? minifyHtml(htmlSourceView.value) : getEditorHtml();
+                            document.getElementById('templateBodyPreviewFrame').srcdoc = html;
+                            previewHtmlModal.show();
+                        });
+
+                        @if (Model.Id > 0)
+                            {
+                                <text>
+                                        const emailTemplateId = @Model.Id;
+                                        const parameterModal = document.getElementById('parameterModal')
+                                        ? bootstrap.Modal.getOrCreateInstance(document.getElementById('parameterModal'))
+                                        : null;
+                                        let currentParameters = [];
+
+                                        async function loadParameterOptions() {
+                                            async function fillSelect(selectId, category, allowBlank) {
+                                                const response = await fetch(`@Url.Action("GetSystemParameterOptions")?category=${category}`);
+                                                const result = await response.json();
+                                                const select = document.getElementById(selectId);
+                                                select.innerHTML = '';
+                                                if (allowBlank) {
+                                                    select.appendChild(new Option('', ''));
+                                                }
+                                                (result.data || []).forEach(function (p) {
+                                                    select.appendChild(new Option(p.paramKey, p.paramValue ?? p.paramKey));
+                                                });
+                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            await fillSelect('paramDataType', 'EmailParamDataType', false);
+                                        await fillFormatOptions(document.getElementById('paramDataType').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+
+                                        async function fillFormatOptions(dataType, selectedValue) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            const response = await fetch(`@Url.Action("GetParamFormatOptions")?dataType=${dataType}`);
+                                        const result = await response.json();
+                                        const select = document.getElementById('paramFormatString');
+                                        select.innerHTML = '';
+                                        (result.data || []).forEach(function (o) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                const label = o.label ? `${o.formatString || '(default)'} — ${o.label}` : (o.formatString || '(default)');
+                                        select.appendChild(new Option(label, o.formatString));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            });
+                                        select.value = selectedValue ?? '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+
+                                        document.getElementById('paramDataType').addEventListener('change', function () {
+                                            fillFormatOptions(this.value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        });
+
+                                        async function loadParameters() {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch(`@Url.Action("GetParameters")?emailTemplateId=${emailTemplateId}`);
+                                        const result = await response.json();
+                                        currentParameters = result.data || [];
+                                        const tbody = document.querySelector('#parametersTable tbody');
+                                        tbody.innerHTML = '';
+                                        const canEditParams = @Json.Serialize(User.HasPermission("EmailTemplateParameter_Edit"));
+                                        const canDeleteParams = @Json.Serialize(User.HasPermission("EmailTemplateParameter_Delete"));
+                                        currentParameters.forEach(function (p, index) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const row = document.createElement('tr');
+                                        row.innerHTML = `<td>${index + 1}</td><td>${p.paramKey}</td><td>${p.dataType}</td>
+                                        <td>${p.isLoop ? 'Yes' : 'No'}</td><td>${p.formatString ?? ''}</td><td>${p.defaultValue ?? ''}</td><td>${p.description ?? ''}</td>
+                                        <td class="text-end">
+                                                ${canEditParams ? `<button type="button" class="btn btn-icon btn-text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit" onclick="editParameterById(${p.id})"><i class="ri ri-edit-line icon-14px"></i></button>` : ''}
+                                                ${canDeleteParams ? `<button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete" onclick="showDeleteParameterModal(${p.id})"><i class="ri ri-delete-bin-line icon-14px"></i></button>` : ''}
+                                        </td>`;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                tbody.appendChild(row);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function showParameterAlert(success, message) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const alertBox = document.getElementById('parameterAlert');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                alertBox.classList.remove('d-none', 'alert-primary', 'alert-danger');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                alertBox.classList.add(success ? 'alert-primary' : 'alert-danger');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                alertBox.textContent = message;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function resetParameterForm() {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramId').value = '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramKey').value = '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramDataType').value = 'String';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                fillFormatOptions('String');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramDefaultValue').value = '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramDescription').value = '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramIsLoop').checked = false;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramIsRequired').checked = false;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('addParameterBtn').addEventListener('click', function () {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                resetParameterForm();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                parameterModal.show();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                window.editParameter = async function (p) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramId').value = p.id;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramKey').value = p.paramKey;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramDataType').value = p.dataType || 'String';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                await fillFormatOptions(p.dataType || 'String', p.formatString || '');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramDefaultValue').value = p.defaultValue || '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramDescription').value = p.description || '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramIsLoop').checked = !!p.isLoop;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('paramIsRequired').checked = !!p.isRequired;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                parameterModal.show();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                window.editParameterById = function (id) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const p = currentParameters.find(x => x.id === id);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (p) window.editParameter(p);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                window.deleteParameter = async function (id) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const formData = new FormData();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('id', id);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch('@Url.Action("DeleteParameter")', {method: 'POST', body: formData });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const result = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                showParameterAlert(result.success, result.message || (result.success ? 'Parameter deleted successfully.' : 'Failed to delete parameter.'));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                await loadParameters();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const deleteParameterModal = document.getElementById('deleteParameterModal')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ? bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteParameterModal'))
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                : null;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                let parameterIdPendingDelete = null;
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                window.showDeleteParameterModal = function (id) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const p = currentParameters.find(x => x.id === id);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                parameterIdPendingDelete = id;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('deleteParameterKey').textContent = p ? p.paramKey : '';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                deleteParameterModal.show();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                };
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('confirmDeleteParameterBtn').addEventListener('click', async function () {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (parameterIdPendingDelete === null) return;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                await deleteParameter(parameterIdPendingDelete);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                parameterIdPendingDelete = null;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                deleteParameterModal.hide();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                document.getElementById('saveParameterBtn').addEventListener('click', async function () {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const formData = new FormData();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('Id', document.getElementById('paramId').value || '0');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('EmailTemplateId', emailTemplateId);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('ParamKey', document.getElementById('paramKey').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('DataType', document.getElementById('paramDataType').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('FormatString', document.getElementById('paramFormatString').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('DefaultValue', document.getElementById('paramDefaultValue').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('Description', document.getElementById('paramDescription').value);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('IsLoop', document.getElementById('paramIsLoop').checked);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('IsRequired', document.getElementById('paramIsRequired').checked);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const response = await fetch('@Url.Action("SaveParameter")', {method: 'POST', body: formData });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                const result = await response.json();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if (!result.success) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                showParameterAlert(false, result.message || 'Failed to save parameter.');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                showParameterAlert(true, result.message || 'Parameter saved successfully.');
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                parameterModal.hide();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                await loadParameters();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                loadParameterOptions();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                loadParameters();
+                                                                                                                                                                                                                                                                                                                                                                                                                    </text>
+                                                                                                                                                                                                                                                                                                                                        }
+                    </script>
+                }

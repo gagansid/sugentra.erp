@@ -1,0 +1,99 @@
+@model Sugentra.ERP.UI.Models.Inventory.QuarantineHold
+@{
+    ViewData["Title"] = "Add Quarantine Hold";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-cross-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Quarantine Holds", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Create", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">@ViewData["Title"]</h5>
+            </div>
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form id="quarantineHoldForm" method="post" novalidate>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Item</label>
+                        <div class="col-sm-9">
+                            <select asp-for="ItemId" class="form-select form-select-sm" required>
+                                @foreach (var item in items)
+                                {
+                                    <option value="@item.Id">@item.Code - @item.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Batch (optional)</label>
+                        <div class="col-sm-9">
+                            <select asp-for="BatchId" class="form-select form-select-sm">
+                                <option value="">-- None --</option>
+                                @foreach (var batch in batches)
+                                {
+                                    <option value="@batch.Id">@batch.Code</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Warehouse</label>
+                        <div class="col-sm-9">
+                            <select asp-for="WarehouseId" class="form-select form-select-sm" required>
+                                @foreach (var w in warehouses)
+                                {
+                                    <option value="@w.Id">@w.Code - @w.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label class="col-sm-3 col-form-label col-form-label-sm">Hold Reason</label>
+                        <div class="col-sm-9">
+                            <select asp-for="HoldReason" class="form-select form-select-sm" required>
+                                <option value="QcFailed">QC Failed</option>
+                                <option value="CustomerReturn">Customer Return</option>
+                                <option value="FumigationPending">Fumigation Pending</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Notes" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9"><textarea asp-for="Notes" class="form-control form-control-sm"
+                                                            rows="2"></textarea></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                    <button type="submit" form="quarantineHoldForm"
+                            class="btn btn-primary btn-sm btn-filter-action">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            document.getElementById('quarantineHoldForm').addEventListener('submit', function (event) {
+                var valid = true;
+                this.querySelectorAll('[required]').forEach(function (field) {
+                    var isFieldValid = field.checkValidity();
+                    field.classList.toggle('is-invalid', !isFieldValid);
+                    valid = valid && isFieldValid;
+                });
+                if (!valid) { event.preventDefault(); event.stopPropagation(); }
+            });
+        </script>
+    }

@@ -1,0 +1,2 @@
+ALTER TABLE Shared_ErrorLogs ADD SolvedAt DATETIME2 NULL;
+ALTER TABLE Shared_ErrorLogs ADD SolvedBy BIGINT NULL;

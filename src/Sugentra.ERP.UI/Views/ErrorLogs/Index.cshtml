@@ -1,0 +1,165 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Shared.ErrorLogListItemDto>
+@{
+    ViewData["Title"] = "Error Logs";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-history-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Audit Log", Url.Action("Index", "Workspace", new { id =
+"AuditLog" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Error Logs", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+
+@section VendorScripts {
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+<style>
+    /* mobile: filter fields stack full-width, one per row */
+    .error-filter-form {
+        width: 100%;
+    }
+
+    .error-filter-form .filter-field {
+        width: 100%;
+    }
+
+    .error-filter-form .filter-date {
+        width: 50%;
+        min-width: 0;
+    }
+
+    /* Apply/Reset stay compact and inline with "Show entries" at every width */
+    .error-filter-form-actions .btn {
+        width: 80px;
+        max-width: 80px;
+    }
+
+    @@media (min-width: 576px) {
+
+        /* desktop: fixed compact widths, row right-aligned via justify-content-end */
+        .error-filter-form .filter-source {
+            width: 150px;
+        }
+
+        .error-filter-form .filter-search {
+            width: 220px;
+        }
+
+        .error-filter-form .filter-date {
+            width: 150px;
+        }
+
+        .error-filter-form .filter-date-group {
+            width: auto;
+        }
+    }
+</style>
+
+<div class="card">
+    <h5 class="card-header">Error Logs</h5>
+    <div class="pt-4 mb-2"
+         style="padding-left: var(--bs-card-cap-padding-x); padding-right: var(--bs-card-cap-padding-x);">
+        <form method="get" id="errorLogFilterForm" class="error-filter-form">
+            <div class="d-flex flex-wrap align-items-center gap-2 justify-content-end w-100 mb-2">
+                <select name="source" class="form-select form-select-sm filter-field filter-source">
+                    <option value="">All Source</option>
+                    <option value="Api" selected="@("Api".Equals(ViewBag.Source) ? "selected" : null)">Api</option>
+                    <option value="UI" selected="@("UI".Equals(ViewBag.Source) ? "selected" : null)">UI</option>
+                </select>
+                <input type="text" name="search" class="form-control form-control-sm filter-field filter-search"
+                       value="@ViewBag.Search" placeholder="Search endpoint/message..." />
+                <div class="d-flex gap-2 filter-field filter-date-group">
+                    <input type="text" name="fromDate"
+                           class="form-control form-control-sm filter-date error-log-flatpickr" value="@ViewBag.FromDate"
+                           placeholder="From date" autocomplete="off" />
+                    <input type="text" name="toDate"
+                           class="form-control form-control-sm filter-date error-log-flatpickr" value="@ViewBag.ToDate"
+                           placeholder="To date" autocomplete="off" />
+                </div>
+            </div>
+        </form>
+        <!-- Apply/Reset live outside the form (via the form= attribute) so they can sit beside the -->
+        <!-- _ShowEntries partial's own <form>, avoiding invalid nested <form> elements -->
+        <div class="d-flex flex-row justify-content-between align-items-center gap-2">
+            <div class="flex-shrink-0">
+                @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+            </div>
+            <div class="d-flex gap-2 error-filter-form-actions">
+                <button type="submit" form="errorLogFilterForm"
+                        class="btn btn-sm btn-primary btn-filter-action flex-fill">Apply</button>
+                <a asp-action="Index"
+                   class="btn btn-sm btn-label-dark waves-effect btn-filter-action flex-fill">Reset</a>
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th class="col-fit">Source</th>
+                    <th>Endpoint</th>
+                    <th class="col-fit">HTTP Code</th>
+                    <th>Exception</th>
+                    <th class="col-fit">Condition</th>
+                    <th class="col-fit">User</th>
+                    <th class="col-fit">Occurred At</th>
+                    <th class="text-center" style="width: 90px;">Detail</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="9" class="text-muted text-center">No error logs found.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var entry in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td><span
+                                class="badge bg-label-@(entry.Source == "Api" ? "info" : "warning")">@entry.Source</span>
+                            </td>
+                            <td>@(entry.Endpoint ?? "-")</td>
+                            <td>@(entry.StatusCode?.ToString() ?? "-")</td>
+                            <td class="text-truncate" style="max-width: 200px;">@(entry.ExceptionType ?? "-")</td>
+                            <td>
+                                <span class="badge bg-label-@(entry.Status == "Solved" ? "primary" : "secondary")">
+                                    @(entry.Status == "Solved" ? "Solved" : "Not Solved")
+                                </span>
+                            </td>
+                            <td>@(entry.Username ?? "-")</td>
+                            <td>@entry.OccurredAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="text-center">
+                                <a asp-action="Detail" asp-route-id="@entry.Id" class="btn btn-icon btn-text-secondary"
+                                   data-bs-toggle="tooltip" data-bs-placement="top" title="View Detail"><i
+                                    class="ri ri-file-search-line icon-14px"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+    </div>
+
+    @section Scripts {
+        <script>
+            document.querySelectorAll('.error-log-flatpickr').forEach(function (el) {
+                // append to body so the popup calendar doesn't grow the flex row and shift the layout on focus
+                flatpickr(el, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
+            });
+        </script>
+    }

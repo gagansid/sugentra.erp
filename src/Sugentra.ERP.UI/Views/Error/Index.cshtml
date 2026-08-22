@@ -1,0 +1,22 @@
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Something Went Wrong";
+}
+
+<div class="authentication-wrapper authentication-basic container-p-y p-4 p-sm-0">
+    <div class="authentication-inner py-6">
+        <div class="card p-md-7 p-1 text-center">
+            <div class="card-body mt-1">
+                <i class="ri ri-error-warning-line text-danger mb-3" style="font-size: 3rem;"></i>
+                <h4 class="mb-2">Oops, Something Went Wrong</h4>
+                <p class="mb-5">
+                    Sorry, the system ran into a problem while processing your request.
+                    Our developers have been notified — please contact the developer/administrator
+                    if this keeps happening.
+                </p>
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,123 @@
+@model Sugentra.ERP.UI.Models.Approvals.ApprovalRequestResponse
+@{
+    ViewData["Title"] = "Approval Request";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-inbox-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("My Approvals", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.DocumentNumber, null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">@Model.DocumentType — @Model.DocumentNumber</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">@Model.Status</dd>
+            <dt class="col-sm-3">Current Level</dt>
+            <dd class="col-sm-9">@Model.CurrentLevelNumber</dd>
+            <dt class="col-sm-3">Requested At</dt>
+            <dd class="col-sm-9">@Model.RequestedAt.ToLocalTime().ToString("g")</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Levels</h5>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Level</th>
+                    <th>Name</th>
+                    <th>Require All</th>
+                    <th>Approved / Required</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var level in Model.Levels)
+                {
+                    <tr>
+                        <td>@level.LevelNumber</td>
+                        <td>@level.Name</td>
+                        <td>@(level.RequireAllApprovers ? "Yes" : "No")</td>
+                        <td>@level.ApprovedCount / @level.RequiredApproverCount</td>
+                        <td>@level.Status</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">History</h5>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Level</th>
+                    <th>Approver</th>
+                    <th>Action</th>
+                    <th>Comment</th>
+                    <th>Actioned At</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.History.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="text-muted text-center">No actions recorded yet.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var action in Model.History)
+                    {
+                        <tr>
+                            <td>@action.LevelNumber</td>
+                            <td>@action.ApproverUserId</td>
+                            <td>@action.Action</td>
+                            <td>@action.Comment</td>
+                            <td>@action.ActionedAt.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model.Status == "Pending" && User.HasPermission("ApprovalRequest_Act"))
+{
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Take Action</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-action="Act" asp-route-id="@Model.Id">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label">Comment</label>
+                    <textarea name="comment" class="form-control" rows="2"></textarea>
+                </div>
+                <button type="submit" name="approve" value="true" class="btn btn-success">
+                    <i class="ri ri-check-line me-1"></i>Approve
+                </button>
+                <button type="submit" name="approve" value="false" class="btn btn-danger">
+                    <i class="ri ri-close-line me-1"></i>Reject
+                </button>
+            </form>
+        </div>
+    </div>
+}

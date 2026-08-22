@@ -1,0 +1,107 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Inventory.StockBalance>
+@{
+    ViewData["Title"] = "Stock Balances";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-stack-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Stock Balances", null)
+    });
+    var hasAdvancedFilter = ViewBag.WarehouseId != null;
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Stock Balances</h5>
+    </div>
+    <!-- _ShowEntries partial's own <form>, avoiding invalid nested <form> elements -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 mb-2">
+        @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        <form method="get" id="stockBalancesFilterForm" class="d-flex align-items-center gap-2">
+            <input type="text" name="keyword" class="form-control form-control-sm"
+                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search item name.." />
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-primary position-relative"
+                        id="stockBalancesFilterDropdown" data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside" aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    <i class="ri ri-filter-3-line me-1"></i>Filter
+                    @if (hasAdvancedFilter)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">Filter active</span>
+                        </span>
+                    }
+                </button>
+                <div class="dropdown-menu dropdown-menu-end w-px-350 p-0" aria-labelledby="stockBalancesFilterDropdown">
+                    <div class="card mb-0 shadow-none">
+                        <div class="card-header py-2">
+                            <h6 class="mb-3">Filter</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label mb-1 small">Warehouse</label>
+                                    <select name="warehouseId" class="form-select form-select-sm">
+                                        <option value="">All Warehouses</option>
+                                        @foreach (var warehouse in warehouses)
+                                        {
+                                            <option value="@warehouse.Id" selected="@(warehouse.Id.ToString().Equals(ViewBag.WarehouseId?.ToString()) ? "selected" : null)">@warehouse.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Item</th>
+                    <th>Warehouse</th>
+                    <th class="text-end">On Hand</th>
+                    <th class="text-end">Reserved</th>
+                    <th class="text-end">Quarantine</th>
+                    <th class="text-end">Avg. Cost</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-muted text-center">No stock balances recorded.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var balance in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@(items.FirstOrDefault(i => i.Id == balance.ItemId)?.Name)</td>
+                            <td>@(warehouses.FirstOrDefault(w => w.Id == balance.WarehouseId)?.Name)</td>
+                            <td class="text-end">@balance.QuantityOnHand.ToString("N4")</td>
+                            <td class="text-end">@balance.QuantityReserved.ToString("N4")</td>
+                            <td class="text-end">@balance.QuantityInQuarantine.ToString("N4")</td>
+                            <td class="text-end">@balance.AverageCost.ToString("N4")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+</div>
