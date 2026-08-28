@@ -1,123 +1,212 @@
 @model Sugentra.ERP.UI.Models.Approvals.ApprovalRequestResponse
+@inject Sugentra.ERP.UI.Services.Settings.ModuleIconLookupService ModuleIconLookup
 @{
     ViewData["Title"] = "Approval Request";
-    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-inbox-line", new[]
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel(await ModuleIconLookup.GetIconAsync("Approvals"), new[]
     {
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("My Approvals", Url.Action("Index")),
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.DocumentNumber, null)
     });
+
+    var userNames = ViewData["UserNames"] as Dictionary<long, string> ?? [];
+    string ApproverName(long userId) => userNames.TryGetValue(userId, out var name) ? name : $"User {userId}";
+    string ApproverNames(IEnumerable<long> userIds)
+    {
+        var names = userIds.Select(ApproverName).ToList();
+        return names.Count == 0 ? "-" : string.Join(", ", names);
+    }
+
+    var statusColor = Model.Status switch
+    {
+        "Approved" => "success",
+        "Rejected" => "danger",
+        "Pending" => "secondary",
+        _ => "secondary"
+    };
 }
 
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
 
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">@Model.DocumentType — @Model.DocumentNumber</h5>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">@Model.DocumentType Approval Request</h5>
     </div>
     <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9">@Model.Status</dd>
-            <dt class="col-sm-3">Current Level</dt>
-            <dd class="col-sm-9">@Model.CurrentLevelNumber</dd>
-            <dt class="col-sm-3">Requested At</dt>
-            <dd class="col-sm-9">@Model.RequestedAt.ToLocalTime().ToString("g")</dd>
-        </dl>
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Levels</h5>
-    </div>
-    <div class="table-responsive text-nowrap">
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Level</th>
-                    <th>Name</th>
-                    <th>Require All</th>
-                    <th>Approved / Required</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var level in Model.Levels)
-                {
+        <div class="mb-5">
+            <h6>Information</h6>
+            <table class="table table-borderless table-hover detail-info-table">
+                <tbody>
                     <tr>
-                        <td>@level.LevelNumber</td>
-                        <td>@level.Name</td>
-                        <td>@(level.RequireAllApprovers ? "Yes" : "No")</td>
-                        <td>@level.ApprovedCount / @level.RequiredApproverCount</td>
-                        <td>@level.Status</td>
+                        <td class="fw-medium">Code</td>
+                        <td class="fw-bold">@Model.DocumentNumber</td>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">History</h5>
-    </div>
-    <div class="table-responsive text-nowrap">
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Level</th>
-                    <th>Approver</th>
-                    <th>Action</th>
-                    <th>Comment</th>
-                    <th>Actioned At</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.History.Count == 0)
-                {
                     <tr>
-                        <td colspan="5" class="text-muted text-center">No actions recorded yet.</td>
+                        <td class="fw-medium">Status</td>
+                        <td><span class="badge bg-label-@statusColor">@Model.Status</span></td>
                     </tr>
-                }
-                else
-                {
-                    @foreach (var action in Model.History)
+                    <tr>
+                        <td class="fw-medium">Current Level</td>
+                        <td>@Model.CurrentLevelNumber</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Requested At</td>
+                        <td>@Model.RequestedAt.ToLocalTime().ToString("g")</td>
+                    </tr>
+                    @if (Model.CompletedAt is not null)
                     {
                         <tr>
-                            <td>@action.LevelNumber</td>
-                            <td>@action.ApproverUserId</td>
-                            <td>@action.Action</td>
-                            <td>@action.Comment</td>
-                            <td>@action.ActionedAt.ToLocalTime().ToString("g")</td>
+                            <td class="fw-medium">Completed At</td>
+                            <td>@Model.CompletedAt.Value.ToLocalTime().ToString("g")</td>
                         </tr>
                     }
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+
+        <h6 class="mb-2">Levels</h6>
+        <div class="table-responsive text-nowrap mb-4">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Level</th>
+                        <th style="width: 200px;">Name</th>
+                        <th style="width: 200px">Approvers</th>
+                        <th style="width: 150px;">Require All</th>
+                        <th style="width: 80px;">Approved / Required</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var level in Model.Levels)
+                    {
+                        <tr>
+                            <td>@level.LevelNumber</td>
+                            <td>@level.Name</td>
+                            <td>@ApproverNames(level.EligibleApproverUserIds)</td>
+                            <td>@(level.RequireAllApprovers ? "Yes" : "No")</td>
+                            <td>@level.ApprovedCount / @level.RequiredApproverCount</td>
+                            <td><span class="badge bg-label-@(level.Status == "Approved" ? "primary" : "secondary")">@level.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <h6 class="mb-2">History</h6>
+        <div class="table-responsive text-nowrap">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Level</th>
+                        <th style="width: 200px;">Approver</th>
+                        <th style="width: 200px;">Action</th>
+                        <th style="width: 150px;">Actioned At</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.History.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-muted text-center">No actions recorded yet.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var action in Model.History)
+                        {
+                            <tr>
+                                <td>@action.LevelNumber</td>
+                                <td>@ApproverName(action.ApproverUserId)</td>
+                                <td><span class="badge bg-label-@(action.Action == "Approved" ? "primary" : "danger")">@action.Action</span></td>
+                                <td>@action.ActionedAt.ToLocalTime().ToString("g")</td>
+                                <td>@action.Comment</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Status == "Pending" && User.HasPermission("ApprovalRequest_Act"))
+        {
+            <h6 class="mb-2 mt-4">Take Action</h6>
+            <form id="approvalActionForm" method="post" asp-action="Act" asp-route-id="@Model.Id" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="approve" id="approvalActionApprove" />
+                <div class="row">
+                    <label class="col-sm-2 col-form-label">Status <span class="text-danger">*</span></label>
+                    <div class="col-sm-10">
+                        <select id="approvalActionStatus" class="form-select form-select-sm gr-select" required>
+                            <option value="">-- Select Status --</option>
+                            <option value="true">Approved</option>
+                            <option value="false">Reject</option>
+                        </select>
+                        <span id="approvalActionStatusError" class="text-danger small d-none">Status is required.</span>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-2 col-form-label">Remark <span class="text-danger">*</span></label>
+                    <div class="col-sm-10">
+                        <textarea name="comment" id="approvalActionComment" class="form-control" rows="4" required></textarea>
+                        <span id="approvalActionCommentError" class="text-danger small d-none">Remark is required.</span>
+                    </div>
+                </div>
+            </form>
+        }
     </div>
+    @if (Model.Status == "Pending" && User.HasPermission("ApprovalRequest_Act"))
+    {
+        <div class="card-footer d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-sm btn-label-dark waves-effect btn-filter-action" onclick="document.getElementById('approvalActionForm').reset(); document.getElementById('approvalActionStatusError').classList.add('d-none'); document.getElementById('approvalActionCommentError').classList.add('d-none')">Cancel</button>
+            <button type="button" class="btn btn-sm btn-primary btn-filter-action" onclick="showApprovalActionConfirm()">Submit</button>
+        </div>
+    }
 </div>
 
 @if (Model.Status == "Pending" && User.HasPermission("ApprovalRequest_Act"))
 {
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Take Action</h5>
-        </div>
-        <div class="card-body">
-            <form method="post" asp-action="Act" asp-route-id="@Model.Id">
-                @Html.AntiForgeryToken()
-                <div class="mb-3">
-                    <label class="form-label">Comment</label>
-                    <textarea name="comment" class="form-control" rows="2"></textarea>
+    <div class="modal fade" id="approvalActionConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm <span id="approvalActionConfirmLabel"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="submit" name="approve" value="true" class="btn btn-success">
-                    <i class="ri ri-check-line me-1"></i>Approve
-                </button>
-                <button type="submit" name="approve" value="false" class="btn btn-danger">
-                    <i class="ri ri-close-line me-1"></i>Reject
-                </button>
-            </form>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to <strong id="approvalActionConfirmText"></strong> this request?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-dark waves-effect" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('approvalActionForm').submit()">Confirm</button>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('approvalActionStatus').addEventListener('change', function () {
+            document.getElementById('approvalActionStatusError').classList.toggle('d-none', this.checkValidity());
+        });
+        document.getElementById('approvalActionComment').addEventListener('input', function () {
+            document.getElementById('approvalActionCommentError').classList.toggle('d-none', this.checkValidity());
+        });
+
+        function showApprovalActionConfirm() {
+            var status = document.getElementById('approvalActionStatus');
+            var comment = document.getElementById('approvalActionComment');
+            document.getElementById('approvalActionStatusError').classList.toggle('d-none', status.checkValidity());
+            document.getElementById('approvalActionCommentError').classList.toggle('d-none', comment.checkValidity());
+            if (!status.checkValidity() || !comment.checkValidity()) {
+                return;
+            }
+
+            var isApprove = status.value === 'true';
+            document.getElementById('approvalActionApprove').value = isApprove ? 'true' : 'false';
+            document.getElementById('approvalActionConfirmLabel').textContent = isApprove ? 'Approve' : 'Reject';
+            document.getElementById('approvalActionConfirmText').textContent = isApprove ? 'approve' : 'reject';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('approvalActionConfirmModal')).show();
+        }
+    </script>
 }

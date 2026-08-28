@@ -20,6 +20,8 @@ public class ApprovalRequestUseCase(
     IApprovalFlowRepository flowRepository,
     IApprovalRequestRepository requestQueryRepository,
     IRoleMembershipService roleMembershipService,
+    IUserDirectoryService userDirectoryService,
+    IHolidayLookupService holidayLookupService,
     IServiceProvider serviceProvider,
     IAuditLogService auditLogService)
 {
@@ -215,11 +217,80 @@ public class ApprovalRequestUseCase(
             levelResponses, historyResponses);
     }
 
-    public Task<IReadOnlyList<ApprovalInboxItem>> GetInboxAsync(long userId) => requestQueryRepository.GetInboxForUserAsync(userId);
+    public async Task<IReadOnlyList<ApprovalInboxItem>> GetInboxAsync(long userId)
+    {
+        var rows = await requestQueryRepository.GetInboxForUserAsync(userId);
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var now = DateTime.UtcNow;
+        var earliestRequestedAt = rows.Min(r => r.RequestedAt);
+        var holidays = await holidayLookupService.GetHolidayDatesAsync(earliestRequestedAt, now);
+
+        return rows.Select(r => new ApprovalInboxItem(
+            r.RequestId, r.DocumentType, r.DocumentId, r.DocumentNumber, r.CurrentLevelNumber, r.LevelName,
+            r.RequestedBy, r.RequestedAt, r.ApproverTypeName, CountBusinessDays(r.RequestedAt, now, holidays))).ToList();
+    }
+
+    // Counts full business days elapsed since RequestedAt (0 if still the same calendar day), excluding
+    // weekends and the holiday calendar - used for the "Aging" column in the My Approvals inbox.
+    private static int CountBusinessDays(DateTime from, DateTime to, IReadOnlySet<DateTime> holidays)
+    {
+        var days = 0;
+        for (var date = from.Date.AddDays(1); date <= to.Date; date = date.AddDays(1))
+        {
+            if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday && !holidays.Contains(date))
+            {
+                days++;
+            }
+        }
+
+        return days;
+    }
+
+    // Spans every submission cycle (a rejection followed by resubmission opens a new Approval_Requests row),
+    // plus the still-pending approvers on whichever request is currently Pending, so the UI can render one timeline.
+    public async Task<IReadOnlyList<ApprovalHistoryEntryDto>> GetDocumentHistoryAsync(string documentType, long documentId)
+    {
+        var requests = await requestQueryRepository.GetAllByDocumentAsync(documentType, documentId);
+        var entries = new List<ApprovalHistoryEntryDto>();
+
+        foreach (var request in requests)
+        {
+            var levels = await requestQueryRepository.GetLevelsAsync(request.Id);
+            var levelsByNumber = levels.ToDictionary(l => l.LevelNumber);
+            var actions = await requestQueryRepository.GetHistoryAsync(request.Id);
+
+            foreach (var action in actions)
+            {
+                var levelName = levelsByNumber.TryGetValue(action.LevelNumber, out var actedLevel) ? actedLevel.Name : $"Level {action.LevelNumber}";
+                var approver = await userDirectoryService.GetByIdAsync(action.ApproverUserId);
+                entries.Add(new ApprovalHistoryEntryDto(
+                    request.Id, action.LevelNumber, levelName, action.ApproverUserId, approver?.FullName,
+                    action.Action, action.Comment, action.ActionedAt));
+            }
+
+            if (request.Status == "Pending" && levelsByNumber.TryGetValue(request.CurrentLevelNumber, out var currentLevel))
+            {
+                var pendingApprovers = await requestQueryRepository.GetApproversAsync(currentLevel.Id);
+                foreach (var pending in pendingApprovers.Where(a => !a.HasActed))
+                {
+                    var user = await userDirectoryService.GetByIdAsync(pending.UserId);
+                    entries.Add(new ApprovalHistoryEntryDto(
+                        request.Id, currentLevel.LevelNumber, currentLevel.Name, pending.UserId, user?.FullName,
+                        "Waiting", null, null));
+                }
+            }
+        }
+
+        return entries;
+    }
 
     private async Task<ApprovalFlowDefinition?> MatchFlowAsync(ApprovalSubmissionRequest request)
     {
-        var flows = await flowRepository.GetActiveByDocumentTypeAsync(request.DocumentType);
+        var flows = await flowRepository.GetActiveByApproverTypeAsync(request.DocumentType);
         return flows.FirstOrDefault(f =>
             (f.MinAmount is null || request.Amount is null || request.Amount >= f.MinAmount) &&
             (f.MaxAmount is null || request.Amount is null || request.Amount <= f.MaxAmount) &&

@@ -1,60 +1,128 @@
-@model List<Sugentra.ERP.UI.Models.Approvals.ApprovalRoleCategoryResponse>
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Approvals.ApprovalRoleCategoryGroupViewModel>
+@inject Sugentra.ERP.UI.Services.Settings.ModuleIconLookupService ModuleIconLookup
 @{
-    ViewData["Title"] = "Approval Role Categories";
-    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shield-user-line", new[]
+    ViewData["Title"] = "Approval Types";
+    var allRoles = (ViewData["AllRoles"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.RoleListItemDto>) ?? [];
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel(await ModuleIconLookup.GetIconAsync("Approvals"), new[]
     {
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
-        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Role Categories", null)
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approval Types", null)
     });
+    var hasAdvancedFilter = ViewBag.RoleId != null;
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
 }
 
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Approval Role Categories</h5>
-        @if (User.HasPermission("ApprovalRoleCategory_Create"))
-        {
-            <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add Data</a>
-        }
+        <h5 class="mb-0">Approval Types</h5>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 mb-2">
+        @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        <form method="get" id="approverRolesFilterForm" class="d-flex align-items-center gap-2">
+            <input type="text" name="keyword" class="form-control form-control-sm"
+                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search.." />
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-primary position-relative"
+                        id="approverRolesFilterDropdown" data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside" aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    <i class="ri ri-filter-3-line me-1"></i>Filter
+                    @if (hasAdvancedFilter)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">Filter active</span>
+                        </span>
+                    }
+                </button>
+                <div class="dropdown-menu dropdown-menu-end w-px-350 p-0" aria-labelledby="approverRolesFilterDropdown">
+                    <div class="card mb-0 shadow-none">
+                        <div class="card-header py-2">
+                            <h6 class="mb-3">Filter</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label mb-1 small">Role</label>
+                                    <select name="roleId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                            data-style="btn-default" data-width="100%">
+                                        <option value="">All Roles</option>
+                                        @foreach (var role in allRoles)
+                                        {
+                                            <option value="@role.Id" selected="@(role.Id.ToString().Equals(ViewBag.RoleId?.ToString()) ? "selected" : null)">@role.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (User.HasPermission("ApprovalRoleCategory_Create"))
+            {
+                <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add Data</a>
+            }
+        </form>
     </div>
     <div class="table-responsive text-nowrap">
         <table class="table table-sm table-hover">
             <thead>
                 <tr>
                     <th class="text-center" style="width: 60px;">No</th>
-                    <th>Role Id</th>
-                    <th>Document Type</th>
-                    <th class="text-center" style="width: 80px;">Actions</th>
+                    <th>Approver Type</th>
+                    <th>Approver Name</th>
+                    <th>Role</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
                 </tr>
             </thead>
             <tbody class="table-border-bottom-0">
-                @if (Model.Count == 0)
+                @if (Model.Items.Count == 0)
                 {
                     <tr>
-                        <td colspan="4" class="text-muted text-center">No approval role categories configured.</td>
+                        <td colspan="5" class="text-muted text-center">No approval types configured.</td>
                     </tr>
                 }
                 else
                 {
-                    var rowNo = 0;
-                    @foreach (var item in Model)
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var group in Model.Items)
                     {
                         rowNo++;
                         <tr>
                             <td class="text-center">@rowNo</td>
-                            <td>@item.RoleId</td>
-                            <td>@item.DocumentType</td>
-                            <td class="text-center">
-                                @if (User.HasPermission("ApprovalRoleCategory_Delete"))
+                            <td class="fw-medium">@group.ApproverType</td>
+                            <td>@(group.Entries.FirstOrDefault()?.Description ?? "-")</td>
+                            <td>
+                                @foreach (var entry in group.Entries)
                                 {
-                                    <form method="post" asp-action="Delete" asp-route-id="@item.Id" class="d-inline" onsubmit="return confirm('Delete this approval role category?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-icon btn-label-danger" title="Delete">
-                                            <i class="ri ri-delete-bin-line"></i>
-                                        </button>
-                                    </form>
+                                    <span class="badge bg-label-secondary me-1">@(allRoles.FirstOrDefault(r => r.Id == entry.RoleId)?.Name ?? $"Role {entry.RoleId}")</span>
                                 }
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2 justify-content-center">
+                                    @if (User.HasPermission("ApprovalRoleCategory_Edit"))
+                                    {
+                                        <a asp-action="Edit" asp-route-approverType="@group.ApproverType" class="btn btn-icon btn-text-secondary"
+                                           data-bs-toggle="tooltip" title="Edit"><i class="ri ri-edit-line icon-14px"></i></a>
+                                    }
+                                    @if (User.HasPermission("ApprovalRoleCategory_Delete"))
+                                    {
+                                        <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                title="Delete" onclick="confirmDelete(this)" data-name="@group.ApproverType"
+                                                data-delete-url="@Url.Action("Delete", new { approverType = group.ApproverType })"><i
+                                            class="ri ri-delete-bin-line icon-14px"></i></button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
@@ -62,4 +130,13 @@
             </tbody>
         </table>
     </div>
+    @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
 </div>
+
+@await Html.PartialAsync("_DeleteConfirmModal", "Approver Type")
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initSelectpickers();
+    });
+</script>

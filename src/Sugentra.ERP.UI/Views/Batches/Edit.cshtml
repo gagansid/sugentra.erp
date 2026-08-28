@@ -3,6 +3,7 @@
     ViewData["Title"] = "Edit Batch";
     var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
     var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var hasStock = ViewBag.HasStock is bool hs && hs;
     var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-archive-2-line", new[]
     {
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
@@ -13,8 +14,17 @@
 
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
 
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-6 col-sm-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">@ViewData["Title"]</h5>
@@ -24,92 +34,151 @@
                      style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
                 <form id="batchForm" method="post" novalidate>
                     <input type="hidden" asp-for="Id" />
-                    <div class="row g-2 mb-3">
-                        <label asp-for="Code" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                        <div class="col-sm-9">
-                            <input asp-for="Code" class="form-control form-control-sm" required />
-                            <div class="invalid-feedback">Code is required.</div>
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="Code" class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Batch Code</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input asp-for="Code" class="form-control form-control-sm" required data-required-message="Batch code is required." />
+                            <span asp-validation-for="Code" class="text-danger small"></span>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <label class="col-sm-3 col-form-label col-form-label-sm">Item</label>
-                        <div class="col-sm-9">
-                            <select asp-for="ItemId" class="form-select form-select-sm" required>
+                    <div class="row g-2@(hasStock ? "" : " align-items-center")">
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Item</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select asp-for="ItemId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%" required data-required-message="Item is required."
+                                    disabled="@(hasStock ? "disabled" : null)">
+                                <option value="" selected disabled>-- Select Item --</option>
                                 @foreach (var item in items)
                                 {
                                     <option value="@item.Id">@item.Code - @item.Name</option>
                                 }
                             </select>
+                            @if (hasStock)
+                            {
+                                <input type="hidden" asp-for="ItemId" />
+                                <div class="form-text text-warning small mb-0">Item can't be changed: this batch already has stock recorded.</div>
+                            }
+                            <span asp-validation-for="ItemId" class="text-danger small"></span>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <label asp-for="Grade" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                        <div class="col-sm-9"><input asp-for="Grade" class="form-control form-control-sm" /></div>
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="Grade" class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Grade</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input asp-for="Grade" class="form-control form-control-sm" />
+                            <span asp-validation-for="Grade" class="text-danger small"></span>
+                        </div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <label class="col-sm-3 col-form-label col-form-label-sm">Warehouse</label>
-                        <div class="col-sm-9">
-                            <select asp-for="WarehouseId" class="form-select form-select-sm" required>
+                    <div class="row g-2@(hasStock ? "" : " align-items-center")">
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Warehouse</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select asp-for="WarehouseId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%" required data-required-message="Warehouse is required."
+                                    disabled="@(hasStock ? "disabled" : null)">
+                                <option value="" selected disabled>-- Select Warehouse --</option>
                                 @foreach (var w in warehouses)
                                 {
                                     <option value="@w.Id">@w.Code - @w.Name</option>
                                 }
                             </select>
+                            @if (hasStock)
+                            {
+                                <input type="hidden" asp-for="WarehouseId" />
+                                <div class="form-text text-warning small mb-0">Warehouse can't be changed: this batch already has stock recorded.</div>
+                            }
+                            <span asp-validation-for="WarehouseId" class="text-danger small"></span>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <label asp-for="ReceivedDate" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                        <div class="col-sm-9">
-                            <input asp-for="ReceivedDate" type="date" class="form-control form-control-sm" required />
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="ReceivedDate" class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Received Date</label>
+                        <div class="col-md-8 col-sm-8">
+                            <div class="input-group input-group-sm received-date-group">
+                                <input asp-for="ReceivedDate" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                       autocomplete="off" value="@Model.ReceivedDate.ToString("yyyy-MM-dd")" required data-required-message="Received date is required." />
+                                <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                            </div>
+                            <span asp-validation-for="ReceivedDate" class="text-danger small"></span>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <label asp-for="LegalityDocumentType" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                        <div class="col-sm-9">
-                            <select asp-for="LegalityDocumentType" class="form-select form-select-sm">
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="LegalityDocumentType" class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Legality Document Type</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select asp-for="LegalityDocumentType" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%">
                                 <option value="">-- None --</option>
-                                <option value="SVLK">SVLK</option>
-                                <option value="FSC">FSC</option>
+                                <option value="SVLK">SVLK - Sertifikasi Verifikasi Legalitas Kayu</option>
+                                <option value="FSC">FSC - Forest Stewardship Council</option>
                                 <option value="Other">Other</option>
                             </select>
+                            <span asp-validation-for="LegalityDocumentType" class="text-danger small"></span>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
-                        <label asp-for="LegalityDocumentNumber"
-                               class="col-sm-3 col-form-label col-form-label-sm"></label>
-                        <div class="col-sm-9"><input asp-for="LegalityDocumentNumber"
-                                                         class="form-control form-control-sm" /></div>
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="LegalityDocumentNumber" class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Legality Document Number</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input asp-for="LegalityDocumentNumber" class="form-control form-control-sm" />
+                            <span asp-validation-for="LegalityDocumentNumber" class="text-danger small"></span>
                         </div>
-                        <div class="row g-2 mb-3">
-                            <label asp-for="LegalityDocumentUrl" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                            <div class="col-sm-9"><input asp-for="LegalityDocumentUrl"
-                                                             class="form-control form-control-sm" /></div>
-                            </div>
-                            <div class="row g-2 mb-3">
-                                <label asp-for="SourceReference" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                                <div class="col-sm-9"><input asp-for="SourceReference" class="form-control form-control-sm" />
-                                </div>
-                            </div>
-                        </form>
                     </div>
-                    <div class="card-footer d-flex justify-content-end gap-2">
-                        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
-                        <button type="submit" form="batchForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="LegalityDocumentUrl" class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Legality Document URL</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input asp-for="LegalityDocumentUrl" class="form-control form-control-sm" />
+                            <span asp-validation-for="LegalityDocumentUrl" class="text-danger small"></span>
+                        </div>
                     </div>
-                </div>
+                    <div class="row g-2 align-items-center">
+                        <label asp-for="SourceReference" class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Source Reference</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input asp-for="SourceReference" class="form-control form-control-sm" />
+                            <span asp-validation-for="SourceReference" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                <button type="submit" form="batchForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
             </div>
         </div>
+    </div>
+</div>
 
-        @section Scripts {
-            <script>
-                document.getElementById('batchForm').addEventListener('submit', function (event) {
-                    var valid = true;
-                    this.querySelectorAll('[required]').forEach(function (field) {
-                        var isFieldValid = field.checkValidity();
-                        field.classList.toggle('is-invalid', !isFieldValid);
-                        valid = valid && isFieldValid;
-                    });
-                    if (!valid) { event.preventDefault(); event.stopPropagation(); }
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            initSelectpickers();
+            var form = document.getElementById('batchForm');
+            if (!form) return;
+
+            function fieldMessageEl(field) {
+                return field.closest('.col-md-8, .col-sm-8')?.querySelector('.text-danger');
+            }
+
+            function clearFieldMessage(field) {
+                if (!field.checkValidity()) return;
+                var msgEl = fieldMessageEl(field);
+                if (msgEl) msgEl.textContent = '';
+            }
+
+            initDateGroupPickers('.received-date-flatpickr', {
+                onChange: function (selectedDates, dateStr, instance) { clearFieldMessage(instance.input); }
+            });
+
+            form.querySelectorAll('[required]').forEach(function (field) {
+                field.addEventListener('input', function () { clearFieldMessage(field); });
+                field.addEventListener('change', function () { clearFieldMessage(field); });
+            });
+
+            form.addEventListener('submit', function (event) {
+                var valid = true;
+                form.querySelectorAll('[required]').forEach(function (field) {
+                    var isFieldValid = field.checkValidity();
+                    var msgEl = fieldMessageEl(field);
+                    if (msgEl) msgEl.textContent = isFieldValid ? '' : (field.dataset.requiredMessage || 'This field is required.');
+                    valid = valid && isFieldValid;
                 });
-            </script>
-        }
+                if (!valid) { event.preventDefault(); event.stopPropagation(); }
+            });
+        });
+    </script>
+}

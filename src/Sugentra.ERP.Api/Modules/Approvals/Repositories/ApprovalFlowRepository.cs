@@ -6,13 +6,13 @@ namespace Sugentra.ERP.Api.Modules.Approvals.Repositories;
 
 public interface IApprovalFlowRepository
 {
-    Task<IReadOnlyList<ApprovalFlowDefinition>> GetActiveByDocumentTypeAsync(string documentType);
+    Task<IReadOnlyList<ApprovalFlowDefinition>> GetActiveByApproverTypeAsync(string approverType);
     Task<IReadOnlyList<ApprovalFlowLevel>> GetLevelsAsync(long flowDefinitionId);
     Task<IReadOnlyList<ApprovalFlowLevelApprover>> GetApproversAsync(long flowLevelId);
     Task<IReadOnlyDictionary<long, IReadOnlyList<ApprovalFlowLevel>>> GetLevelsByFlowDefinitionIdsAsync(IEnumerable<long> flowDefinitionIds);
     Task<IReadOnlyDictionary<long, IReadOnlyList<ApprovalFlowLevelApprover>>> GetApproversByFlowLevelIdsAsync(IEnumerable<long> flowLevelIds);
     Task ReplaceLevelsAsync(long flowDefinitionId, IReadOnlyList<ApprovalFlowLevel> levels, IReadOnlyDictionary<int, List<ApprovalFlowLevelApprover>> approversByLevelNumber);
-    Task<bool> IsRoleAuthorizedForDocumentTypeAsync(long roleId, string documentType);
+    Task<bool> IsRoleAuthorizedForApproverTypeAsync(long roleId, string approverType);
 }
 
 public class ApprovalFlowRepository(
@@ -20,11 +20,11 @@ public class ApprovalFlowRepository(
     GenericRepository<ApprovalFlowLevel> levelRepository,
     GenericRepository<ApprovalFlowLevelApprover> approverRepository) : IApprovalFlowRepository
 {
-    public async Task<IReadOnlyList<ApprovalFlowDefinition>> GetActiveByDocumentTypeAsync(string documentType)
+    public async Task<IReadOnlyList<ApprovalFlowDefinition>> GetActiveByApproverTypeAsync(string approverType)
     {
         using var connection = connectionFactory.CreateConnection();
         return await connection.QueryListAsync<ApprovalFlowDefinition>(
-            ApprovalQueries.GetActiveFlowDefinitionsByDocumentTypeSql, new { DocumentType = documentType });
+            ApprovalQueries.GetActiveFlowDefinitionsByApproverTypeSql, new { ApproverType = approverType });
     }
 
     public async Task<IReadOnlyList<ApprovalFlowLevel>> GetLevelsAsync(long flowDefinitionId)
@@ -91,11 +91,11 @@ public class ApprovalFlowRepository(
         }
     }
 
-    public async Task<bool> IsRoleAuthorizedForDocumentTypeAsync(long roleId, string documentType)
+    public async Task<bool> IsRoleAuthorizedForApproverTypeAsync(long roleId, string approverType)
     {
         using var connection = connectionFactory.CreateConnection();
         var count = await connection.QueryScalarAsync<int>(
-            ApprovalQueries.IsRoleAuthorizedForDocumentTypeSql, new { RoleId = roleId, DocumentType = documentType });
+            ApprovalQueries.IsRoleAuthorizedForApproverTypeSql, new { RoleId = roleId, ApproverType = approverType });
         return count > 0;
     }
 }

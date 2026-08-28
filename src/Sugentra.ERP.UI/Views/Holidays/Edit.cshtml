@@ -1,0 +1,62 @@
+@model Sugentra.ERP.UI.Models.Settings.Holiday
+@{
+    ViewData["Title"] = "Holiday";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-settings-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Settings", Url.Action("Index", "Workspace", new { id = "Settings" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Holidays", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Holiday</h5>
+            </div>
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
+                     style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+                <form id="holidayForm" method="post" novalidate>
+                    <input type="hidden" asp-for="Id" />
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Date" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Date" type="date" class="form-control form-control-sm"
+                                   value="@Model.Date.ToString("yyyy-MM-dd")" required />
+                            <div class="invalid-feedback">Date is required.</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <label asp-for="Name" class="col-sm-3 col-form-label col-form-label-sm"></label>
+                        <div class="col-sm-9">
+                            <input asp-for="Name" class="form-control form-control-sm" required />
+                            <div class="invalid-feedback">Name is required.</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                <button type="submit" form="holidayForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('holidayForm').addEventListener('submit', function (event) {
+            this.querySelectorAll('[required]').forEach(function (field) {
+                field.classList.toggle('is-invalid', !field.checkValidity());
+            });
+            if (!this.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    </script>
+}

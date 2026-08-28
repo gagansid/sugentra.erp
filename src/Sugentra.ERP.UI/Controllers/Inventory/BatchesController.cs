@@ -17,6 +17,29 @@ public class BatchesController(BatchApiService service, ItemApiService itemServi
         ViewBag.Warehouses = (await warehouseService.GetAllAsync()).Data ?? [];
     }
 
+    /// <summary>Maps the API's field-&gt;messages error dictionary onto ModelState so views can show per-field messages.</summary>
+    private void ApplyValidationErrors(object? errors, string? fallbackMessage)
+    {
+        var applied = false;
+        if (errors is System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.Object } element)
+        {
+            foreach (var field in element.EnumerateObject())
+            {
+                if (field.Value.ValueKind != System.Text.Json.JsonValueKind.Array) continue;
+                foreach (var message in field.Value.EnumerateArray())
+                {
+                    ModelState.AddModelError(field.Name, message.GetString() ?? "Invalid value.");
+                    applied = true;
+                }
+            }
+        }
+
+        if (!applied)
+        {
+            ModelState.AddModelError(string.Empty, fallbackMessage ?? "Failed to save batch.");
+        }
+    }
+
     public async Task<IActionResult> Index(string? keyword = null, int page = 1, int pageSize = 10, long? warehouseId = null, DateTime? dateFrom = null, DateTime? dateTo = null)
     {
         var result = await service.GetAllAsync();
@@ -77,7 +100,7 @@ public class BatchesController(BatchApiService service, ItemApiService itemServi
         var result = await service.CreateAsync(model);
         if (!result.Success)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "Failed to create batch.");
+            ApplyValidationErrors(result.Errors, result.Message ?? "Failed to create batch.");
             await PopulateLookupsAsync();
             return View(model);
         }
@@ -97,6 +120,7 @@ public class BatchesController(BatchApiService service, ItemApiService itemServi
         }
 
         await PopulateLookupsAsync();
+        ViewBag.HasStock = (await service.HasStockAsync(id)).Data;
         return View(result.Data);
     }
 
@@ -108,8 +132,9 @@ public class BatchesController(BatchApiService service, ItemApiService itemServi
         var result = await service.UpdateAsync(id, model);
         if (!result.Success)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "Failed to update batch.");
+            ApplyValidationErrors(result.Errors, result.Message ?? "Failed to update batch.");
             await PopulateLookupsAsync();
+            ViewBag.HasStock = (await service.HasStockAsync(id)).Data;
             return View(model);
         }
 
@@ -136,7 +161,15 @@ public class BatchesController(BatchApiService service, ItemApiService itemServi
     public async Task<IActionResult> Delete(long id)
     {
         var result = await service.DeleteAsync(id);
-        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        if (result.Success)
+        {
+            TempData["SuccessMessage"] = result.Message ?? "Batch deleted successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? "Batch cannot be deleted because it still has stock or related records.";
+        }
+
         return RedirectToAction(nameof(Index));
     }
 }

@@ -1,8 +1,12 @@
 using Sugentra.ERP.UI.Models.Inventory;
+using Sugentra.ERP.UI.Models.Approvals;
 
 namespace Sugentra.ERP.UI.Services.Inventory;
 
-public class BatchApiService(ApiClient apiClient) : CrudApiService<Batch>(apiClient, "api/inventory/batches");
+public class BatchApiService(ApiClient apiClient) : CrudApiService<Batch>(apiClient, "api/inventory/batches")
+{
+    public Task<ApiResult<bool>> HasStockAsync(long id) => ApiClient.GetAsync<bool>($"api/inventory/batches/{id}/has-stock");
+}
 
 public class LandedCostAllocationApiService(ApiClient apiClient) : CrudApiService<LandedCostAllocation>(apiClient, "api/inventory/landed-cost-allocations");
 
@@ -23,6 +27,8 @@ public class GoodsReceiptApiService(ApiClient apiClient)
     public Task<ApiResult<bool>> DeleteAsync(long id) => apiClient.DeleteAsync($"{BaseRoute}/{id}");
 
     public Task<ApiResult<GoodsReceiptAdjacentDto>> GetAdjacentAsync(long id) => apiClient.GetAsync<GoodsReceiptAdjacentDto>($"{BaseRoute}/{id}/adjacent");
+
+    public Task<ApiResult<IReadOnlyList<ApprovalHistoryEntry>>> GetApprovalHistoryAsync(long id) => apiClient.GetAsync<IReadOnlyList<ApprovalHistoryEntry>>($"{BaseRoute}/{id}/approval-history");
 }
 
 public class QuarantineHoldApiService(ApiClient apiClient) : CrudApiService<QuarantineHold>(apiClient, "api/inventory/quarantine-holds");

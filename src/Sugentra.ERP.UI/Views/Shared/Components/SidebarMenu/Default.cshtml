@@ -48,9 +48,15 @@
           <div>Dashboard</div>
         </a>
       </li>
-      <li class="menu-header small text-uppercase">
-        <span class="menu-header-text">@activeModuleGroup.ModuleName</span>
-      </li>
+      @* Modules whose own first item is already a header divider (Controller is null, e.g. Approvals'
+         "Approvals"/"Settings"/"Reports" sub-groups) skip this generic module-name header to avoid a
+         duplicate; modules with a flat item list still get their module name as the header. *@
+      @if (activeModuleGroup.Items.FirstOrDefault()?.Controller is not null)
+      {
+        <li class="menu-header small text-uppercase">
+          <span class="menu-header-text">@activeModuleGroup.ModuleName</span>
+        </li>
+      }
       @foreach (var item in activeModuleGroup.Items)
       {
         @await Html.PartialAsync("~/Views/Shared/Components/SidebarMenu/_MenuNode.cshtml", item)

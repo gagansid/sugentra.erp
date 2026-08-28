@@ -18,13 +18,15 @@ public class GoodsReceiptUseCase(
     IItemDirectoryService itemDirectoryService,
     IDocumentNumberGeneratorService documentNumberGeneratorService,
     IApprovalService approvalService,
+    IUserDirectoryService userDirectoryService,
     IAuditLogService auditLogService,
     ICurrentUserService currentUserService)
 {
     public async Task<IReadOnlyList<GoodsReceiptResponse>> GetAllAsync()
     {
         var receipts = await receiptRepository.GetAllAsync();
-        return await Task.WhenAll(receipts.Select(ToResponseAsync));
+        var userCache = await ResolveCreatedByUsersAsync(receipts.Select(r => r.CreatedBy));
+        return await Task.WhenAll(receipts.Select(r => ToResponseAsync(r, userCache)));
     }
 
     public async Task<GoodsReceiptResponse?> GetByIdAsync(long id)
@@ -297,10 +299,30 @@ public class GoodsReceiptUseCase(
 
     private async Task<GoodsReceiptResponse> ToResponseAsync(GoodsReceipt receipt)
     {
+        var userCache = await ResolveCreatedByUsersAsync([receipt.CreatedBy]);
+        return await ToResponseAsync(receipt, userCache);
+    }
+
+    private async Task<GoodsReceiptResponse> ToResponseAsync(GoodsReceipt receipt, IReadOnlyDictionary<long, UserDirectoryEntry> userCache)
+    {
         var lines = await lineRepository.GetByReceiptIdAsync(receipt.Id);
         var lineResponses = lines.Select(l => new GoodsReceiptLineResponse(l.Id, l.ItemId, l.BatchId, l.Quantity, l.UnitCost)).ToList();
+        var createdByUser = receipt.CreatedBy.HasValue && userCache.TryGetValue(receipt.CreatedBy.Value, out var user) ? user : null;
         return new GoodsReceiptResponse(
             receipt.Id, receipt.ReceiptNumber, receipt.WarehouseId, receipt.VendorReference, receipt.ReceiptDate,
-            receipt.Status, receipt.CurrentApprovalLevel, receipt.Notes, receipt.CreatedAt, lineResponses);
+            receipt.Status, receipt.CurrentApprovalLevel, receipt.Notes, receipt.CreatedAt, receipt.CreatedBy,
+            createdByUser?.FullName, lineResponses);
+    }
+
+    // Resolves each distinct CreatedBy id once (IUserDirectoryService has no batch lookup) to avoid N+1 calls on list endpoints.
+    private async Task<IReadOnlyDictionary<long, UserDirectoryEntry>> ResolveCreatedByUsersAsync(IEnumerable<long?> createdByIds)
+    {
+        var distinctIds = createdByIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+        if (distinctIds.Count == 0) return new Dictionary<long, UserDirectoryEntry>();
+
+        var users = await Task.WhenAll(distinctIds.Select(userDirectoryService.GetByIdAsync));
+        return distinctIds.Zip(users, (id, user) => (id, user))
+            .Where(x => x.user is not null)
+            .ToDictionary(x => x.id, x => x.user!);
     }
 }

@@ -48,15 +48,16 @@
                 </div>
             </div>
             <div class="row g-2">
-                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Warehouse</label>
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Warehouse</label>
                 <div class="col-md-4 col-sm-8">
                     <select name="warehouseId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
-                            data-style="btn-default" data-width="100%" required>
+                            data-style="btn-default" data-width="100%" required data-required-message="Warehouse is required.">
                         @foreach (var w in warehouses)
                         {
                             <option value="@w.Id" selected="@(w.Id == Model.WarehouseId ? "selected" : null)">@w.Code - @w.Name</option>
                         }
                     </select>
+                    <div class="text-danger small line-error"></div>
                 </div>
             </div>
             <div class="row g-2">
@@ -64,15 +65,16 @@
                 <div class="col-md-4 col-sm-8"><input name="vendorReference" class="form-control form-control-sm" value="@Model.VendorReference" /></div>
             </div>
             <div class="row g-2">
-                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Receipt Date</label>
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Receipt Date</label>
                 <div class="col-md-4 col-sm-8">
                     <div class="input-group input-group-sm receipt-date-group">
                         <input name="receiptDate" type="text"
                                class="form-control form-control-sm receipt-date-flatpickr"
                                autocomplete="off" value="@Model.ReceiptDate.ToString("yyyy-MM-dd HH:mm")"
-                               required />
+                               required data-required-message="Receipt date is required." />
                         <span class="input-group-text receipt-date-toggle"><i class="ri ri-calendar-line"></i></span>
                     </div>
+                    <div class="text-danger small line-error"></div>
                 </div>
                 </div>
                 <div class="row g-2">
@@ -82,13 +84,20 @@
                 </div>
 
             <h6 class="mb-3">Lines</h6>
+            <div class="row g-2 mb-1">
+                <label class="col-md-2 form-label mb-0 small required-label">Batch</label>
+                <label class="col-md-4 form-label mb-0 small">Item</label>
+                <label class="col-md-3 form-label mb-0 small required-label">Quantity</label>
+                <label class="col-md-3 form-label mb-0 small required-label">Unit Cost</label>
+            </div>
             <div id="lines">
                 @foreach (var line in Model.Lines)
                 {
                     <div class="row g-2 mb-2 line-row">
                         <div class="col-md-2">
                             <select name="batchId" class="selectpicker form-control form-control-sm gr-select batch-select"
-                                    data-live-search="true" data-style="btn-default" data-width="100%" required>
+                                    data-live-search="true" data-style="btn-default" data-width="100%" required
+                                    data-required-message="Batch is required.">
                                 <option value="">-- Select Batch --</option>
                                 @foreach (var batch in batches)
                                 {
@@ -96,7 +105,7 @@
                                             selected="@(batch.Id == line.BatchId ? "selected" : null)">@batch.Code</option>
                                 }
                             </select>
-                            <div class="invalid-feedback">Batch is required.</div>
+                            <div class="text-danger small line-error"></div>
                         </div>
                         <div class="col-md-4">
                             <select name="itemId" class="selectpicker form-control form-control-sm gr-select item-select"
@@ -108,22 +117,25 @@
                                 }
                             </select>
                             <input type="hidden" name="itemId" class="item-hidden" value="@line.ItemId" />
+                            <div class="text-danger small line-error item-error"></div>
                         </div>
                         <div class="col-md-3">
                             <input name="quantity" type="number" step="0.01" class="form-control form-control-sm"
-                                   value="@line.Quantity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" required />
-                            <div class="invalid-feedback">Quantity is required.</div>
+                                   value="@line.Quantity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" required
+                                   data-required-message="Quantity is required." />
+                            <div class="text-danger small line-error"></div>
                         </div>
                         <div class="col-md-3">
                             <div class="input-group input-group-sm has-validation unit-cost-group">
                                 <input name="unitCost" type="number" step="0.01" class="form-control form-control-sm"
-                                       value="@line.UnitCost.ToString(System.Globalization.CultureInfo.InvariantCulture)" required />
+                                       value="@line.UnitCost.ToString(System.Globalization.CultureInfo.InvariantCulture)" required
+                                       data-required-message="Unit cost is required." />
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-line" data-bs-toggle="tooltip"
                                         title="Remove">
                                     <i class="ri ri-delete-bin-line icon-14px"></i>
                                 </button>
                             </div>
-                            <div class="invalid-feedback">Unit cost is required.</div>
+                            <div class="text-danger small line-error"></div>
                         </div>
                     </div>
                 }
@@ -174,6 +186,12 @@
             });
         });
 
+        // Shows the small `data-required-message` text under a required field, or clears it when valid.
+        function setFieldError(field, message) {
+            var errorEl = field.closest('.col-md-2, .col-md-3, .col-md-4, .col-sm-8')?.querySelector('.line-error');
+            if (errorEl) errorEl.textContent = message || '';
+        }
+
         function syncItemFromBatch(row) {
             var batchSelect = row.querySelector('select.batch-select');
             var itemSelect = row.querySelector('select.item-select');
@@ -183,6 +201,10 @@
             $(itemSelect).val(itemId);
             rerenderSelectPicker($(itemSelect));
             itemHidden.value = itemId;
+            if (itemId) {
+                var itemErrorEl = row.querySelector('.item-error');
+                if (itemErrorEl) itemErrorEl.textContent = '';
+            }
         }
 
         // A batch already picked in another line can't be picked again (one batch = one line).
@@ -234,22 +256,30 @@
                 row.querySelector('.item-hidden').value = '';
                 $(row).find('select.batch-select, select.item-select').val('');
                 rerenderSelectPicker($(row).find('select.batch-select, select.item-select'));
+                row.querySelectorAll('.line-error').forEach(function (el) { el.textContent = ''; });
             }
             refreshBatchOptions();
         });
 
         refreshBatchOptions();
 
+        // Clears a required field's message as soon as it becomes valid, so it works for
+        // rows added later by #addLine (delegated on the form, not bound per-element).
+        $('#receiptForm').on('change input', 'select.batch-select, select[name="warehouseId"], input[required]', function () {
+            if (this.checkValidity()) setFieldError(this, '');
+        });
+
         document.getElementById('receiptForm').addEventListener('submit', function (event) {
             var valid = true;
             this.querySelectorAll('[required]').forEach(function (field) {
                 var isFieldValid = field.checkValidity();
-                field.classList.toggle('is-invalid', !isFieldValid);
+                setFieldError(field, isFieldValid ? '' : field.dataset.requiredMessage);
                 valid = valid && isFieldValid;
             });
             document.querySelectorAll('.item-hidden').forEach(function (hidden) {
                 var isValid = !!hidden.value;
-                hidden.closest('.line-row').querySelector('select.item-select').classList.toggle('is-invalid', !isValid);
+                var itemErrorEl = hidden.closest('.line-row').querySelector('.item-error');
+                if (itemErrorEl) itemErrorEl.textContent = isValid ? '' : 'Item is required: select a batch first.';
                 valid = valid && isValid;
             });
             if (!valid) { event.preventDefault(); event.stopPropagation(); }

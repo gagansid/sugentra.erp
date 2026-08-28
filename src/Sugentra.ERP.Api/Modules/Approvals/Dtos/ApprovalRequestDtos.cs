@@ -1,5 +1,7 @@
 namespace Sugentra.ERP.Api.Modules.Approvals.Dtos;
 
+using System.ComponentModel.DataAnnotations;
+
 public record ApprovalRequestLevelResponse(
     int LevelNumber,
     string Name,
@@ -24,7 +26,10 @@ public record ApprovalRequestResponse(
     IReadOnlyList<ApprovalRequestLevelResponse> Levels,
     IReadOnlyList<ApprovalRequestActionResponse> History);
 
-public record ApprovalActionRequest(bool Approve, string? Comment);
+public record ApprovalActionRequest(
+    bool Approve,
+    [Required, StringLength(8000, MinimumLength = 1)]
+    string Comment);
 
 // One row in the "My Approvals" inbox — a request currently waiting on the acting user at its current level.
 public record ApprovalInboxItem(
@@ -35,4 +40,19 @@ public record ApprovalInboxItem(
     int CurrentLevelNumber,
     string LevelName,
     long RequestedBy,
-    DateTime RequestedAt);
+    DateTime RequestedAt,
+    string ApproverTypeName,
+    int AgingDays);
+
+// Raw shape materialized directly from GetInboxForUserSql — AgingDays (business-day aware) is computed
+// afterwards in ApprovalRequestUseCase, not in SQL, since it needs the holiday calendar.
+public record ApprovalInboxRow(
+    long RequestId,
+    string DocumentType,
+    long DocumentId,
+    string DocumentNumber,
+    int CurrentLevelNumber,
+    string LevelName,
+    long RequestedBy,
+    DateTime RequestedAt,
+    string ApproverTypeName);

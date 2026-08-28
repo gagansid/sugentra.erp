@@ -24,7 +24,7 @@
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"
                      style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
                 <form id="quarantineHoldForm" method="post" novalidate>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 align-items-center">
                         <label class="col-sm-3 col-form-label col-form-label-sm">Item</label>
                         <div class="col-sm-9">
                             <select asp-for="ItemId" class="form-select form-select-sm" required>
@@ -35,7 +35,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 align-items-center">
                         <label class="col-sm-3 col-form-label col-form-label-sm">Batch (optional)</label>
                         <div class="col-sm-9">
                             <select asp-for="BatchId" class="form-select form-select-sm">
@@ -47,7 +47,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 align-items-center">
                         <label class="col-sm-3 col-form-label col-form-label-sm">Warehouse</label>
                         <div class="col-sm-9">
                             <select asp-for="WarehouseId" class="form-select form-select-sm" required>
@@ -58,7 +58,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 align-items-center">
                         <label class="col-sm-3 col-form-label col-form-label-sm">Hold Reason</label>
                         <div class="col-sm-9">
                             <select asp-for="HoldReason" class="form-select form-select-sm" required>
@@ -68,7 +68,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row g-2 mb-3">
+                    <div class="row g-2 align-items-center">
                         <label asp-for="Notes" class="col-sm-3 col-form-label col-form-label-sm"></label>
                         <div class="col-sm-9"><textarea asp-for="Notes" class="form-control form-control-sm"
                                                             rows="2"></textarea></div>

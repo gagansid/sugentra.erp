@@ -31,7 +31,8 @@ public class StockBalanceRepository(IDbConnectionFactory connectionFactory)
     {
         using var connection = ConnectionFactory.CreateConnection();
         const string sql = """
-            SELECT ISNULL(SUM(Quantity), 0) FROM Inventory_StockBalances
+            SELECT ISNULL(SUM(QuantityOnHand + QuantityReserved + QuantityInQuarantine), 0)
+            FROM Inventory_StockBalances
             WHERE BatchId = @BatchId AND IsDeleted = 0
             """;
         return await connection.QueryScalarAsync<decimal>(sql, new { BatchId = batchId });

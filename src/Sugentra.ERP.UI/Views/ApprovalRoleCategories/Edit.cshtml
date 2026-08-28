@@ -1,0 +1,107 @@
+@model Sugentra.ERP.UI.Models.Approvals.ApprovalRoleCategoryGroupViewModel
+@inject Sugentra.ERP.UI.Services.Settings.ModuleIconLookupService ModuleIconLookup
+@{
+    ViewData["Title"] = "Edit Approver Role";
+    var allRoles = (ViewData["AllRoles"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.RoleListItemDto>) ?? [];
+    var selectedRoleIds = Model.Entries.Select(e => e.RoleId).ToHashSet();
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel(await ModuleIconLookup.GetIconAsync("Approvals"), new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approval Types", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+}
+
+<div class="row">
+    <div class="col-md-6 col-sm-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">@ViewData["Title"]</h5>
+            </div>
+            <div class="card-body">
+                <form id="roleCategoryEditForm" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="originalApproverType" value="@Model.ApproverType" />
+                    <div class="row g-2 align-items-center">
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Approver Type</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input type="text" name="approverType" class="form-control form-control-sm" required value="@Model.ApproverType" data-required-message="Approver type is required." />
+                            <span class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="row g-2 align-items-center">
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Approver Name</label>
+                        <div class="col-md-8 col-sm-8">
+                            <input type="text" name="description" class="form-control form-control-sm" required value="@(Model.Entries.FirstOrDefault()?.Description)" placeholder="e.g. Goods Receipt Approvers" data-required-message="Approver name is required." />
+                            <span class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="row g-2 align-items-center">
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Role(s)</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select name="roleIds" class="selectpicker form-control form-control-sm" multiple data-live-search="true"
+                                    data-style="btn-default" data-width="100%" data-container="body" required
+                                    data-required-message="Select at least one role.">
+                                @foreach (var role in allRoles)
+                                {
+                                    <option value="@role.Id" selected="@(selectedRoleIds.Contains(role.Id) ? "selected" : null)">@role.Name</option>
+                                }
+                            </select>
+                            <span class="text-danger small"></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                <button type="submit" form="roleCategoryEditForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            initSelectpickers();
+            var form = document.getElementById('roleCategoryEditForm');
+            if (!form) return;
+
+            function fieldMessageEl(field) {
+                return field.closest('.col-md-8, .col-sm-8')?.querySelector('.text-danger');
+            }
+
+            function clearFieldMessage(field) {
+                if (!field.checkValidity()) return;
+                var msgEl = fieldMessageEl(field);
+                if (msgEl) msgEl.textContent = '';
+            }
+
+            form.querySelectorAll('[required]').forEach(function (field) {
+                field.addEventListener('input', function () { clearFieldMessage(field); });
+                field.addEventListener('change', function () { clearFieldMessage(field); });
+            });
+
+            form.addEventListener('submit', function (event) {
+                var valid = true;
+                form.querySelectorAll('[required]').forEach(function (field) {
+                    var isFieldValid = field.checkValidity();
+                    var msgEl = fieldMessageEl(field);
+                    if (msgEl) msgEl.textContent = isFieldValid ? '' : (field.dataset.requiredMessage || 'This field is required.');
+                    valid = valid && isFieldValid;
+                });
+                if (!valid) { event.preventDefault(); event.stopPropagation(); }
+            });
+        });
+    </script>
+}
+

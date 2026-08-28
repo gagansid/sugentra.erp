@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sugentra.ERP.UI.Models;
 using Sugentra.ERP.UI.Models.Approvals;
 using Sugentra.ERP.UI.Models.Identity;
 using Sugentra.ERP.UI.Services.Approvals;
@@ -8,27 +9,64 @@ using Sugentra.ERP.UI.Services.Identity;
 namespace Sugentra.ERP.UI.Controllers.Approvals;
 
 [Authorize(Policy = "ApprovalFlow_View")]
-public class ApprovalFlowsController(ApprovalFlowApiService service, RoleApiService roleApiService, UserApiService userApiService) : Controller
+public class ApprovalFlowsController(ApprovalFlowApiService service, RoleApiService roleApiService, UserApiService userApiService, ApprovalRoleCategoryApiService roleCategoryService) : Controller
 {
     private async Task PopulateRolesAsync()
     {
         var roles = await roleApiService.GetPagedAsync(new RoleListRequest(null, 1, int.MaxValue));
-        ViewData["AllRoles"] = roles.Data?.Items ?? [];
+        var allRoles = roles.Data?.Items ?? [];
 
         var users = await userApiService.GetPagedAsync(new UserListRequest(Page: 1, PageSize: int.MaxValue));
         ViewData["AllUsers"] = users.Data?.Items ?? [];
+
+        var roleCategories = (await roleCategoryService.GetAllAsync()).Data ?? [];
+
+        // Only roles configured as an Approver Role (Settings > Approval Types) are eligible to be picked in a flow level.
+        var configuredRoleIds = roleCategories.Select(rc => rc.RoleId).ToHashSet();
+        ViewData["AllRoles"] = allRoles.Where(r => configuredRoleIds.Contains(r.Id)).ToList();
+
+        ViewData["ApproverTypes"] = roleCategories
+            .GroupBy(rc => rc.ApproverType)
+            .Select(g => new ApproverTypeOption(g.Key, g.First().Description))
+            .OrderBy(x => x.ApproverType)
+            .ToList();
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? keyword = null, bool? isActive = null, int page = 1, int pageSize = 10)
     {
         var result = await service.GetAllAsync();
         if (!result.Success)
         {
             TempData["ErrorMessage"] = result.Message;
-            return View(new List<ApprovalFlowDefinitionResponse>());
+            return View(new PagedResult<ApprovalFlowDefinitionResponse>());
         }
 
-        return View(result.Data ?? []);
+        var flows = (result.Data ?? []).AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            flows = flows.Where(f =>
+                f.ApproverType.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                f.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (isActive.HasValue)
+        {
+            flows = flows.Where(f => f.IsActive == isActive.Value);
+        }
+
+        var flowList = flows.ToList();
+
+        ViewBag.Keyword = keyword;
+        ViewBag.IsActive = isActive;
+
+        return View(new PagedResult<ApprovalFlowDefinitionResponse>
+        {
+            Items = flowList.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = flowList.Count
+        });
     }
 
     [Authorize(Policy = "ApprovalFlow_Create")]
@@ -42,12 +80,12 @@ public class ApprovalFlowsController(ApprovalFlowApiService service, RoleApiServ
     [Authorize(Policy = "ApprovalFlow_Create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        string documentType, string name, decimal? minAmount, decimal? maxAmount, long? currencyId, long? warehouseId,
+        string approverType, string name, decimal? minAmount, decimal? maxAmount, long? currencyId, long? warehouseId,
         int priority, bool isActive, List<int> levelNumber, List<string> levelName, List<bool> requireAllApprovers,
         List<string?> roleIds, List<string?> userIds)
     {
         var request = new SaveApprovalFlowDefinitionRequest(
-            documentType, name, minAmount, maxAmount, currencyId, warehouseId, priority, isActive,
+            approverType, name, minAmount, maxAmount, currencyId, warehouseId, priority, isActive,
             BuildLevels(levelNumber, levelName, requireAllApprovers, roleIds, userIds));
 
         var result = await service.CreateAsync(request);
@@ -79,12 +117,12 @@ public class ApprovalFlowsController(ApprovalFlowApiService service, RoleApiServ
     [Authorize(Policy = "ApprovalFlow_Edit")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
-        long id, string documentType, string name, decimal? minAmount, decimal? maxAmount, long? currencyId, long? warehouseId,
+        long id, string approverType, string name, decimal? minAmount, decimal? maxAmount, long? currencyId, long? warehouseId,
         int priority, bool isActive, List<int> levelNumber, List<string> levelName, List<bool> requireAllApprovers,
         List<string?> roleIds, List<string?> userIds)
     {
         var request = new SaveApprovalFlowDefinitionRequest(
-            documentType, name, minAmount, maxAmount, currencyId, warehouseId, priority, isActive,
+            approverType, name, minAmount, maxAmount, currencyId, warehouseId, priority, isActive,
             BuildLevels(levelNumber, levelName, requireAllApprovers, roleIds, userIds));
 
         var result = await service.UpdateAsync(id, request);

@@ -9,11 +9,11 @@ public class Batch : BaseAuditableEntity
 {
     [Required, StringLength(50)]
     public string Code { get; set; } = string.Empty;
-    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "Item is required.")]
     public long ItemId { get; set; }
     [StringLength(50)]
     public string? Grade { get; set; }
-    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "Warehouse is required.")]
     public long WarehouseId { get; set; }
     [Required]
     public DateTime ReceivedDate { get; set; }

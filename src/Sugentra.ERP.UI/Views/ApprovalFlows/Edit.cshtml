@@ -1,7 +1,8 @@
 @model Sugentra.ERP.UI.Models.Approvals.ApprovalFlowDefinitionResponse
+@inject Sugentra.ERP.UI.Services.Settings.ModuleIconLookupService ModuleIconLookup
 @{
     ViewData["Title"] = "Edit Approval Flow";
-    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-git-branch-line", new[]
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel(await ModuleIconLookup.GetIconAsync("Approvals"), new[]
     {
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approvals", Url.Action("Index", "Workspace", new { id = "Approvals" })),
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Approval Flows", Url.Action("Index")),
@@ -10,4 +11,12 @@
 }
 
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+}
+
 @await Html.PartialAsync("_Form", Model)

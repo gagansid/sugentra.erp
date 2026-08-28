@@ -8,6 +8,15 @@
     var hasChildren = Model.Children.Count > 0;
     var currentModuleCode = ViewData["CurrentModuleCode"] as string;
 }
+@if (Model.Controller is null && !hasChildren)
+{
+    // A menu-only divider (no link target) - used to sub-group items within a module, e.g. "Settings"/"Reports".
+    <li class="menu-header small text-uppercase">
+        <span class="menu-header-text">@Model.Name</span>
+    </li>
+}
+else
+{
 <li class="menu-item @(isActive ? "active" : "") @(hasChildren ? "open" : "")">
     @if (hasChildren)
     {
@@ -38,3 +47,5 @@
         </a>
     }
 </li>
+}
+

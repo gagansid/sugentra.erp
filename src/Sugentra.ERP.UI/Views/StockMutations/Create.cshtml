@@ -19,7 +19,7 @@
     </div>
     <div class="card-body">
         <form id="mutationForm" method="post" novalidate>
-            <div class="row g-2 mb-3">
+            <div class="row g-2 align-items-center">
                 <label class="col-sm-3 col-form-label col-form-label-sm">Mutation Type</label>
                 <div class="col-sm-9">
                     <select name="mutationType" class="form-select form-select-sm" required>
@@ -29,7 +29,7 @@
                     </select>
                 </div>
             </div>
-            <div class="row g-2 mb-3">
+            <div class="row g-2 align-items-center">
                 <label class="col-sm-3 col-form-label col-form-label-sm">Source Warehouse</label>
                 <div class="col-sm-9">
                     <select name="sourceWarehouseId" class="form-select form-select-sm" required>
@@ -40,7 +40,7 @@
                     </select>
                 </div>
             </div>
-            <div class="row g-2 mb-3">
+            <div class="row g-2 align-items-center">
                 <label class="col-sm-3 col-form-label col-form-label-sm">Destination Warehouse</label>
                 <div class="col-sm-9">
                     <select name="destinationWarehouseId" class="form-select form-select-sm">
@@ -52,16 +52,16 @@
                     </select>
                 </div>
             </div>
-            <div class="row g-2 mb-3">
+            <div class="row g-2 align-items-center">
                 <label class="col-sm-3 col-form-label col-form-label-sm">Vendor Reference</label>
                 <div class="col-sm-9"><input name="vendorReference" class="form-control form-control-sm" /></div>
             </div>
-            <div class="row g-2 mb-3">
+            <div class="row g-2 align-items-center">
                 <label class="col-sm-3 col-form-label col-form-label-sm">Mutation Date</label>
                 <div class="col-sm-9"><input name="mutationDate" type="date" class="form-control form-control-sm"
                                                  value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
                 </div>
-                <div class="row g-2 mb-3">
+                <div class="row g-2 align-items-center">
                     <label class="col-sm-3 col-form-label col-form-label-sm">Notes</label>
                     <div class="col-sm-9"><textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
                     </div>

@@ -4,12 +4,13 @@ using Sugentra.ERP.Api.Modules.Inventory.Dtos;
 using Sugentra.ERP.Api.Modules.Inventory.Queries;
 using Sugentra.ERP.Api.Modules.Inventory.UseCases;
 using Sugentra.ERP.Api.Shared.Common;
+using Sugentra.ERP.Api.Shared.Contracts;
 
 namespace Sugentra.ERP.Api.Modules.Inventory.Controllers;
 
 [Route("api/inventory/goods-receipts")]
 [Authorize]
-public class GoodsReceiptsController(GoodsReceiptUseCase useCase, GoodsReceiptListQuery listQuery) : ApiControllerBase
+public class GoodsReceiptsController(GoodsReceiptUseCase useCase, GoodsReceiptListQuery listQuery, IApprovalService approvalService) : ApiControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "GoodsReceipt_View")]
@@ -18,6 +19,10 @@ public class GoodsReceiptsController(GoodsReceiptUseCase useCase, GoodsReceiptLi
     [HttpGet("{id:long}/adjacent")]
     [Authorize(Policy = "GoodsReceipt_View")]
     public async Task<IActionResult> GetAdjacent(long id) => Success(await listQuery.GetAdjacentAsync(id));
+
+    [HttpGet("{id:long}/approval-history")]
+    [Authorize(Policy = "GoodsReceipt_View")]
+    public async Task<IActionResult> GetApprovalHistory(long id) => Success(await approvalService.GetHistoryAsync("GoodsReceipt", id));
 
     [HttpGet("{id:long}")]
     [Authorize(Policy = "GoodsReceipt_View")]

@@ -3,9 +3,9 @@ namespace Sugentra.ERP.Api.Modules.Approvals.Queries;
 // SQL text only — no execution here (Queries convention, see AGENTS.md).
 public static class ApprovalQueries
 {
-    public const string GetActiveFlowDefinitionsByDocumentTypeSql = """
+    public const string GetActiveFlowDefinitionsByApproverTypeSql = """
         SELECT * FROM Approval_FlowDefinitions
-        WHERE DocumentType = @DocumentType AND IsActive = 1 AND IsDeleted = 0
+        WHERE ApproverType = @ApproverType AND IsActive = 1 AND IsDeleted = 0
         ORDER BY Priority DESC, Id ASC
         """;
 
@@ -33,6 +33,12 @@ public static class ApprovalQueries
         SELECT TOP 1 * FROM Approval_Requests
         WHERE DocumentType = @DocumentType AND DocumentId = @DocumentId AND Status = 'Pending' AND IsDeleted = 0
         ORDER BY Id DESC
+        """;
+
+    public const string GetRequestsByDocumentSql = """
+        SELECT * FROM Approval_Requests
+        WHERE DocumentType = @DocumentType AND DocumentId = @DocumentId AND IsDeleted = 0
+        ORDER BY RequestedAt ASC
         """;
 
     public const string GetRequestByIdSql = "SELECT * FROM Approval_Requests WHERE Id = @Id AND IsDeleted = 0";
@@ -72,18 +78,19 @@ public static class ApprovalQueries
         WHERE RequestId = @RequestId AND LevelNumber = @LevelNumber AND ApproverUserId = @UserId
         """;
 
-    public const string IsRoleAuthorizedForDocumentTypeSql = """
+    public const string IsRoleAuthorizedForApproverTypeSql = """
         SELECT COUNT(1) FROM Approval_RoleCategories
-        WHERE RoleId = @RoleId AND DocumentType = @DocumentType AND IsDeleted = 0
+        WHERE RoleId = @RoleId AND ApproverType = @ApproverType AND IsDeleted = 0
         """;
 
     // Inbox: requests currently pending on the given user at their current level (not yet acted).
     public const string GetInboxForUserSql = """
         SELECT r.Id AS RequestId, r.DocumentType, r.DocumentId, r.DocumentNumber, r.CurrentLevelNumber,
-               rl.Name AS LevelName, r.RequestedBy, r.RequestedAt
+               rl.Name AS LevelName, r.RequestedBy, r.RequestedAt, fd.Name AS ApproverTypeName
         FROM Approval_Requests r
         JOIN Approval_RequestLevels rl ON rl.RequestId = r.Id AND rl.LevelNumber = r.CurrentLevelNumber AND rl.IsDeleted = 0
         JOIN Approval_RequestLevelApprovers rla ON rla.RequestLevelId = rl.Id AND rla.IsDeleted = 0
+        JOIN Approval_FlowDefinitions fd ON fd.Id = r.FlowDefinitionId AND fd.IsDeleted = 0
         WHERE r.Status = 'Pending' AND r.IsDeleted = 0 AND rla.UserId = @UserId AND rla.HasActed = 0
         ORDER BY r.RequestedAt ASC
         """;

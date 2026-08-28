@@ -6,7 +6,7 @@ public record ApprovalFlowLevelDto(int LevelNumber, string Name, bool RequireAll
 
 public record ApprovalFlowDefinitionResponse(
     long Id,
-    string DocumentType,
+    string ApproverType,
     string Name,
     decimal? MinAmount,
     decimal? MaxAmount,
@@ -17,7 +17,7 @@ public record ApprovalFlowDefinitionResponse(
     IReadOnlyList<ApprovalFlowLevelDto> Levels);
 
 public record SaveApprovalFlowDefinitionRequest(
-    string DocumentType,
+    string ApproverType,
     string Name,
     decimal? MinAmount,
     decimal? MaxAmount,

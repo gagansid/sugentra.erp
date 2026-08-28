@@ -5,6 +5,8 @@ namespace Sugentra.ERP.UI.Services.Settings;
 
 public class CurrencyApiService(ApiClient apiClient) : CrudApiService<Currency>(apiClient, "api/settings/currencies");
 
+public class HolidayApiService(ApiClient apiClient) : CrudApiService<Holiday>(apiClient, "api/settings/holidays");
+
 public class UnitOfMeasurementApiService(ApiClient apiClient) : CrudApiService<UnitOfMeasurement>(apiClient, "api/settings/units-of-measurement");
 
 public class WarehouseApiService(ApiClient apiClient) : CrudApiService<Warehouse>(apiClient, "api/settings/warehouses");

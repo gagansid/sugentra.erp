@@ -100,6 +100,8 @@
 
 .bootstrap-select.form-control-sm .dropdown-toggle {
     padding: 0.45rem 1rem !important;
+    min-height: calc(1.375em + 0.883rem + calc(1px * 2)) !important;
+    box-sizing: border-box !important;
 }
 
 .bootstrap-select .dropdown-toggle.show,
@@ -128,28 +130,109 @@ textarea.form-control {
     font-size: 0.7225rem !important;
 }
 
-.receipt-date-group .receipt-date-flatpickr {
-    border-inline-end: 0;
-    border-start-end-radius: 0 !important;
-    border-end-end-radius: 0 !important;
+.input-group:not(.input-group-floating):focus-within,
+.input-group:focus {
     box-shadow: none !important;
 }
 
-.receipt-date-group .receipt-date-toggle {
-    border-inline-start: 0;
-    border-start-start-radius: 0 !important;
-    border-end-start-radius: 0 !important;
+.ids-select {
+    padding-inline: inherit !important;
+}
+
+.required-label::after {
+    content: " *";
+    color: var(--bs-danger);
+}
+
+.field-validation-error,
+span.text-danger.small,
+.line-error {
+    font-size: 0.6875rem !important;
+    display: block;
+    margin-top: 0.10rem;
+    margin-bottom: 0.15rem;
+}
+
+.select2-container--default .select2-selection--single {
+    height: calc(1.375em + 0.883rem + 2px) !important;
+    min-height: calc(1.375em + 0.883rem + 2px) !important;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-sm) !important;
+    padding: 0 2rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--bs-primary);
+    box-shadow: none;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding-left: 0;
+    padding-right: 0;
+    line-height: 1.5;
     color: var(--bs-body-color);
 }
 
-.receipt-date-group:focus-within {
-    border-radius: var(--bs-border-radius-sm);
-    box-shadow: 0 0 0 1px var(--bs-primary);
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--bs-secondary-color);
 }
 
-.receipt-date-group:focus-within .receipt-date-flatpickr,
-.receipt-date-group:focus-within .receipt-date-toggle {
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    margin-inline-end: 0.5rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(1.375em + 0.883rem + 2px) !important;
+    right: 0.5rem;
+}
+
+.select2-container .select2-search--dropdown .select2-search__field {
+    border-radius: var(--bs-border-radius-sm);
+}
+
+.receipt-date-group {
+    border: 1px solid color-mix(in sRGB, var(--bs-base-color) 22%, var(--bs-paper-bg));
+    border-radius: var(--bs-border-radius-sm);
+}
+
+.receipt-date-group .receipt-date-flatpickr,
+.receipt-date-group .receipt-date-toggle {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.receipt-date-group:focus-within {
     border-color: var(--bs-primary);
+}
+
+.received-date-group {
+    border: 1px solid color-mix(in sRGB, var(--bs-base-color) 22%, var(--bs-paper-bg));
+    border-radius: var(--bs-border-radius-sm);
+}
+
+.received-date-group .received-date-flatpickr,
+.received-date-group .received-date-toggle {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.received-date-group:focus-within {
+    border-color: var(--bs-primary);
+}
+
+.received-date-group .received-date-toggle {
+    color: var(--bs-body-color);
+    cursor: pointer;
+}
+
+.receipt-date-group .receipt-date-toggle {
+    color: var(--bs-body-color);
+    cursor: pointer;
 }
 
 /* Goods Receipt Batch/Item selects live in narrow columns: bootstrap-select's default
@@ -323,34 +406,51 @@ h5.card-header {
     font-size: 0.8125rem !important;
 }
 
-/* Show-entries page-size select uses the app-wide .form-select-sm min-height rule above, which
-   feels oversized next to the .small label text here — shrink it back to a compact height. */
 .show-entries select.form-select-sm {
     min-height: calc(1.575em + 0.6rem + calc(1px * 2)) !important;
     padding-block: 0.2rem !important;
 }
 
-/* Approval Flow level-row Role(s)/User(s) select2 multi-selects — the theme sizes select2 via
-   CSS custom properties on .select2-container (not via classes/overridable padding), so match
-   the surrounding form-control-sm/form-select-sm height through those vars instead of fighting
-   the theme's own choice/remove-icon padding (which reserves inline-end space for the "x" — an
-   earlier version of this rule overrode that padding directly and caused the remove icon to
-   overlap the chip label). */
-#levelsContainer .select2-container {
-    --bs-select-height: calc(1.375em + 1.258rem + calc(1px * 2));
-    --bs-select-multiple-padding-x: 0.5rem;
-    --bs-select-multiple-padding-y: 0.35rem;
-    --bs-select-multiple-line-height: 1.25rem;
+.user-ids-group {
+    --uig-height: calc(1.375em + 0.883rem + calc(1px * 2));
 }
 
-/* Remove-level button matches the row's field height (form-control-sm/select2) instead of the
-   default .btn-icon.btn-sm square, so it lines up with the rest of the row. */
-#levelsContainer .remove-level-btn.btn-icon {
-    block-size: calc(1.375em + 1.258rem + calc(1px * 2));
-    inline-size: calc(1.375em + 1.258rem + calc(1px * 2));
+.user-ids-group .bootstrap-select {
+    width: 1% !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
-/* App-wide compact button text. !important since .btn's own font-size otherwise wins. */
+.user-ids-group .dropdown-toggle {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.user-ids-group .bootstrap-select.form-control-sm .dropdown-toggle {
+    padding-inline-end: 0.5rem !important;
+}
+
+.user-ids-group .remove-level-btn {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+.user-ids-group .bootstrap-select,
+.user-ids-group .dropdown-toggle,
+.user-ids-group .remove-level-btn {
+    height: var(--uig-height) !important;
+    min-height: var(--uig-height) !important;
+    box-sizing: border-box !important;
+}
+
+.user-ids-group .dropdown-toggle,
+.user-ids-group .remove-level-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding-block: 0 !important;
+}
+
 .btn {
     font-size: 0.8125rem !important;
 }

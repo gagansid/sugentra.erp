@@ -22,7 +22,27 @@ public class BatchUseCase(
 
     public Task<Batch> CreateAsync(Batch entity) => crudUseCase.CreateAsync(entity);
 
-    public Task<Result<Batch>> UpdateAsync(long id, Batch entity) => crudUseCase.UpdateAsync(id, entity);
+    public async Task<Result<Batch>> UpdateAsync(long id, Batch entity)
+    {
+        var existing = await repository.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return Result<Batch>.Failure($"Record {id} not found.");
+        }
+
+        if (existing.ItemId != entity.ItemId || existing.WarehouseId != entity.WarehouseId)
+        {
+            var totalQuantity = await balanceRepository.GetTotalQuantityByBatchAsync(id);
+            if (totalQuantity != 0)
+            {
+                return Result<Batch>.Failure("Cannot change Item/Warehouse: this batch already has stock recorded against it.");
+            }
+        }
+
+        return await crudUseCase.UpdateAsync(id, entity);
+    }
+
+    public async Task<bool> HasStockAsync(long id) => await balanceRepository.GetTotalQuantityByBatchAsync(id) != 0;
 
     public async Task<Result<bool>> DeleteAsync(long id)
     {

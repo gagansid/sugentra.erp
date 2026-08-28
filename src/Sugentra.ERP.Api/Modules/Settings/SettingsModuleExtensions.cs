@@ -100,6 +100,12 @@ public static class SettingsModuleExtensions
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<EmailConnectionTestService>();
 
+        services.AddScoped<GenericRepository<Holiday>>();
+        services.AddScoped(sp => new CrudUseCase<Holiday>(
+            sp.GetRequiredService<GenericRepository<Holiday>>(), sp.GetRequiredService<Shared.Logging.IAuditLogService>(),
+            sp.GetRequiredService<Shared.Auth.ICurrentUserService>(), "Setting_Holidays"));
+        services.AddScoped<IHolidayLookupService, HolidayLookupService>();
+
         services.AddScoped<AuditLogQuery>();
         services.AddScoped<ModuleQuery>();
         services.AddScoped<MenuQuery>();

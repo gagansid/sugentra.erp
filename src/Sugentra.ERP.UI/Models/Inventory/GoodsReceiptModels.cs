@@ -14,4 +14,5 @@ public record GoodsReceiptAdjacentDto(long? PreviousId, long? NextId, long? Firs
 
 public record GoodsReceiptResponse(
     long Id, string ReceiptNumber, long WarehouseId, string? VendorReference, DateTime ReceiptDate,
-    string Status, string? CurrentApprovalLevel, string? Notes, DateTime CreatedAt, IReadOnlyList<GoodsReceiptLineResponse> Lines);
+    string Status, string? CurrentApprovalLevel, string? Notes, DateTime CreatedAt, long? CreatedBy, string? CreatedByName,
+    IReadOnlyList<GoodsReceiptLineResponse> Lines);

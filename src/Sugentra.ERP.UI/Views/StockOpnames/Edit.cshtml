@@ -19,12 +19,12 @@
     </div>
     <div class="card-body">
         <form id="opnameForm" method="post" novalidate>
-            <div class="row g-2 mb-3">
+            <div class="row g-2 align-items-center">
                 <label class="col-sm-3 col-form-label col-form-label-sm">Opname Date</label>
                 <div class="col-sm-9"><input name="opnameDate" type="date" class="form-control form-control-sm"
                                                  value="@Model.OpnameDate.ToString("yyyy-MM-dd")" required /></div>
                 </div>
-                <div class="row g-2 mb-3">
+                <div class="row g-2 align-items-center">
                     <label class="col-sm-3 col-form-label col-form-label-sm">Notes</label>
                     <div class="col-sm-9"><textarea name="notes" class="form-control form-control-sm"
                                                         rows="2">@Model.Notes</textarea></div>

@@ -64,15 +64,21 @@
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label mb-1 small">Date From</label>
-                                    <input name="dateFrom" type="text" class="form-control form-control-sm goods-receipt-date-flatpickr"
-                                           autocomplete="off"
-                                           value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateFrom" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label mb-1 small">Date To</label>
-                                    <input name="dateTo" type="text" class="form-control form-control-sm goods-receipt-date-flatpickr"
-                                           autocomplete="off"
-                                           value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateTo" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label mb-1 small">Status</label>
@@ -155,7 +161,7 @@
                                     @if (receipt.Status == "Draft" && User.HasPermission("GoodsReceipt_Delete"))
                                     {
                                         <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
-                                                title="Delete" onclick="showDeleteGoodsReceiptModal(this)"
+                                                title="Delete" onclick="confirmDelete(this)"
                                                 data-name="@receipt.ReceiptNumber"
                                                 data-delete-url="@Url.Action("Delete", new { id = receipt.Id })"><i
                                             class="ri ri-delete-bin-line icon-14px"></i></button>
@@ -171,39 +177,11 @@
         @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
     </div>
 
-    <div class="modal fade" id="deleteGoodsReceiptModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="deleteGoodsReceiptForm" method="post">
-                    @Html.AntiForgeryToken()
-                    <div class="modal-header">
-                        <h5 class="modal-title">Delete Goods Receipt</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-0">Are you sure you want to delete <strong id="deleteGoodsReceiptName"></strong>?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
-                                data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_DeleteConfirmModal", "Goods Receipt")
 
     <script>
-        function showDeleteGoodsReceiptModal(button) {
-            document.getElementById('deleteGoodsReceiptName').textContent = button.getAttribute('data-name');
-            document.getElementById('deleteGoodsReceiptForm').action = button.getAttribute('data-delete-url');
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteGoodsReceiptModal')).show();
-        }
-
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.goods-receipt-date-flatpickr').forEach(function (input) {
-                flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
-            });
+            initDateGroupPickers('.received-date-flatpickr');
         });
 
         // Drop empty filter fields so only params with a value are sent in the GET query string.

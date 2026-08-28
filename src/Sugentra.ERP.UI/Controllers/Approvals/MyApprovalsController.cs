@@ -1,23 +1,57 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sugentra.ERP.UI.Models;
 using Sugentra.ERP.UI.Models.Approvals;
+using Sugentra.ERP.UI.Models.Identity;
 using Sugentra.ERP.UI.Services.Approvals;
+using Sugentra.ERP.UI.Services.Identity;
 
 namespace Sugentra.ERP.UI.Controllers.Approvals;
 
 [Authorize(Policy = "ApprovalRequest_View")]
-public class MyApprovalsController(ApprovalRequestApiService service) : Controller
+public class MyApprovalsController(ApprovalRequestApiService service, UserApiService userApiService) : Controller
 {
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? keyword = null, string? approverType = null, int page = 1, int pageSize = 10)
     {
         var result = await service.GetInboxAsync();
         if (!result.Success)
         {
             TempData["ErrorMessage"] = result.Message;
-            return View(new List<ApprovalInboxItem>());
+            return View(new PagedResult<ApprovalInboxItem>());
         }
 
-        return View(result.Data ?? []);
+        var items = (result.Data ?? []).AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            items = items.Where(i =>
+                i.DocumentNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                i.ApproverTypeName.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                i.LevelName.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(approverType))
+        {
+            items = items.Where(i => i.DocumentType == approverType);
+        }
+
+        var itemList = items.ToList();
+
+        ViewBag.Keyword = keyword;
+        ViewBag.ApproverType = approverType;
+        ViewData["ApproverTypeOptions"] = (result.Data ?? [])
+            .Select(i => new { i.DocumentType, i.ApproverTypeName })
+            .DistinctBy(i => i.DocumentType)
+            .OrderBy(i => i.ApproverTypeName)
+            .ToList();
+
+        return View(new PagedResult<ApprovalInboxItem>
+        {
+            Items = itemList.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = itemList.Count
+        });
     }
 
     public async Task<IActionResult> Details(long id)
@@ -28,6 +62,22 @@ public class MyApprovalsController(ApprovalRequestApiService service) : Controll
             TempData["ErrorMessage"] = result.Message ?? "Approval request not found.";
             return RedirectToAction(nameof(Index));
         }
+
+        var userIds = result.Data.Levels.SelectMany(l => l.EligibleApproverUserIds)
+            .Concat(result.Data.History.Select(h => h.ApproverUserId))
+            .Distinct()
+            .ToList();
+
+        var userNames = new Dictionary<long, string>();
+        foreach (var userId in userIds)
+        {
+            var userResult = await userApiService.GetByIdAsync(userId);
+            if (userResult.Success && userResult.Data is not null)
+            {
+                userNames[userId] = userResult.Data.FullName;
+            }
+        }
+        ViewData["UserNames"] = userNames;
 
         return View(result.Data);
     }

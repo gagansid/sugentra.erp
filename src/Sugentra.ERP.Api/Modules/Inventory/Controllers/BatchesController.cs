@@ -22,6 +22,10 @@ public class BatchesController(BatchUseCase useCase) : ApiControllerBase
         return entity is null ? Failure("Batch not found.", StatusCodes.Status404NotFound) : Success(entity);
     }
 
+    [HttpGet("{id:long}/has-stock")]
+    [Authorize(Policy = "Batch_View")]
+    public async Task<IActionResult> HasStock(long id) => Success(await useCase.HasStockAsync(id));
+
     [HttpPost]
     [Authorize(Policy = "Batch_Create")]
     public async Task<IActionResult> Create([FromBody] Batch request)

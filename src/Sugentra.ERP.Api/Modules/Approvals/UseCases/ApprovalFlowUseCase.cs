@@ -50,7 +50,7 @@ public class ApprovalFlowUseCase(
 
         var flow = new ApprovalFlowDefinition
         {
-            DocumentType = request.DocumentType,
+            ApproverType = request.ApproverType,
             Name = request.Name,
             MinAmount = request.MinAmount,
             MaxAmount = request.MaxAmount,
@@ -77,7 +77,7 @@ public class ApprovalFlowUseCase(
 
         var oldValues = JsonSerializer.Serialize(existing);
 
-        existing.DocumentType = request.DocumentType;
+        existing.ApproverType = request.ApproverType;
         existing.Name = request.Name;
         existing.MinAmount = request.MinAmount;
         existing.MaxAmount = request.MaxAmount;
@@ -122,7 +122,7 @@ public class ApprovalFlowUseCase(
 
     private async Task<string?> ValidateAsync(SaveApprovalFlowDefinitionRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.DocumentType)) return "DocumentType is required.";
+        if (string.IsNullOrWhiteSpace(request.ApproverType)) return "ApproverType is required.";
         if (string.IsNullOrWhiteSpace(request.Name)) return "Name is required.";
         if (request.Levels.Count == 0) return "At least one approval level is required.";
         if (request.Levels.Any(l => l.Approvers.Count == 0)) return "Every level must have at least one approver (role or user).";
@@ -132,9 +132,9 @@ public class ApprovalFlowUseCase(
         var roleIds = request.Levels.SelectMany(l => l.Approvers).Where(a => a.RoleId.HasValue).Select(a => a.RoleId!.Value).Distinct();
         foreach (var roleId in roleIds)
         {
-            if (!await approvalFlowRepository.IsRoleAuthorizedForDocumentTypeAsync(roleId, request.DocumentType))
+            if (!await approvalFlowRepository.IsRoleAuthorizedForApproverTypeAsync(roleId, request.ApproverType))
             {
-                return $"Role {roleId} is not authorized to approve '{request.DocumentType}'. Add it under Approval Role Categories first.";
+                return $"Role {roleId} is not authorized to approve '{request.ApproverType}'. Add it under Approval Role Categories first.";
             }
         }
 
@@ -158,7 +158,7 @@ public class ApprovalFlowUseCase(
             .ToList();
 
         return new ApprovalFlowDefinitionResponse(
-            flow.Id, flow.DocumentType, flow.Name, flow.MinAmount, flow.MaxAmount,
+            flow.Id, flow.ApproverType, flow.Name, flow.MinAmount, flow.MaxAmount,
             flow.CurrencyId, flow.WarehouseId, flow.Priority, flow.IsActive, levelDtos);
     }
 }

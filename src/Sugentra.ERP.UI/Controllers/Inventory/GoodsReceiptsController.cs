@@ -161,6 +161,8 @@ public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiServ
         ViewBag.NextId = adjacentResult.Data?.NextId;
         ViewBag.FirstId = adjacentResult.Data?.FirstId;
         ViewBag.LastId = adjacentResult.Data?.LastId;
+        var historyResult = await service.GetApprovalHistoryAsync(id);
+        ViewBag.ApprovalHistory = historyResult.Data ?? [];
         return View(result.Data);
     }
 

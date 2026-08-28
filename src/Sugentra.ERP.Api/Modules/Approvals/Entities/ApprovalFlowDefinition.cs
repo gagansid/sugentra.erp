@@ -3,12 +3,12 @@ using Sugentra.ERP.Api.Shared.Common;
 
 namespace Sugentra.ERP.Api.Modules.Approvals.Entities;
 
-// One active flow config per DocumentType, optionally narrowed by amount range/currency/warehouse
+// One active flow config per ApproverType, optionally narrowed by amount range/currency/warehouse
 // (see docs/plan.md ApprovalMatrix precedent). Higher Priority is matched first when multiple flows qualify.
 [Table("Approval_FlowDefinitions")]
 public class ApprovalFlowDefinition : BaseAuditableEntity
 {
-    public string DocumentType { get; set; } = string.Empty;
+    public string ApproverType { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public decimal? MinAmount { get; set; }
     public decimal? MaxAmount { get; set; }

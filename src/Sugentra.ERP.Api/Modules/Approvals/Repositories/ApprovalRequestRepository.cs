@@ -8,6 +8,7 @@ namespace Sugentra.ERP.Api.Modules.Approvals.Repositories;
 public interface IApprovalRequestRepository
 {
     Task<ApprovalRequest?> GetActiveByDocumentAsync(string documentType, long documentId);
+    Task<IReadOnlyList<ApprovalRequest>> GetAllByDocumentAsync(string documentType, long documentId);
     Task<ApprovalRequest?> GetByIdAsync(long id);
     Task<IReadOnlyList<ApprovalRequestLevel>> GetLevelsAsync(long requestId);
     Task<IReadOnlyList<ApprovalRequestLevelApprover>> GetApproversAsync(long requestLevelId);
@@ -17,7 +18,7 @@ public interface IApprovalRequestRepository
     Task<bool> IsEligibleApproverAsync(long requestLevelId, long userId);
     Task<bool> HasAlreadyActedAsync(long requestId, int levelNumber, long userId);
     Task MarkApproverActedAsync(long requestLevelId, long userId);
-    Task<IReadOnlyList<ApprovalInboxItem>> GetInboxForUserAsync(long userId);
+    Task<IReadOnlyList<ApprovalInboxRow>> GetInboxForUserAsync(long userId);
 }
 
 public class ApprovalRequestRepository(IDbConnectionFactory connectionFactory) : IApprovalRequestRepository
@@ -33,6 +34,13 @@ public class ApprovalRequestRepository(IDbConnectionFactory connectionFactory) :
     {
         using var connection = connectionFactory.CreateConnection();
         return await connection.QuerySingleAsync<ApprovalRequest>(ApprovalQueries.GetRequestByIdSql, new { Id = id });
+    }
+
+    public async Task<IReadOnlyList<ApprovalRequest>> GetAllByDocumentAsync(string documentType, long documentId)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QueryListAsync<ApprovalRequest>(
+            ApprovalQueries.GetRequestsByDocumentSql, new { DocumentType = documentType, DocumentId = documentId });
     }
 
     public async Task<IReadOnlyList<ApprovalRequestLevel>> GetLevelsAsync(long requestId)
@@ -92,9 +100,9 @@ public class ApprovalRequestRepository(IDbConnectionFactory connectionFactory) :
         await connection.ExecuteCommandAsync(ApprovalQueries.MarkApproverActedSql, new { RequestLevelId = requestLevelId, UserId = userId });
     }
 
-    public async Task<IReadOnlyList<ApprovalInboxItem>> GetInboxForUserAsync(long userId)
+    public async Task<IReadOnlyList<ApprovalInboxRow>> GetInboxForUserAsync(long userId)
     {
         using var connection = connectionFactory.CreateConnection();
-        return await connection.QueryListAsync<ApprovalInboxItem>(ApprovalQueries.GetInboxForUserSql, new { UserId = userId });
+        return await connection.QueryListAsync<ApprovalInboxRow>(ApprovalQueries.GetInboxForUserSql, new { UserId = userId });
     }
 }

@@ -18,12 +18,28 @@ public record ApprovalStatusDto(
     int CurrentLevelNumber,
     int TotalLevels);
 
+// One row in a document's approval trail: either a completed action (Approved/Rejected) or a still-pending
+// approver on the current level (Status = "Waiting"), so callers can render a single unified timeline.
+public record ApprovalHistoryEntryDto(
+    long RequestId,
+    int LevelNumber,
+    string LevelName,
+    long? ApproverUserId,
+    string? ApproverName,
+    string Status,
+    string? Comment,
+    DateTime? ActionedAt);
+
 public interface IApprovalService
 {
     /// Returns RequiresApproval = false when no active flow matches the document — caller should proceed with its own direct transition.
     Task<ApprovalSubmissionResult> SubmitForApprovalAsync(ApprovalSubmissionRequest request);
 
     Task<ApprovalStatusDto?> GetStatusAsync(string documentType, long documentId);
+
+    // Full trail across every submission cycle for the document (a rejection-then-resubmit creates a new
+    // Approval_Requests row), ordered oldest to newest.
+    Task<IReadOnlyList<ApprovalHistoryEntryDto>> GetHistoryAsync(string documentType, long documentId);
 }
 
 // Implemented by the module that owns the document type (e.g. Inventory) so Approvals can call back

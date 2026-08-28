@@ -9,4 +9,6 @@ public class ApprovalService(ApprovalRequestUseCase requestUseCase) : IApprovalS
     public Task<ApprovalSubmissionResult> SubmitForApprovalAsync(ApprovalSubmissionRequest request) => requestUseCase.SubmitAsync(request);
 
     public Task<ApprovalStatusDto?> GetStatusAsync(string documentType, long documentId) => requestUseCase.GetStatusAsync(documentType, documentId);
+
+    public Task<IReadOnlyList<ApprovalHistoryEntryDto>> GetHistoryAsync(string documentType, long documentId) => requestUseCase.GetDocumentHistoryAsync(documentType, documentId);
 }

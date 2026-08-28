@@ -12,9 +12,11 @@
 }
 
 @section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
     <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
 }
 @section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
     <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
 }
 
@@ -24,12 +26,11 @@
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Batches</h5>
     </div>
-    <!-- _ShowEntries partial's own <form>, avoiding invalid nested <form> elements -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 mb-2">
         @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
         <form method="get" id="batchesFilterForm" class="d-flex align-items-center gap-2">
             <input type="text" name="keyword" class="form-control form-control-sm"
-                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search code, legality no, source.." />
+                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search.." />
             <div class="dropdown">
                 <button type="button" class="btn btn-sm btn-outline-primary position-relative"
                         id="batchesFilterDropdown" data-bs-toggle="dropdown"
@@ -51,7 +52,8 @@
                             <div class="row g-2">
                                 <div class="col-12 mb-2">
                                     <label class="form-label mb-1 small">Warehouse</label>
-                                    <select name="warehouseId" class="form-select form-select-sm">
+                                    <select name="warehouseId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                            data-style="btn-default" data-width="100%">
                                         <option value="">All Warehouses</option>
                                         @foreach (var warehouse in warehouses)
                                         {
@@ -61,15 +63,21 @@
                                 </div>
                                 <div class="col-12 mb-2">
                                     <label class="form-label mb-1 small">Received Date From</label>
-                                    <input name="dateFrom" type="text" class="form-control form-control-sm batch-date-flatpickr"
-                                           autocomplete="off"
-                                           value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateFrom" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
                                 </div>
                                 <div class="col-12 mb-2">
                                     <label class="form-label mb-1 small">Received Date To</label>
-                                    <input name="dateTo" type="text" class="form-control form-control-sm batch-date-flatpickr"
-                                           autocomplete="off"
-                                           value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateTo" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -129,7 +137,7 @@
                                     @if (User.HasPermission("Batch_Delete"))
                                     {
                                         <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
-                                                title="Delete" onclick="showDeleteBatchModal(this)" data-name="@batch.Code"
+                                                title="Delete" onclick="confirmDelete(this)" data-name="@batch.Code"
                                                 data-delete-url="@Url.Action("Delete", new { id = batch.Id })"><i
                                             class="ri ri-delete-bin-line icon-14px"></i></button>
                                         }
@@ -144,38 +152,11 @@
         @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
     </div>
 
-    <div class="modal fade" id="deleteBatchModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="deleteBatchForm" method="post">
-                    @Html.AntiForgeryToken()
-                    <div class="modal-header">
-                        <h5 class="modal-title">Delete Batch</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-0">Are you sure you want to delete <strong id="deleteBatchName"></strong>?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
-                                data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_DeleteConfirmModal", "Batch")
 
     <script>
-        function showDeleteBatchModal(button) {
-            document.getElementById('deleteBatchName').textContent = button.getAttribute('data-name');
-            document.getElementById('deleteBatchForm').action = button.getAttribute('data-delete-url');
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteBatchModal')).show();
-        }
-
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.batch-date-flatpickr').forEach(function (input) {
-                flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
-            });
+            initSelectpickers();
+            initDateGroupPickers('.received-date-flatpickr');
         });
     </script>

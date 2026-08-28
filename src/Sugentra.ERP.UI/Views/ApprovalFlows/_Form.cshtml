@@ -3,6 +3,8 @@
     var isEdit = Model.Id > 0;
     var allRoles = (ViewData["AllRoles"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.RoleListItemDto>) ?? [];
     var allUsers = (ViewData["AllUsers"] as IReadOnlyList<Sugentra.ERP.UI.Models.Identity.UserListItemDto>) ?? [];
+    var approverTypes = (ViewData["ApproverTypes"] as IReadOnlyList<Sugentra.ERP.UI.Models.Approvals.ApproverTypeOption>) ?? [];
+    var formId = isEdit ? "approvalFlowEditForm" : "approvalFlowCreateForm";
 }
 
 <div class="card">
@@ -10,115 +12,149 @@
         <h5 class="mb-0">@(isEdit ? "Edit" : "Add") Approval Flow</h5>
     </div>
     <div class="card-body">
-        <form method="post" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.Id">
+        <form id="@formId" method="post" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.Id" novalidate>
             @Html.AntiForgeryToken()
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <label class="form-label">Document Type</label>
-                    <input type="text" name="documentType" class="form-control" value="@Model.DocumentType" required placeholder="e.g. GoodsReceipt" />
+
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Approver Type</label>
+                <div class="col-md-4 col-sm-8">
+                    <select name="approverType" id="approverTypeSelect" class="selectpicker form-control form-control-sm"
+                            data-style="btn-default" data-width="100%" data-container="body" data-live-search="true"
+                            required data-required-message="Approver type is required.">
+                        <option value="">-- Select Approver Type --</option>
+                        @foreach (var type in approverTypes)
+                        {
+                            <option value="@type.ApproverType" selected="@(type.ApproverType == Model.ApproverType ? "selected" : null)">
+                                @(string.IsNullOrWhiteSpace(type.Description) ? type.ApproverType : $"{type.ApproverType} ({type.Description})")
+                            </option>
+                        }
+                        @if (isEdit && !approverTypes.Any(t => t.ApproverType == Model.ApproverType))
+                        {
+                            <option value="@Model.ApproverType" selected>@Model.ApproverType</option>
+                        }
+                    </select>
+                    <span class="text-danger small"></span>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Name</label>
-                    <input type="text" name="name" class="form-control" value="@Model.Name" required />
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Name</label>
+                <div class="col-md-4 col-sm-8">
+                    <input type="text" name="name" class="form-control form-control-sm" value="@Model.Name"
+                           required data-required-message="Name is required." />
+                    <span class="text-danger small"></span>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Min Amount</label>
-                    <input type="number" step="0.01" name="minAmount" class="form-control" value="@Model.MinAmount" />
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Min Amount</label>
+                <div class="col-md-4 col-sm-8">
+                    <input type="number" step="0.01" name="minAmount" class="form-control form-control-sm" value="@Model.MinAmount" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Max Amount</label>
-                    <input type="number" step="0.01" name="maxAmount" class="form-control" value="@Model.MaxAmount" />
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Max Amount</label>
+                <div class="col-md-4 col-sm-8">
+                    <input type="number" step="0.01" name="maxAmount" class="form-control form-control-sm" value="@Model.MaxAmount" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Currency Id</label>
-                    <input type="number" name="currencyId" class="form-control" value="@Model.CurrencyId" />
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Currency Id</label>
+                <div class="col-md-4 col-sm-8">
+                    <input type="number" name="currencyId" class="form-control form-control-sm" value="@Model.CurrencyId" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Warehouse Id</label>
-                    <input type="number" name="warehouseId" class="form-control" value="@Model.WarehouseId" />
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Warehouse Id</label>
+                <div class="col-md-4 col-sm-8">
+                    <input type="number" name="warehouseId" class="form-control form-control-sm" value="@Model.WarehouseId" />
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Priority</label>
-                    <input type="number" name="priority" class="form-control" value="@Model.Priority" />
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Priority</label>
+                <div class="col-md-4 col-sm-8">
+                    <input type="number" name="priority" class="form-control form-control-sm" value="@Model.Priority" />
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <div class="form-check">
+            </div>
+            <div class="row align-items-center">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Active</label>
+                <div class="col-md-4 col-sm-8 d-flex align-items-center">
+                    <div class="form-check form-switch">
                         <input type="checkbox" name="isActive" value="true" class="form-check-input" id="isActive" checked="@(Model.IsActive ? "checked" : null)" />
                         <input type="hidden" name="isActive" value="false" />
-                        <label class="form-check-label" for="isActive">Active</label>
                     </div>
                 </div>
             </div>
 
+            <hr />
+
             <h6 class="mb-2">Approval Levels</h6>
-            <p class="text-muted small">Pick Role(s) and/or User(s) eligible to approve at that level. A level needs at least one of the two.</p>
+            <p class="text-muted small">Pick Role(s) and/or User(s) eligible to approve at that level. A level needs at least one of the two. Roles listed are limited to those configured under Settings &gt; Approval Types.</p>
+            <div class="row g-2 mb-1">
+                <label class="col-md-1 form-label mb-0 small">Level #</label>
+                <label class="col-md-2 form-label mb-0 small">Level Name</label>
+                <label class="col-md-2 form-label mb-0 small">Require All?</label>
+                <label class="col-md-3 form-label mb-0 small">Role(s)</label>
+                <label class="col-md-4 form-label mb-0 small">User(s)</label>
+            </div>
             <div id="levelsContainer"></div>
-            <button type="button" id="addLevelBtn" class="btn btn-sm btn-label-primary mb-4">
+            <button type="button" id="addLevelBtn" class="btn btn-sm btn-label-primary mb-2">
                 <i class="ri ri-add-line me-1"></i>Add Level
             </button>
-
-            <div>
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a asp-action="Index" class="btn btn-label-dark">Cancel</a>
-            </div>
         </form>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Cancel</a>
+        <button type="submit" form="@formId" class="btn btn-sm btn-primary btn-filter-action">Save</button>
     </div>
 </div>
 
 <template id="levelRowTemplate">
-    <div class="row g-2 align-items-end mb-2 level-row border rounded p-2 mx-0">
+    <div class="row g-2 align-items-start mb-3 level-row">
         <div class="col-md-1">
-            <label class="form-label small mb-0">Level #</label>
             <input type="number" name="levelNumber" class="form-control form-control-sm level-number" required />
         </div>
         <div class="col-md-2">
-            <label class="form-label small mb-0">Level Name</label>
             <input type="text" name="levelName" class="form-control form-control-sm" required />
         </div>
         <div class="col-md-2">
-            <label class="form-label small mb-0">Require All?</label>
-            <select name="requireAllApprovers" class="form-select form-select-sm">
+            <select name="requireAllApprovers" class="selectpicker form-control form-control-sm"
+                    data-style="btn-default" data-width="100%">
                 <option value="true">Yes</option>
                 <option value="false">No</option>
             </select>
         </div>
         <div class="col-md-3">
-            <label class="form-label small mb-0">Role(s)</label>
-            <select class="form-select form-select-sm role-ids-select" multiple>
+            <select name="roleIds" class="selectpicker form-control form-control-sm role-ids-select" multiple
+                    data-live-search="true" data-style="btn-default" data-width="100%" data-container="body">
                 @foreach (var role in allRoles)
                 {
                     <option value="@role.Id">@role.Name</option>
                 }
             </select>
-            <input type="hidden" name="roleIds" class="role-ids-hidden" />
         </div>
-        <div class="col-md-3">
-            <label class="form-label small mb-0">User(s)</label>
-            <select class="form-select form-select-sm user-ids-select" multiple>
-                @foreach (var user in allUsers)
-                {
-                    <option value="@user.Id">@user.FullName</option>
-                }
-            </select>
-            <input type="hidden" name="userIds" class="user-ids-hidden" />
-        </div>
-        <div class="col-md-1">
-            <button type="button" class="btn btn-icon btn-label-danger remove-level-btn"><i class="ri ri-close-line"></i></button>
+        <div class="col-md-4">
+            <div class="input-group input-group-sm user-ids-group">
+                <select name="userIds" class="selectpicker form-control form-control-sm user-ids-select ids-select" multiple
+                        data-live-search="true" data-style="btn-default" data-width="100%" data-container="body">
+                    @foreach (var user in allUsers)
+                    {
+                        <option value="@user.Id">@user.FullName</option>
+                    }
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-level-btn" data-bs-toggle="tooltip" title="Remove">
+                    <i class="ri ri-delete-bin-line icon-14px"></i>
+                </button>
+            </div>
         </div>
     </div>
 </template>
 
-<link rel="stylesheet" href="~/vendor/libs/select2/select2.css" />
-<script src="~/vendor/libs/select2/select2.js" defer></script>
-
-@* Plain inline script (not @section Scripts): this view is rendered via Html.PartialAsync, and sections
-   defined inside a partial are silently ignored rather than surfaced by the parent's layout. *@
 <script>
     (function () {
             const levelsContainer = document.getElementById('levelsContainer');
             const template = document.getElementById('levelRowTemplate');
             const addLevelBtn = document.getElementById('addLevelBtn');
-            if (!levelsContainer || !template || !addLevelBtn) {
+            const form = document.getElementById('@formId');
+            if (!levelsContainer || !template || !addLevelBtn || !form) {
                 return;
             }
 
@@ -128,32 +164,22 @@
                 row.querySelector('.level-number').value = level?.levelNumber ?? (levelsContainer.children.length + 1);
                 row.querySelector('[name="levelName"]').value = level?.name ?? '';
                 row.querySelector('[name="requireAllApprovers"]').value = (level?.requireAllApprovers ?? true) ? 'true' : 'false';
-                row.querySelector('.role-ids-hidden').value = level?.roleIds ?? '';
-                row.querySelector('.user-ids-hidden').value = level?.userIds ?? '';
+
+                const roleSelect = row.querySelector('.role-ids-select');
+                (level?.roleIds ?? '').split(',').filter(Boolean).forEach(function (id) {
+                    const opt = roleSelect.querySelector('option[value="' + id + '"]');
+                    if (opt) opt.selected = true;
+                });
+
+                const userSelect = row.querySelector('.user-ids-select');
+                (level?.userIds ?? '').split(',').filter(Boolean).forEach(function (id) {
+                    const opt = userSelect.querySelector('option[value="' + id + '"]');
+                    if (opt) opt.selected = true;
+                });
+
                 row.querySelector('.remove-level-btn').addEventListener('click', () => row.remove());
                 levelsContainer.appendChild(row);
-                enhanceMultiSelect(row, '.role-ids-select', '.role-ids-hidden', 'Select role(s)');
-                enhanceMultiSelect(row, '.user-ids-select', '.user-ids-hidden', 'Select user(s)');
-            }
-
-            // select2 needs jQuery, which loads at the bottom of the shared layout after this script runs on
-            // initial page load — no-ops until then; the window 'load' sweep below catches rows added too early.
-            function enhanceMultiSelect(row, selectSelector, hiddenSelector, placeholder) {
-                if (typeof $ === 'undefined' || !$.fn.select2) return;
-                const $select = $(row.querySelector(selectSelector));
-                if ($select.data('select2')) return;
-
-                $select.select2({ width: '100%', placeholder: placeholder });
-
-                const hiddenInput = row.querySelector(hiddenSelector);
-                const preselected = hiddenInput.value;
-                if (preselected) {
-                    $select.val(preselected.split(',').filter(Boolean)).trigger('change');
-                }
-
-                $select.on('change', function () {
-                    hiddenInput.value = ($select.val() || []).join(',');
-                });
+                initSelectpickers();
             }
 
             addLevelBtn.addEventListener('click', function (event) {
@@ -176,11 +202,41 @@
                 addLevelRow(null);
             }
 
-            window.addEventListener('load', function () {
-                levelsContainer.querySelectorAll('.level-row').forEach(function (row) {
-                    enhanceMultiSelect(row, '.role-ids-select', '.role-ids-hidden', 'Select role(s)');
-                    enhanceMultiSelect(row, '.user-ids-select', '.user-ids-hidden', 'Select user(s)');
+            function fieldMessageEl(field) {
+                return field.closest('.col-md-4, .col-sm-8')?.querySelector('.text-danger');
+            }
+
+            function clearFieldMessage(field) {
+                if (field.checkValidity && !field.checkValidity()) return;
+                const msgEl = fieldMessageEl(field);
+                if (msgEl) msgEl.textContent = '';
+            }
+
+            form.querySelectorAll('[required]').forEach(function (field) {
+                field.addEventListener('input', function () { clearFieldMessage(field); });
+                field.addEventListener('change', function () { clearFieldMessage(field); });
+            });
+
+            form.addEventListener('submit', function (event) {
+                let hasError = false;
+                form.querySelectorAll('[required]').forEach(function (field) {
+                    const msgEl = fieldMessageEl(field);
+                    if (!field.checkValidity()) {
+                        if (msgEl) msgEl.textContent = field.dataset.requiredMessage || 'This field is required.';
+                        hasError = true;
+                    } else if (msgEl) {
+                        msgEl.textContent = '';
+                    }
                 });
+
+                if (hasError) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+
+            window.addEventListener('load', function () {
+                initSelectpickers();
             });
         })();
     </script>

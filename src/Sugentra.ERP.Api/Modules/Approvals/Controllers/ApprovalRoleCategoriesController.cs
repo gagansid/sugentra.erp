@@ -25,6 +25,12 @@ public class ApprovalRoleCategoriesController(CrudUseCase<ApprovalRoleCategory> 
     [Authorize(Policy = "ApprovalRoleCategory_Create")]
     public async Task<IActionResult> Create([FromBody] ApprovalRoleCategory request)
     {
+        var existing = await useCase.GetAllAsync();
+        if (existing.Any(c => c.RoleId == request.RoleId && c.ApproverType == request.ApproverType))
+        {
+            return Failure($"Role {request.RoleId} is already authorized to approve '{request.ApproverType}'.", StatusCodes.Status422UnprocessableEntity);
+        }
+
         var created = await useCase.CreateAsync(request);
         return SuccessCreated($"api/approvals/role-categories/{created.Id}", created);
     }
