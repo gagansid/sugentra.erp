@@ -17,8 +17,6 @@ BEGIN
         IsDeleted        BIT            NOT NULL CONSTRAINT DF_Inventory_LandedCostDocuments_IsDeleted DEFAULT (0),
         DeletedAt        DATETIME2      NULL,
         DeletedBy        BIGINT         NULL,
-        CONSTRAINT CK_Inventory_LandedCostDocuments_AllocationMethod CHECK (AllocationMethod IN ('ByValue', 'ByQuantity')),
-        CONSTRAINT CK_Inventory_LandedCostDocuments_Status CHECK (Status IN ('Draft', 'Posted')),
         CONSTRAINT FK_Inventory_LandedCostDocuments_GoodsReceipt FOREIGN KEY (GoodsReceiptId) REFERENCES Inventory_GoodsReceipts (Id)
     );
 END
@@ -41,7 +39,6 @@ BEGIN
         IsDeleted             BIT            NOT NULL CONSTRAINT DF_Inventory_LandedCostDocumentLines_IsDeleted DEFAULT (0),
         DeletedAt             DATETIME2      NULL,
         DeletedBy             BIGINT         NULL,
-        CONSTRAINT CK_Inventory_LandedCostDocumentLines_CostType CHECK (CostType IN ('Freight', 'Insurance', 'Handling', 'Duty', 'Other')),
         CONSTRAINT FK_Inventory_LandedCostDocumentLines_Document FOREIGN KEY (LandedCostDocumentId) REFERENCES Inventory_LandedCostDocuments (Id),
         CONSTRAINT FK_Inventory_LandedCostDocumentLines_Currency FOREIGN KEY (CurrencyId) REFERENCES Setting_Currencies (Id)
     );
