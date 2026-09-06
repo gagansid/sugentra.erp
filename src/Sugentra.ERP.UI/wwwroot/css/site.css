@@ -301,6 +301,13 @@ span.text-danger.small,
     padding-block: 0.4415rem !important;
 }
 
+/* Plain <select>/<input> pairs in a cost line row render at slightly different native heights;
+   pin both to the same 34px used elsewhere so the row lines up. */
+.cost-line-row .form-select,
+.cost-line-row .form-control {
+    height: 34px !important;
+}
+
 .btn-filter-action {
     width: 90px !important;
     flex-shrink: 0;
