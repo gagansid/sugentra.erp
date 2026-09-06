@@ -15,5 +15,5 @@ public record StockMutationLineResponse(long Id, long ItemId, long? BatchId, dec
 
 public record StockMutationResponse(
     long Id, string MutationNumber, string MutationType, long SourceWarehouseId, long? DestinationWarehouseId,
-    string? VendorReference, DateTime MutationDate, string Status, string? Notes, DateTime CreatedAt,
-    IReadOnlyList<StockMutationLineResponse> Lines);
+    string? VendorReference, DateTime MutationDate, string Status, string? CurrentApprovalLevel, string? Notes,
+    DateTime CreatedAt, long? CreatedBy, string? CreatedByName, IReadOnlyList<StockMutationLineResponse> Lines);

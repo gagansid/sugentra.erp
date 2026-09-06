@@ -155,25 +155,22 @@ public class StockMutationsController(StockMutationApiService service, ItemApiSe
         }
 
         await PopulateLookupsAsync();
+        var adjacentResult = await service.GetAdjacentAsync(id);
+        ViewBag.PreviousId = adjacentResult.Data?.PreviousId;
+        ViewBag.NextId = adjacentResult.Data?.NextId;
+        ViewBag.FirstId = adjacentResult.Data?.FirstId;
+        ViewBag.LastId = adjacentResult.Data?.LastId;
+        var historyResult = await service.GetApprovalHistoryAsync(id);
+        ViewBag.ApprovalHistory = historyResult.Data ?? [];
         return View(result.Data);
     }
 
     [Authorize(Policy = "StockMutation_Edit")]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Approve(long id)
+    public async Task<IActionResult> Post(long id)
     {
-        var result = await service.ApproveAsync(id);
-        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
-        return RedirectToAction(nameof(Detail), new { id });
-    }
-
-    [Authorize(Policy = "StockMutation_Edit")]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Complete(long id)
-    {
-        var result = await service.CompleteAsync(id);
+        var result = await service.PostStockMutationAsync(id);
         TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
         return RedirectToAction(nameof(Detail), new { id });
     }

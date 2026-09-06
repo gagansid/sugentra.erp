@@ -6,6 +6,8 @@ namespace Sugentra.ERP.UI.Services.Inventory;
 public class BatchApiService(ApiClient apiClient) : CrudApiService<Batch>(apiClient, "api/inventory/batches")
 {
     public Task<ApiResult<bool>> HasStockAsync(long id) => ApiClient.GetAsync<bool>($"api/inventory/batches/{id}/has-stock");
+
+    public Task<ApiResult<InventoryAdjacentDto>> GetAdjacentAsync(long id) => ApiClient.GetAsync<InventoryAdjacentDto>($"api/inventory/batches/{id}/adjacent");
 }
 
 public class LandedCostAllocationApiService(ApiClient apiClient) : CrudApiService<LandedCostAllocation>(apiClient, "api/inventory/landed-cost-allocations");
@@ -31,7 +33,10 @@ public class GoodsReceiptApiService(ApiClient apiClient)
     public Task<ApiResult<IReadOnlyList<ApprovalHistoryEntry>>> GetApprovalHistoryAsync(long id) => apiClient.GetAsync<IReadOnlyList<ApprovalHistoryEntry>>($"{BaseRoute}/{id}/approval-history");
 }
 
-public class QuarantineHoldApiService(ApiClient apiClient) : CrudApiService<QuarantineHold>(apiClient, "api/inventory/quarantine-holds");
+public class QuarantineHoldApiService(ApiClient apiClient) : CrudApiService<QuarantineHold>(apiClient, "api/inventory/quarantine-holds")
+{
+    public Task<ApiResult<InventoryAdjacentDto>> GetAdjacentAsync(long id) => ApiClient.GetAsync<InventoryAdjacentDto>($"api/inventory/quarantine-holds/{id}/adjacent");
+}
 
 public class InventoryStatsApiService(ApiClient apiClient)
 {
@@ -74,11 +79,13 @@ public class StockMutationApiService(ApiClient apiClient)
 
     public Task<ApiResult<StockMutationResponse>> UpdateAsync(long id, UpdateStockMutationRequest request) => apiClient.PutAsync<StockMutationResponse>($"{BaseRoute}/{id}", request);
 
-    public Task<ApiResult<StockMutationResponse>> ApproveAsync(long id) => apiClient.PostAsync<StockMutationResponse>($"{BaseRoute}/{id}/approve", new { });
-
-    public Task<ApiResult<StockMutationResponse>> CompleteAsync(long id) => apiClient.PostAsync<StockMutationResponse>($"{BaseRoute}/{id}/complete", new { });
+    public Task<ApiResult<StockMutationResponse>> PostStockMutationAsync(long id) => apiClient.PostAsync<StockMutationResponse>($"{BaseRoute}/{id}/post", new { });
 
     public Task<ApiResult<bool>> DeleteAsync(long id) => apiClient.DeleteAsync($"{BaseRoute}/{id}");
+
+    public Task<ApiResult<InventoryAdjacentDto>> GetAdjacentAsync(long id) => apiClient.GetAsync<InventoryAdjacentDto>($"{BaseRoute}/{id}/adjacent");
+
+    public Task<ApiResult<IReadOnlyList<ApprovalHistoryEntry>>> GetApprovalHistoryAsync(long id) => apiClient.GetAsync<IReadOnlyList<ApprovalHistoryEntry>>($"{BaseRoute}/{id}/approval-history");
 }
 
 public class StockOpnameApiService(ApiClient apiClient)
@@ -93,9 +100,12 @@ public class StockOpnameApiService(ApiClient apiClient)
 
     public Task<ApiResult<StockOpnameResponse>> UpdateAsync(long id, UpdateStockOpnameRequest request) => apiClient.PutAsync<StockOpnameResponse>($"{BaseRoute}/{id}", request);
 
-    public Task<ApiResult<StockOpnameResponse>> SubmitAsync(long id) => apiClient.PostAsync<StockOpnameResponse>($"{BaseRoute}/{id}/submit", new { });
+    public Task<ApiResult<StockOpnameResponse>> PostStockOpnameAsync(long id) => apiClient.PostAsync<StockOpnameResponse>($"{BaseRoute}/{id}/post", new { });
 
-    public Task<ApiResult<StockOpnameResponse>> ApproveAsync(long id) => apiClient.PostAsync<StockOpnameResponse>($"{BaseRoute}/{id}/approve", new { });
+    public Task<ApiResult<IReadOnlyList<Sugentra.ERP.UI.Models.Approvals.ApprovalHistoryEntry>>> GetApprovalHistoryAsync(long id) =>
+        apiClient.GetAsync<IReadOnlyList<Sugentra.ERP.UI.Models.Approvals.ApprovalHistoryEntry>>($"{BaseRoute}/{id}/approval-history");
 
     public Task<ApiResult<bool>> DeleteAsync(long id) => apiClient.DeleteAsync($"{BaseRoute}/{id}");
+
+    public Task<ApiResult<InventoryAdjacentDto>> GetAdjacentAsync(long id) => apiClient.GetAsync<InventoryAdjacentDto>($"{BaseRoute}/{id}/adjacent");
 }

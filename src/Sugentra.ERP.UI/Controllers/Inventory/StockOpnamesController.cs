@@ -147,25 +147,22 @@ public class StockOpnamesController(StockOpnameApiService service, ItemApiServic
         }
 
         await PopulateLookupsAsync();
+        var adjacentResult = await service.GetAdjacentAsync(id);
+        ViewBag.PreviousId = adjacentResult.Data?.PreviousId;
+        ViewBag.NextId = adjacentResult.Data?.NextId;
+        ViewBag.FirstId = adjacentResult.Data?.FirstId;
+        ViewBag.LastId = adjacentResult.Data?.LastId;
+        var historyResult = await service.GetApprovalHistoryAsync(id);
+        ViewBag.ApprovalHistory = historyResult.Data ?? [];
         return View(result.Data);
     }
 
     [Authorize(Policy = "StockOpname_Edit")]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Submit(long id)
+    public async Task<IActionResult> Post(long id)
     {
-        var result = await service.SubmitAsync(id);
-        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
-        return RedirectToAction(nameof(Detail), new { id });
-    }
-
-    [Authorize(Policy = "StockOpname_Edit")]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Approve(long id)
-    {
-        var result = await service.ApproveAsync(id);
+        var result = await service.PostStockOpnameAsync(id);
         TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
         return RedirectToAction(nameof(Detail), new { id });
     }

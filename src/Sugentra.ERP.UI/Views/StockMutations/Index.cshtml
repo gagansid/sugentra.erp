@@ -94,8 +94,8 @@
                                         <option value="">All Status</option>
                                         <option value="Draft" selected="@("Draft".Equals(ViewBag.Status) ? "selected" : null)">Draft
                                         </option>
-                                        <option value="Approved" selected="@("Approved".Equals(ViewBag.Status) ? "selected" : null)">
-                                            Approved</option>
+                                        <option value="WaitingApproval" selected="@("WaitingApproval".Equals(ViewBag.Status) ? "selected" : null)">
+                                            Waiting Approval</option>
                                         <option value="Completed" selected="@("Completed".Equals(ViewBag.Status) ? "selected" : null)">
                                             Completed</option>
                                     </select>
@@ -149,10 +149,12 @@
                                         <span class="badge bg-label-@(mutation.Status switch
                                                                        {
                                                                            "Draft" => "secondary",
-                                                                           "Approved" => "info",
-                                                                           "Completed" => "success",
+                                                                           "WaitingApproval" => "warning",
+                                                                           "Completed" => "primary",
                                                                            _ => "secondary"
-                                                                       })">@mutation.Status</span>
+                                                                       })">@(mutation.Status == "WaitingApproval"
+                                                                               ? $"Waiting Approval - {mutation.CurrentApprovalLevel}"
+                                                                               : mutation.Status)</span>
                                     </td>
                                     <td>
                                         <div class="d-flex gap-2 justify-content-center">
@@ -164,7 +166,7 @@
                                             @if (mutation.Status == "Draft" && User.HasPermission("StockMutation_Delete"))
                                             {
                                                 <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
-                                                        title="Delete" onclick="showDeleteStockMutationModal(this)"
+                                                        title="Delete" onclick="confirmDelete(this)"
                                                         data-name="@mutation.MutationNumber"
                                                         data-delete-url="@Url.Action("Delete", new { id = mutation.Id })"><i
                                                     class="ri ri-delete-bin-line icon-14px"></i></button>
@@ -180,35 +182,9 @@
                 @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
             </div>
 
-            <div class="modal fade" id="deleteStockMutationModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form id="deleteStockMutationForm" method="post">
-                            @Html.AntiForgeryToken()
-                            <div class="modal-header">
-                                <h5 class="modal-title">Delete Stock Mutation</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p class="mb-0">Are you sure you want to delete <strong id="deleteStockMutationName"></strong>?</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
-                                        data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            @await Html.PartialAsync("_DeleteConfirmModal", "Stock Mutation")
 
             <script>
-                function showDeleteStockMutationModal(button) {
-                    document.getElementById('deleteStockMutationName').textContent = button.getAttribute('data-name');
-                    document.getElementById('deleteStockMutationForm').action = button.getAttribute('data-delete-url');
-                    bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteStockMutationModal')).show();
-                }
-
                 document.addEventListener('DOMContentLoaded', function () {
                     initDateGroupPickers('.received-date-flatpickr');
                 });

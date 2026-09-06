@@ -1,17 +1,22 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sugentra.ERP.Api.Modules.Inventory.Entities;
+using Sugentra.ERP.Api.Modules.Inventory.Queries;
 using Sugentra.ERP.Api.Shared.Common;
 
 namespace Sugentra.ERP.Api.Modules.Inventory.Controllers;
 
 [Route("api/inventory/quarantine-holds")]
 [Authorize]
-public class QuarantineHoldsController(CrudUseCase<QuarantineHold> useCase) : ApiControllerBase
+public class QuarantineHoldsController(CrudUseCase<QuarantineHold> useCase, InventoryAdjacentQuery adjacentQuery) : ApiControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "QuarantineHold_View")]
     public async Task<IActionResult> GetAll() => Success(await useCase.GetAllAsync());
+
+    [HttpGet("{id:long}/adjacent")]
+    [Authorize(Policy = "QuarantineHold_View")]
+    public async Task<IActionResult> GetAdjacent(long id) => Success(await adjacentQuery.GetQuarantineHoldAdjacentAsync(id));
 
     [HttpGet("{id:long}")]
     [Authorize(Policy = "QuarantineHold_View")]

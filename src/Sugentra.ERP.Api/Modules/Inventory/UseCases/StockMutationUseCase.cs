@@ -16,13 +16,16 @@ public class StockMutationUseCase(
     GenericRepository<StockLedger> ledgerRepository,
     IStockBalanceRepository balanceRepository,
     IDocumentNumberGeneratorService documentNumberGeneratorService,
+    IApprovalService approvalService,
+    IUserDirectoryService userDirectoryService,
     IAuditLogService auditLogService,
     ICurrentUserService currentUserService)
 {
     public async Task<IReadOnlyList<StockMutationResponse>> GetAllAsync()
     {
         var mutations = await mutationRepository.GetAllAsync();
-        return await Task.WhenAll(mutations.Select(ToResponseAsync));
+        var userCache = await ResolveCreatedByUsersAsync(mutations.Select(m => m.CreatedBy));
+        return await Task.WhenAll(mutations.Select(m => ToResponseAsync(m, userCache)));
     }
 
     public async Task<StockMutationResponse?> GetByIdAsync(long id)
@@ -93,17 +96,119 @@ public class StockMutationUseCase(
         return Result<StockMutationResponse>.Success(response);
     }
 
-    public Task<Result<StockMutationResponse>> ApproveAsync(long id) => TransitionStatusAsync(id, "Draft", "Approved");
-
-    public async Task<Result<StockMutationResponse>> CompleteAsync(long id)
+    public async Task<Result<StockMutationResponse>> PostAsync(long id)
     {
-        var result = await TransitionStatusAsync(id, "Approved", "Completed");
-        if (result.IsSuccess)
+        var mutation = await mutationRepository.GetByIdAsync(id);
+        if (mutation is null)
         {
-            await ApplyStockMovementAsync(id);
+            return Result<StockMutationResponse>.Failure($"StockMutation {id} not found.");
         }
 
-        return result;
+        if (mutation.Status != "Draft")
+        {
+            return Result<StockMutationResponse>.Failure("Only Draft mutations can be posted.");
+        }
+
+        // FromVendor mutations bring stock in from an external, unlimited source — no balance check needed.
+        if (mutation.MutationType != "FromVendor")
+        {
+            var insufficiencyError = await ValidateStockSufficiencyAsync(mutation);
+            if (insufficiencyError is not null)
+            {
+                return Result<StockMutationResponse>.Failure(insufficiencyError);
+            }
+        }
+
+        var submission = await approvalService.SubmitForApprovalAsync(new ApprovalSubmissionRequest(
+            "StockMutation", id, mutation.MutationNumber, null, null, mutation.SourceWarehouseId, currentUserService.UserId ?? 0));
+
+        if (submission.RequiresApproval)
+        {
+            // Status/CurrentApprovalLevel were already set by SetWaitingApprovalLevelAsync, called
+            // synchronously from within SubmitForApprovalAsync — re-fetch since our copy is stale.
+            var refreshed = await mutationRepository.GetByIdAsync(id);
+            return Result<StockMutationResponse>.Success(await ToResponseAsync(refreshed!));
+        }
+
+        return await FinalizeCompleteAsync(mutation);
+    }
+
+    // Invoked by IApprovalDocumentHandler on submission and every time the request advances to a new level.
+    public async Task SetWaitingApprovalLevelAsync(long id, string levelName)
+    {
+        var mutation = await mutationRepository.GetByIdAsync(id);
+        if (mutation is null) return;
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(mutation));
+
+        mutation.Status = "WaitingApproval";
+        mutation.CurrentApprovalLevel = levelName;
+        mutation.UpdatedAt = DateTime.UtcNow;
+        await mutationRepository.UpdateAsync(mutation);
+
+        var response = await ToResponseAsync(mutation);
+        await auditLogService.LogAsync("Inventory_StockMutations", id, "ApprovalLevelAdvanced", oldValues, JsonSerializer.Serialize(response), null);
+    }
+
+    // Invoked by IApprovalDocumentHandler once every approval level has signed off.
+    public async Task CompleteApprovedPostAsync(long id)
+    {
+        var mutation = await mutationRepository.GetByIdAsync(id);
+        if (mutation is null || mutation.Status != "WaitingApproval") return;
+
+        await FinalizeCompleteAsync(mutation);
+    }
+
+    // Rejection sends it back to Draft for revision/resubmission — the reason lives in the approval history.
+    public async Task RejectPostAsync(long id)
+    {
+        var mutation = await mutationRepository.GetByIdAsync(id);
+        if (mutation is null || mutation.Status != "WaitingApproval") return;
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(mutation));
+
+        mutation.Status = "Draft";
+        mutation.CurrentApprovalLevel = null;
+        mutation.UpdatedAt = DateTime.UtcNow;
+        await mutationRepository.UpdateAsync(mutation);
+
+        var response = await ToResponseAsync(mutation);
+        await auditLogService.LogAsync("Inventory_StockMutations", id, "ApprovalRejected", oldValues, JsonSerializer.Serialize(response), null);
+    }
+
+    private async Task<Result<StockMutationResponse>> FinalizeCompleteAsync(StockMutation mutation)
+    {
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(mutation));
+
+        mutation.Status = "Completed";
+        mutation.CurrentApprovalLevel = null;
+        mutation.UpdatedBy = currentUserService.UserId;
+        mutation.UpdatedAt = DateTime.UtcNow;
+        await mutationRepository.UpdateAsync(mutation);
+
+        await ApplyStockMovementAsync(mutation.Id);
+
+        var response = await ToResponseAsync(mutation);
+        await auditLogService.LogAsync("Inventory_StockMutations", mutation.Id, "Completed", oldValues, JsonSerializer.Serialize(response), currentUserService.UserId);
+
+        return Result<StockMutationResponse>.Success(response);
+    }
+
+    // Ensures the source warehouse actually holds enough stock before it's decremented on completion.
+    private async Task<string?> ValidateStockSufficiencyAsync(StockMutation mutation)
+    {
+        var lines = await lineRepository.GetByMutationIdAsync(mutation.Id);
+        foreach (var line in lines)
+        {
+            var sourceBalance = await balanceRepository.FindAsync(line.ItemId, mutation.SourceWarehouseId, line.BatchId);
+            var available = sourceBalance?.QuantityOnHand ?? 0;
+            if (available < line.Quantity)
+            {
+                return $"Insufficient stock for item {line.ItemId} at warehouse {mutation.SourceWarehouseId}: available {available}, requested {line.Quantity}.";
+            }
+        }
+
+        return null;
     }
 
     // Moves stock between warehouses only once a mutation reaches its final Completed state.
@@ -214,32 +319,6 @@ public class StockMutationUseCase(
         return Result<bool>.Success(true);
     }
 
-    private async Task<Result<StockMutationResponse>> TransitionStatusAsync(long id, string requiredStatus, string newStatus)
-    {
-        var mutation = await mutationRepository.GetByIdAsync(id);
-        if (mutation is null)
-        {
-            return Result<StockMutationResponse>.Failure($"StockMutation {id} not found.");
-        }
-
-        if (mutation.Status != requiredStatus)
-        {
-            return Result<StockMutationResponse>.Failure($"Only {requiredStatus} mutations can transition to {newStatus}.");
-        }
-
-        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(mutation));
-
-        mutation.Status = newStatus;
-        mutation.UpdatedBy = currentUserService.UserId;
-        mutation.UpdatedAt = DateTime.UtcNow;
-        await mutationRepository.UpdateAsync(mutation);
-
-        var response = await ToResponseAsync(mutation);
-        await auditLogService.LogAsync("Inventory_StockMutations", id, newStatus, oldValues, JsonSerializer.Serialize(response), currentUserService.UserId);
-
-        return Result<StockMutationResponse>.Success(response);
-    }
-
     private async Task AddLinesAsync(long mutationId, List<StockMutationLineRequest> lines)
     {
         foreach (var line in lines)
@@ -257,10 +336,30 @@ public class StockMutationUseCase(
 
     private async Task<StockMutationResponse> ToResponseAsync(StockMutation mutation)
     {
+        var userCache = await ResolveCreatedByUsersAsync([mutation.CreatedBy]);
+        return await ToResponseAsync(mutation, userCache);
+    }
+
+    private async Task<StockMutationResponse> ToResponseAsync(StockMutation mutation, IReadOnlyDictionary<long, UserDirectoryEntry> userCache)
+    {
         var lines = await lineRepository.GetByMutationIdAsync(mutation.Id);
         var lineResponses = lines.Select(l => new StockMutationLineResponse(l.Id, l.ItemId, l.BatchId, l.Quantity)).ToList();
+        var createdByUser = mutation.CreatedBy.HasValue && userCache.TryGetValue(mutation.CreatedBy.Value, out var user) ? user : null;
         return new StockMutationResponse(
             mutation.Id, mutation.MutationNumber, mutation.MutationType, mutation.SourceWarehouseId, mutation.DestinationWarehouseId,
-            mutation.VendorReference, mutation.MutationDate, mutation.Status, mutation.Notes, mutation.CreatedAt, lineResponses);
+            mutation.VendorReference, mutation.MutationDate, mutation.Status, mutation.CurrentApprovalLevel, mutation.Notes,
+            mutation.CreatedAt, mutation.CreatedBy, createdByUser?.FullName, lineResponses);
+    }
+
+    // Resolves each distinct CreatedBy id once (IUserDirectoryService has no batch lookup) to avoid N+1 calls on list endpoints.
+    private async Task<IReadOnlyDictionary<long, UserDirectoryEntry>> ResolveCreatedByUsersAsync(IEnumerable<long?> createdByIds)
+    {
+        var distinctIds = createdByIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+        if (distinctIds.Count == 0) return new Dictionary<long, UserDirectoryEntry>();
+
+        var users = await Task.WhenAll(distinctIds.Select(userDirectoryService.GetByIdAsync));
+        return distinctIds.Zip(users, (id, user) => (id, user))
+            .Where(x => x.user is not null)
+            .ToDictionary(x => x.id, x => x.user!);
     }
 }

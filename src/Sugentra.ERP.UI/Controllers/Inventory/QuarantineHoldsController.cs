@@ -137,6 +137,11 @@ public class QuarantineHoldsController(QuarantineHoldApiService service, ItemApi
         }
 
         await PopulateLookupsAsync();
+        var adjacentResult = await service.GetAdjacentAsync(id);
+        ViewBag.PreviousId = adjacentResult.Data?.PreviousId;
+        ViewBag.NextId = adjacentResult.Data?.NextId;
+        ViewBag.FirstId = adjacentResult.Data?.FirstId;
+        ViewBag.LastId = adjacentResult.Data?.LastId;
         return View(result.Data);
     }
 

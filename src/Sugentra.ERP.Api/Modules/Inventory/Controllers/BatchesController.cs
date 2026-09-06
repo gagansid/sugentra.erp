@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sugentra.ERP.Api.Modules.Inventory.Entities;
+using Sugentra.ERP.Api.Modules.Inventory.Queries;
 using Sugentra.ERP.Api.Modules.Inventory.UseCases;
 using Sugentra.ERP.Api.Shared.Common;
 
@@ -8,11 +9,15 @@ namespace Sugentra.ERP.Api.Modules.Inventory.Controllers;
 
 [Route("api/inventory/batches")]
 [Authorize]
-public class BatchesController(BatchUseCase useCase) : ApiControllerBase
+public class BatchesController(BatchUseCase useCase, InventoryAdjacentQuery adjacentQuery) : ApiControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "Batch_View")]
     public async Task<IActionResult> GetAll() => Success(await useCase.GetAllAsync());
+
+    [HttpGet("{id:long}/adjacent")]
+    [Authorize(Policy = "Batch_View")]
+    public async Task<IActionResult> GetAdjacent(long id) => Success(await adjacentQuery.GetBatchAdjacentAsync(id));
 
     [HttpGet("{id:long}")]
     [Authorize(Policy = "Batch_View")]

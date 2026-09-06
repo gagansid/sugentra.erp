@@ -1,18 +1,24 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sugentra.ERP.Api.Modules.Inventory.Dtos;
+using Sugentra.ERP.Api.Modules.Inventory.Queries;
 using Sugentra.ERP.Api.Modules.Inventory.UseCases;
 using Sugentra.ERP.Api.Shared.Common;
+using Sugentra.ERP.Api.Shared.Contracts;
 
 namespace Sugentra.ERP.Api.Modules.Inventory.Controllers;
 
 [Route("api/inventory/stock-opnames")]
 [Authorize]
-public class StockOpnamesController(StockOpnameUseCase useCase) : ApiControllerBase
+public class StockOpnamesController(StockOpnameUseCase useCase, InventoryAdjacentQuery adjacentQuery, IApprovalService approvalService) : ApiControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "StockOpname_View")]
     public async Task<IActionResult> GetAll() => Success(await useCase.GetAllAsync());
+
+    [HttpGet("{id:long}/adjacent")]
+    [Authorize(Policy = "StockOpname_View")]
+    public async Task<IActionResult> GetAdjacent(long id) => Success(await adjacentQuery.GetStockOpnameAdjacentAsync(id));
 
     [HttpGet("{id:long}")]
     [Authorize(Policy = "StockOpname_View")]
@@ -40,25 +46,19 @@ public class StockOpnamesController(StockOpnameUseCase useCase) : ApiControllerB
             : Failure(result.Error!, StatusCodes.Status400BadRequest);
     }
 
-    [HttpPost("{id:long}/submit")]
+    [HttpPost("{id:long}/post")]
     [Authorize(Policy = "StockOpname_Edit")]
-    public async Task<IActionResult> Submit(long id)
+    public async Task<IActionResult> Post(long id)
     {
-        var result = await useCase.SubmitAsync(id);
+        var result = await useCase.PostAsync(id);
         return result.IsSuccess
-            ? Success(result.Value, "Stock opname submitted successfully.")
+            ? Success(result.Value, "Stock opname posted successfully.")
             : Failure(result.Error!, StatusCodes.Status400BadRequest);
     }
 
-    [HttpPost("{id:long}/approve")]
-    [Authorize(Policy = "StockOpname_Edit")]
-    public async Task<IActionResult> Approve(long id)
-    {
-        var result = await useCase.ApproveAsync(id);
-        return result.IsSuccess
-            ? Success(result.Value, "Stock opname approved successfully.")
-            : Failure(result.Error!, StatusCodes.Status400BadRequest);
-    }
+    [HttpGet("{id:long}/approval-history")]
+    [Authorize(Policy = "StockOpname_View")]
+    public async Task<IActionResult> GetApprovalHistory(long id) => Success(await approvalService.GetHistoryAsync("StockOpname", id));
 
     [HttpDelete("{id:long}")]
     [Authorize(Policy = "StockOpname_Delete")]

@@ -6,9 +6,12 @@ namespace Sugentra.ERP.Api.Modules.Inventory.Queries;
 public record InventoryStatsDto(
     int TotalBatches,
     int QuarantineHoldsOnHold, int QuarantineHoldsReleased, int QuarantineHoldsRejected,
-    int StockOpnamesDraft, int StockOpnamesSubmitted, int StockOpnamesApproved,
-    int StockMutationsDraft, int StockMutationsApproved, int StockMutationsCompleted,
-    int GoodsReceiptsDraft, int GoodsReceiptsWaitingApproval, int GoodsReceiptsPosted);
+    int StockOpnamesDraft, int StockOpnamesWaitingApproval, int StockOpnamesCompleted,
+    int StockMutationsDraft, int StockMutationsWaitingApproval, int StockMutationsCompleted,
+    int StockMutationsInternal, int StockMutationsToVendor, int StockMutationsFromVendor,
+    int GoodsReceiptsDraft, int GoodsReceiptsWaitingApproval, int GoodsReceiptsPosted,
+    decimal StockBalanceOnHand, decimal StockBalanceReserved, decimal StockBalanceInQuarantine,
+    int TotalStockLedgerEntries);
 public record MonthlyCountDto(string MonthKey, int Count);
 
 /// <summary>Read path for the Inventory workspace dashboard cards/chart — raw Dapper counts, no business rules.</summary>
@@ -20,14 +23,21 @@ public class InventoryStatsQuery(IDbConnectionFactory connectionFactory)
                (SELECT COUNT(*) FROM Inventory_QuarantineHolds WHERE IsDeleted = 0 AND Status = 'Released') AS QuarantineHoldsReleased,
                (SELECT COUNT(*) FROM Inventory_QuarantineHolds WHERE IsDeleted = 0 AND Status = 'Rejected') AS QuarantineHoldsRejected,
                (SELECT COUNT(*) FROM Inventory_StockOpnames WHERE IsDeleted = 0 AND Status = 'Draft') AS StockOpnamesDraft,
-               (SELECT COUNT(*) FROM Inventory_StockOpnames WHERE IsDeleted = 0 AND Status = 'Submitted') AS StockOpnamesSubmitted,
-               (SELECT COUNT(*) FROM Inventory_StockOpnames WHERE IsDeleted = 0 AND Status = 'Approved') AS StockOpnamesApproved,
+               (SELECT COUNT(*) FROM Inventory_StockOpnames WHERE IsDeleted = 0 AND Status = 'WaitingApproval') AS StockOpnamesWaitingApproval,
+               (SELECT COUNT(*) FROM Inventory_StockOpnames WHERE IsDeleted = 0 AND Status = 'Completed') AS StockOpnamesCompleted,
                (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND Status = 'Draft') AS StockMutationsDraft,
-               (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND Status = 'Approved') AS StockMutationsApproved,
+               (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND Status = 'WaitingApproval') AS StockMutationsWaitingApproval,
                (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND Status = 'Completed') AS StockMutationsCompleted,
+               (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND MutationType = 'Internal') AS StockMutationsInternal,
+               (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND MutationType = 'ToVendor') AS StockMutationsToVendor,
+               (SELECT COUNT(*) FROM Inventory_StockMutations WHERE IsDeleted = 0 AND MutationType = 'FromVendor') AS StockMutationsFromVendor,
                (SELECT COUNT(*) FROM Inventory_GoodsReceipts WHERE IsDeleted = 0 AND Status = 'Draft') AS GoodsReceiptsDraft,
                (SELECT COUNT(*) FROM Inventory_GoodsReceipts WHERE IsDeleted = 0 AND Status = 'WaitingApproval') AS GoodsReceiptsWaitingApproval,
-               (SELECT COUNT(*) FROM Inventory_GoodsReceipts WHERE IsDeleted = 0 AND Status = 'Posted') AS GoodsReceiptsPosted
+               (SELECT COUNT(*) FROM Inventory_GoodsReceipts WHERE IsDeleted = 0 AND Status = 'Posted') AS GoodsReceiptsPosted,
+               (SELECT ISNULL(SUM(QuantityOnHand), 0) FROM Inventory_StockBalances WHERE IsDeleted = 0) AS StockBalanceOnHand,
+               (SELECT ISNULL(SUM(QuantityReserved), 0) FROM Inventory_StockBalances WHERE IsDeleted = 0) AS StockBalanceReserved,
+               (SELECT ISNULL(SUM(QuantityInQuarantine), 0) FROM Inventory_StockBalances WHERE IsDeleted = 0) AS StockBalanceInQuarantine,
+               (SELECT COUNT(*) FROM Inventory_StockLedgers WHERE IsDeleted = 0) AS TotalStockLedgerEntries
         """;
 
     public async Task<InventoryStatsDto> GetAsync()

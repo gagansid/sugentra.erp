@@ -153,7 +153,7 @@
                                             <span class="badge bg-label-@(hold.Status switch
                                                                            {
                                                                                "OnHold" => "warning",
-                                                                               "Released" => "success",
+                                                                                   "Released" => "primary",
                                                                                "Rejected" => "danger",
                                                                                _ => "secondary"
                                                                            })">@hold.Status</span>
@@ -168,7 +168,7 @@
                                                 @if (User.HasPermission("QuarantineHold_Delete"))
                                                 {
                                                     <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
-                                                            title="Delete" onclick="showDeleteQuarantineHoldModal(this)"
+                                                            title="Delete" onclick="confirmDelete(this)"
                                                             data-name="@hold.HoldReason"
                                                             data-delete-url="@Url.Action("Delete", new { id = hold.Id })"><i
                                                         class="ri ri-delete-bin-line icon-14px"></i></button>
@@ -184,35 +184,9 @@
                     @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
                 </div>
 
-                <div class="modal fade" id="deleteQuarantineHoldModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <form id="deleteQuarantineHoldForm" method="post">
-                                @Html.AntiForgeryToken()
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Delete Quarantine Hold</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <p class="mb-0">Are you sure you want to delete <strong id="deleteQuarantineHoldName"></strong>?</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
-                                            data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                @await Html.PartialAsync("_DeleteConfirmModal", "Quarantine Hold")
 
                 <script>
-                    function showDeleteQuarantineHoldModal(button) {
-                        document.getElementById('deleteQuarantineHoldName').textContent = button.getAttribute('data-name');
-                        document.getElementById('deleteQuarantineHoldForm').action = button.getAttribute('data-delete-url');
-                        bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteQuarantineHoldModal')).show();
-                    }
-
                     document.addEventListener('DOMContentLoaded', function () {
                         initDateGroupPickers('.received-date-flatpickr');
                     });

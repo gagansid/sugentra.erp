@@ -12,18 +12,14 @@
     });
 }
 
-@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", User.HasPermission("QuarantineHold_Edit") } })
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Quarantine Hold</h5>
-        @if (User.HasPermission("QuarantineHold_Edit"))
-        {
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-primary"><i
-                class="ri ri-edit-line me-1"></i>Edit</a>
-            }
-        </div>
-        <div class="card-body">
+    </div>
+    <div class="card-body">
             <div class="mb-5">
                 <h6>Information</h6>
                 <table class="table table-borderless table-hover detail-info-table">
@@ -50,7 +46,7 @@
                             <span class="badge bg-label-@(Model.Status switch
                                                            {
                                                                "OnHold" => "warning",
-                                                               "Released" => "success",
+                                                                   "Released" => "primary",
                                                                "Rejected" => "danger",
                                                                _ => "secondary"
                                                            })">@Model.Status</span>

@@ -1,0 +1,138 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Inventory.LandedCostAllocation>
+@{
+    ViewData["Title"] = "Landed Cost Allocations";
+    var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var currencies = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Currency>)ViewBag.Currencies;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-coin-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Landed Cost Allocations", null)
+    });
+    var hasAdvancedFilter = ViewBag.BatchId != null || !string.IsNullOrEmpty(ViewBag.CostType as string);
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Landed Cost Allocations</h5>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 mb-2">
+        @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        <form method="get" id="landedCostAllocationsFilterForm" class="d-flex align-items-center gap-2">
+            <input type="text" name="keyword" class="form-control form-control-sm"
+                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search notes.." />
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-primary position-relative"
+                        id="landedCostAllocationsFilterDropdown" data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside" aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    <i class="ri ri-filter-3-line me-1"></i>Filter
+                    @if (hasAdvancedFilter)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">Filter active</span>
+                        </span>
+                    }
+                </button>
+                <div class="dropdown-menu dropdown-menu-end w-px-500 p-0" aria-labelledby="landedCostAllocationsFilterDropdown">
+                    <div class="card mb-0 shadow-none">
+                        <div class="card-header py-2">
+                            <h6 class="mb-3">Filter</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Batch</label>
+                                    <select name="batchId" class="form-select form-select-sm">
+                                        <option value="">All Batches</option>
+                                        @foreach (var batch in batches)
+                                        {
+                                            <option value="@batch.Id" selected="@(batch.Id.ToString().Equals(ViewBag.BatchId?.ToString()) ? "selected" : null)">@batch.Code</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Cost Type</label>
+                                    <select name="costType" class="form-select form-select-sm">
+                                        <option value="">All Cost Types</option>
+                                        @foreach (var costType in new[] { "Freight", "Insurance", "Handling", "Duty", "Other" })
+                                        {
+                                            <option value="@costType" selected="@(costType.Equals(ViewBag.CostType) ? "selected" : null)">@costType</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (User.HasPermission("Batch_Create"))
+            {
+                <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add New</a>
+            }
+        </form>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Batch</th>
+                    <th>Cost Type</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Notes</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-muted text-center">No landed cost allocations recorded.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var allocation in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td>@(batches.FirstOrDefault(b => b.Id == allocation.BatchId)?.Code)</td>
+                            <td>@allocation.CostType</td>
+                            <td>@allocation.Amount.ToString("N2")</td>
+                            <td>@(currencies.FirstOrDefault(c => c.Id == allocation.CurrencyId)?.Code)</td>
+                            <td>@allocation.Notes</td>
+                            <td>
+                                <div class="d-flex gap-2 justify-content-center">
+                                    @if (User.HasPermission("Batch_Edit"))
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@allocation.Id" class="btn btn-icon btn-text-secondary"
+                                           data-bs-toggle="tooltip" title="Edit"><i class="ri ri-edit-line icon-14px"></i></a>
+                                    }
+                                    @if (User.HasPermission("Batch_Delete"))
+                                    {
+                                        <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                title="Delete" onclick="confirmDelete(this)"
+                                                data-name="@allocation.CostType"
+                                                data-delete-url="@Url.Action("Delete", new { id = allocation.Id })"><i
+                                            class="ri ri-delete-bin-line icon-14px"></i></button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+</div>
+
+@await Html.PartialAsync("_DeleteConfirmModal", "Landed Cost Allocation")

@@ -15,7 +15,10 @@ public class StockOpname : BaseAuditableEntity
     [Required]
     public DateTime OpnameDate { get; set; }
     [Required, StringLength(20)]
-    public string Status { get; set; } = "Draft"; // Draft | Submitted | Approved
+    public string Status { get; set; } = "Draft"; // Draft | WaitingApproval | Completed
+    // Set alongside Status == "WaitingApproval"; the human-readable label is composed in the UI, not stored.
+    [StringLength(100)]
+    public string? CurrentApprovalLevel { get; set; }
     [StringLength(500)]
     public string? Notes { get; set; }
 }

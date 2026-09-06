@@ -8,6 +8,7 @@ namespace Sugentra.ERP.Api.Modules.Inventory.Controllers;
 
 public record MonthlyActivityPoint(string Month, int? GoodsReceipts, int? StockMutations, int? StockOpnames, int? QuarantineHolds);
 public record StatusBreakdown(string Status, int Count);
+public record StockBalanceSummary(decimal OnHand, decimal Reserved, decimal InQuarantine);
 
 public record InventoryStatsResponse(
     int? TotalItems,
@@ -15,7 +16,10 @@ public record InventoryStatsResponse(
     IReadOnlyList<StatusBreakdown>? GoodsReceipts,
     IReadOnlyList<StatusBreakdown>? QuarantineHolds,
     IReadOnlyList<StatusBreakdown>? StockMutations,
+    IReadOnlyList<StatusBreakdown>? StockMutationTypes,
     IReadOnlyList<StatusBreakdown>? StockOpnames,
+    StockBalanceSummary? StockBalances,
+    int? TotalStockLedgerEntries,
     DateTime DateFrom,
     DateTime DateTo,
     IReadOnlyList<MonthlyActivityPoint> MonthlyActivity);
@@ -56,18 +60,30 @@ public class InventoryStatsController(InventoryStatsQuery statsQuery, IItemDirec
             ?
             [
                 new StatusBreakdown("Draft", stats.StockMutationsDraft),
-                new StatusBreakdown("Approved", stats.StockMutationsApproved),
+                new StatusBreakdown("Waiting Approval", stats.StockMutationsWaitingApproval),
                 new StatusBreakdown("Completed", stats.StockMutationsCompleted)
+            ]
+            : null;
+        IReadOnlyList<StatusBreakdown>? stockMutationTypes = User.HasClaim("permission", "StockMutation_View")
+            ?
+            [
+                new StatusBreakdown("Internal", stats.StockMutationsInternal),
+                new StatusBreakdown("To Vendor", stats.StockMutationsToVendor),
+                new StatusBreakdown("From Vendor", stats.StockMutationsFromVendor)
             ]
             : null;
         IReadOnlyList<StatusBreakdown>? stockOpnameStatuses = User.HasClaim("permission", "StockOpname_View")
             ?
             [
                 new StatusBreakdown("Draft", stats.StockOpnamesDraft),
-                new StatusBreakdown("Submitted", stats.StockOpnamesSubmitted),
-                new StatusBreakdown("Approved", stats.StockOpnamesApproved)
+                new StatusBreakdown("Waiting Approval", stats.StockOpnamesWaitingApproval),
+                new StatusBreakdown("Completed", stats.StockOpnamesCompleted)
             ]
             : null;
+        StockBalanceSummary? stockBalances = User.HasClaim("permission", "StockBalance_View")
+            ? new StockBalanceSummary(stats.StockBalanceOnHand, stats.StockBalanceReserved, stats.StockBalanceInQuarantine)
+            : null;
+        int? totalStockLedgerEntries = User.HasClaim("permission", "StockLedger_View") ? stats.TotalStockLedgerEntries : null;
 
         // Default the chart window to the current calendar month (1st to last day) when no filter is given.
         var monthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -105,8 +121,8 @@ public class InventoryStatsController(InventoryStatsQuery statsQuery, IItemDirec
             .ToList();
 
         return Success(new InventoryStatsResponse(
-            totalItems, totalBatches, goodsReceiptStatuses, quarantineHoldStatuses, stockMutationStatuses, stockOpnameStatuses,
-            from, to, monthlyActivity));
+            totalItems, totalBatches, goodsReceiptStatuses, quarantineHoldStatuses, stockMutationStatuses, stockMutationTypes,
+            stockOpnameStatuses, stockBalances, totalStockLedgerEntries, from, to, monthlyActivity));
     }
 }
 

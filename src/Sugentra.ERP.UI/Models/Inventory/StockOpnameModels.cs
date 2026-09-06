@@ -9,5 +9,5 @@ public record UpdateStockOpnameRequest(DateTime OpnameDate, string? Notes, List<
 public record StockOpnameLineResponse(long Id, long ItemId, long? BatchId, decimal SystemQuantity, decimal CountedQuantity, decimal VarianceQuantity, string? Notes);
 
 public record StockOpnameResponse(
-    long Id, string OpnameNumber, long WarehouseId, DateTime OpnameDate, string Status, string? Notes, DateTime CreatedAt,
-    IReadOnlyList<StockOpnameLineResponse> Lines);
+    long Id, string OpnameNumber, long WarehouseId, DateTime OpnameDate, string Status, string? CurrentApprovalLevel,
+    string? Notes, DateTime CreatedAt, IReadOnlyList<StockOpnameLineResponse> Lines);

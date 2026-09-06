@@ -1,18 +1,28 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sugentra.ERP.Api.Modules.Inventory.Dtos;
+using Sugentra.ERP.Api.Modules.Inventory.Queries;
 using Sugentra.ERP.Api.Modules.Inventory.UseCases;
 using Sugentra.ERP.Api.Shared.Common;
+using Sugentra.ERP.Api.Shared.Contracts;
 
 namespace Sugentra.ERP.Api.Modules.Inventory.Controllers;
 
 [Route("api/inventory/stock-mutations")]
 [Authorize]
-public class StockMutationsController(StockMutationUseCase useCase) : ApiControllerBase
+public class StockMutationsController(StockMutationUseCase useCase, InventoryAdjacentQuery adjacentQuery, IApprovalService approvalService) : ApiControllerBase
 {
     [HttpGet]
     [Authorize(Policy = "StockMutation_View")]
     public async Task<IActionResult> GetAll() => Success(await useCase.GetAllAsync());
+
+    [HttpGet("{id:long}/adjacent")]
+    [Authorize(Policy = "StockMutation_View")]
+    public async Task<IActionResult> GetAdjacent(long id) => Success(await adjacentQuery.GetStockMutationAdjacentAsync(id));
+
+    [HttpGet("{id:long}/approval-history")]
+    [Authorize(Policy = "StockMutation_View")]
+    public async Task<IActionResult> GetApprovalHistory(long id) => Success(await approvalService.GetHistoryAsync("StockMutation", id));
 
     [HttpGet("{id:long}")]
     [Authorize(Policy = "StockMutation_View")]
@@ -40,23 +50,13 @@ public class StockMutationsController(StockMutationUseCase useCase) : ApiControl
             : Failure(result.Error!, StatusCodes.Status400BadRequest);
     }
 
-    [HttpPost("{id:long}/approve")]
+    [HttpPost("{id:long}/post")]
     [Authorize(Policy = "StockMutation_Edit")]
-    public async Task<IActionResult> Approve(long id)
+    public async Task<IActionResult> Post(long id)
     {
-        var result = await useCase.ApproveAsync(id);
+        var result = await useCase.PostAsync(id);
         return result.IsSuccess
-            ? Success(result.Value, "Stock mutation approved successfully.")
-            : Failure(result.Error!, StatusCodes.Status400BadRequest);
-    }
-
-    [HttpPost("{id:long}/complete")]
-    [Authorize(Policy = "StockMutation_Edit")]
-    public async Task<IActionResult> Complete(long id)
-    {
-        var result = await useCase.CompleteAsync(id);
-        return result.IsSuccess
-            ? Success(result.Value, "Stock mutation completed successfully.")
+            ? Success(result.Value, "Stock mutation posted successfully.")
             : Failure(result.Error!, StatusCodes.Status400BadRequest);
     }
 

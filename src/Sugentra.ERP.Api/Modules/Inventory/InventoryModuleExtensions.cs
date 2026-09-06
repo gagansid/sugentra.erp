@@ -50,12 +50,15 @@ public static class InventoryModuleExtensions
         services.AddScoped<GenericRepository<StockMutation>>();
         services.AddScoped<IStockMutationLineRepository, StockMutationLineRepository>();
         services.AddScoped<StockMutationUseCase>();
+        services.AddScoped<IApprovalDocumentHandler, StockMutationApprovalHandler>();
+        services.AddScoped<IApprovalDocumentHandler, StockOpnameApprovalHandler>();
 
         services.AddScoped<GenericRepository<StockOpname>>();
         services.AddScoped<IStockOpnameLineRepository, StockOpnameLineRepository>();
         services.AddScoped<StockOpnameUseCase>();
 
         services.AddScoped<InventoryStatsQuery>();
+        services.AddScoped<InventoryAdjacentQuery>();
 
         return services;
     }

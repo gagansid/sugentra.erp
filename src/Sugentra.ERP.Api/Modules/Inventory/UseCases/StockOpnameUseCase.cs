@@ -16,6 +16,7 @@ public class StockOpnameUseCase(
     GenericRepository<StockLedger> ledgerRepository,
     IStockBalanceRepository balanceRepository,
     IDocumentNumberGeneratorService documentNumberGeneratorService,
+    IApprovalService approvalService,
     IAuditLogService auditLogService,
     ICurrentUserService currentUserService)
 {
@@ -86,20 +87,95 @@ public class StockOpnameUseCase(
         return Result<StockOpnameResponse>.Success(response);
     }
 
-    public Task<Result<StockOpnameResponse>> SubmitAsync(long id) => TransitionStatusAsync(id, "Draft", "Submitted");
-
-    public async Task<Result<StockOpnameResponse>> ApproveAsync(long id)
+    public async Task<Result<StockOpnameResponse>> PostAsync(long id)
     {
-        var result = await TransitionStatusAsync(id, "Submitted", "Approved");
-        if (result.IsSuccess)
+        var opname = await opnameRepository.GetByIdAsync(id);
+        if (opname is null)
         {
-            await ApplyVarianceAdjustmentsAsync(id);
+            return Result<StockOpnameResponse>.Failure($"StockOpname {id} not found.");
         }
 
-        return result;
+        if (opname.Status != "Draft")
+        {
+            return Result<StockOpnameResponse>.Failure("Only Draft stock opnames can be posted.");
+        }
+
+        var submission = await approvalService.SubmitForApprovalAsync(new ApprovalSubmissionRequest(
+            "StockOpname", id, opname.OpnameNumber, null, null, opname.WarehouseId, currentUserService.UserId ?? 0));
+
+        if (submission.RequiresApproval)
+        {
+            // Status/CurrentApprovalLevel were already set by SetWaitingApprovalLevelAsync, called
+            // synchronously from within SubmitForApprovalAsync — re-fetch since our copy is stale.
+            var refreshed = await opnameRepository.GetByIdAsync(id);
+            return Result<StockOpnameResponse>.Success(await ToResponseAsync(refreshed!));
+        }
+
+        return await FinalizeCompleteAsync(opname);
     }
 
-    // Posts variance quantities to the ledger/balance only once the count is Approved, never on Submit.
+    // Invoked by IApprovalDocumentHandler on submission and every time the request advances to a new level.
+    public async Task SetWaitingApprovalLevelAsync(long id, string levelName)
+    {
+        var opname = await opnameRepository.GetByIdAsync(id);
+        if (opname is null) return;
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(opname));
+
+        opname.Status = "WaitingApproval";
+        opname.CurrentApprovalLevel = levelName;
+        opname.UpdatedAt = DateTime.UtcNow;
+        await opnameRepository.UpdateAsync(opname);
+
+        var response = await ToResponseAsync(opname);
+        await auditLogService.LogAsync("Inventory_StockOpnames", id, "ApprovalLevelAdvanced", oldValues, JsonSerializer.Serialize(response), null);
+    }
+
+    // Invoked by IApprovalDocumentHandler once every approval level has signed off.
+    public async Task CompleteApprovedPostAsync(long id)
+    {
+        var opname = await opnameRepository.GetByIdAsync(id);
+        if (opname is null || opname.Status != "WaitingApproval") return;
+
+        await FinalizeCompleteAsync(opname);
+    }
+
+    // Rejection sends it back to Draft for revision/resubmission — the reason lives in the approval history.
+    public async Task RejectPostAsync(long id)
+    {
+        var opname = await opnameRepository.GetByIdAsync(id);
+        if (opname is null || opname.Status != "WaitingApproval") return;
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(opname));
+
+        opname.Status = "Draft";
+        opname.CurrentApprovalLevel = null;
+        opname.UpdatedAt = DateTime.UtcNow;
+        await opnameRepository.UpdateAsync(opname);
+
+        var response = await ToResponseAsync(opname);
+        await auditLogService.LogAsync("Inventory_StockOpnames", id, "ApprovalRejected", oldValues, JsonSerializer.Serialize(response), null);
+    }
+
+    private async Task<Result<StockOpnameResponse>> FinalizeCompleteAsync(StockOpname opname)
+    {
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(opname));
+
+        opname.Status = "Completed";
+        opname.CurrentApprovalLevel = null;
+        opname.UpdatedBy = currentUserService.UserId;
+        opname.UpdatedAt = DateTime.UtcNow;
+        await opnameRepository.UpdateAsync(opname);
+
+        await ApplyVarianceAdjustmentsAsync(opname.Id);
+
+        var response = await ToResponseAsync(opname);
+        await auditLogService.LogAsync("Inventory_StockOpnames", opname.Id, "Completed", oldValues, JsonSerializer.Serialize(response), currentUserService.UserId);
+
+        return Result<StockOpnameResponse>.Success(response);
+    }
+
+    // Posts variance quantities to the ledger/balance only once the count is Completed, never while Draft/WaitingApproval.
     private async Task ApplyVarianceAdjustmentsAsync(long opnameId)
     {
         var opname = await opnameRepository.GetByIdAsync(opnameId);
@@ -161,32 +237,6 @@ public class StockOpnameUseCase(
         return Result<bool>.Success(true);
     }
 
-    private async Task<Result<StockOpnameResponse>> TransitionStatusAsync(long id, string requiredStatus, string newStatus)
-    {
-        var opname = await opnameRepository.GetByIdAsync(id);
-        if (opname is null)
-        {
-            return Result<StockOpnameResponse>.Failure($"StockOpname {id} not found.");
-        }
-
-        if (opname.Status != requiredStatus)
-        {
-            return Result<StockOpnameResponse>.Failure($"Only {requiredStatus} stock opnames can transition to {newStatus}.");
-        }
-
-        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(opname));
-
-        opname.Status = newStatus;
-        opname.UpdatedBy = currentUserService.UserId;
-        opname.UpdatedAt = DateTime.UtcNow;
-        await opnameRepository.UpdateAsync(opname);
-
-        var response = await ToResponseAsync(opname);
-        await auditLogService.LogAsync("Inventory_StockOpnames", id, newStatus, oldValues, JsonSerializer.Serialize(response), currentUserService.UserId);
-
-        return Result<StockOpnameResponse>.Success(response);
-    }
-
     private async Task AddLinesAsync(long opnameId, List<StockOpnameLineRequest> lines)
     {
         foreach (var line in lines)
@@ -209,6 +259,6 @@ public class StockOpnameUseCase(
     {
         var lines = await lineRepository.GetByOpnameIdAsync(opname.Id);
         var lineResponses = lines.Select(l => new StockOpnameLineResponse(l.Id, l.ItemId, l.BatchId, l.SystemQuantity, l.CountedQuantity, l.VarianceQuantity, l.Notes)).ToList();
-        return new StockOpnameResponse(opname.Id, opname.OpnameNumber, opname.WarehouseId, opname.OpnameDate, opname.Status, opname.Notes, opname.CreatedAt, lineResponses);
+        return new StockOpnameResponse(opname.Id, opname.OpnameNumber, opname.WarehouseId, opname.OpnameDate, opname.Status, opname.CurrentApprovalLevel, opname.Notes, opname.CreatedAt, lineResponses);
     }
 }

@@ -83,10 +83,10 @@
                                         <option value="">All Status</option>
                                         <option value="Draft" selected="@("Draft".Equals(ViewBag.Status) ? "selected" : null)">Draft
                                         </option>
-                                        <option value="Submitted" selected="@("Submitted".Equals(ViewBag.Status) ? "selected" : null)">
-                                            Submitted</option>
-                                        <option value="Approved" selected="@("Approved".Equals(ViewBag.Status) ? "selected" : null)">
-                                            Approved</option>
+                                        <option value="WaitingApproval" selected="@("WaitingApproval".Equals(ViewBag.Status) ? "selected" : null)">
+                                            Waiting Approval</option>
+                                        <option value="Completed" selected="@("Completed".Equals(ViewBag.Status) ? "selected" : null)">
+                                            Completed</option>
                                     </select>
                                 </div>
                             </div>
@@ -138,10 +138,12 @@
                                         <span class="badge bg-label-@(opname.Status switch
                                                                        {
                                                                            "Draft" => "secondary",
-                                                                           "Submitted" => "info",
-                                                                           "Approved" => "success",
+                                                                           "WaitingApproval" => "warning",
+                                                                           "Completed" => "primary",
                                                                            _ => "secondary"
-                                                                       })">@opname.Status</span>
+                                                                       })">@(opname.Status == "WaitingApproval"
+                                                                            ? $"Waiting Approval - {opname.CurrentApprovalLevel}"
+                                                                            : opname.Status)</span>
                                     </td>
                                     <td>
                                         <div class="d-flex gap-2 justify-content-center">
@@ -153,7 +155,7 @@
                                             @if (opname.Status == "Draft" && User.HasPermission("StockOpname_Delete"))
                                             {
                                                 <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
-                                                        title="Delete" onclick="showDeleteStockOpnameModal(this)"
+                                                        title="Delete" onclick="confirmDelete(this)"
                                                         data-name="@opname.OpnameNumber"
                                                         data-delete-url="@Url.Action("Delete", new { id = opname.Id })"><i
                                                     class="ri ri-delete-bin-line icon-14px"></i></button>
@@ -169,35 +171,9 @@
                 @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
             </div>
 
-            <div class="modal fade" id="deleteStockOpnameModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form id="deleteStockOpnameForm" method="post">
-                            @Html.AntiForgeryToken()
-                            <div class="modal-header">
-                                <h5 class="modal-title">Delete Stock Opname</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p class="mb-0">Are you sure you want to delete <strong id="deleteStockOpnameName"></strong>?</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-label-dark waves-effect btn-filter-action"
-                                        data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-danger btn-filter-action">Delete</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            @await Html.PartialAsync("_DeleteConfirmModal", "Stock Opname")
 
             <script>
-                function showDeleteStockOpnameModal(button) {
-                    document.getElementById('deleteStockOpnameName').textContent = button.getAttribute('data-name');
-                    document.getElementById('deleteStockOpnameForm').action = button.getAttribute('data-delete-url');
-                    bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteStockOpnameModal')).show();
-                }
-
                 document.addEventListener('DOMContentLoaded', function () {
                     initDateGroupPickers('.received-date-flatpickr');
                 });
