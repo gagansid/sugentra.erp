@@ -52,9 +52,10 @@
                 <label class="col-md-3 form-label mb-0 small">Notes</label>
             </div>
             <div id="lines">
-                <div class="row g-2 mb-2 line-row cost-line-row">
+                <div class="row g-2 mb-2 line-row">
                     <div class="col-md-3">
-                        <select name="costType" class="form-select form-select-sm" required data-required-message="Cost type is required.">
+                        <select name="costType" class="selectpicker form-control form-control-sm gr-select"
+                                data-style="btn-default" data-width="100%" required data-required-message="Cost type is required.">
                             @foreach (var costType in new[] { "Freight", "Insurance", "Handling", "Duty", "Other" })
                             {
                                 <option value="@costType">@costType</option>
@@ -68,7 +69,8 @@
                         <div class="text-danger small line-error"></div>
                     </div>
                     <div class="col-md-3">
-                        <select name="currencyId" class="form-select form-select-sm" required data-required-message="Currency is required.">
+                        <select name="currencyId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                data-style="btn-default" data-width="100%" required data-required-message="Currency is required.">
                             <option value="" selected disabled>-- Select Currency --</option>
                             @foreach (var currency in currencies)
                             {
@@ -98,15 +100,34 @@
 
 @section Scripts {
     <script>
-        $('.gr-select').selectpicker();
+        // Self-heals against double-wrapping the same <select> (bootstrap-select always wraps on
+        // init) -- e.g. bfcache restores re-running this script.
+        function initSelectPickers($scope) {
+            $scope.find('select.gr-select').each(function () {
+                var $select = $(this);
+                if ($select.closest('.bootstrap-select').length) {
+                    $select.selectpicker('destroy');
+                }
+                $select.selectpicker();
+            });
+        }
+
+        initSelectPickers($(document));
 
         document.getElementById('addLine').addEventListener('click', function () {
             var lines = document.getElementById('lines');
             var clone = lines.firstElementChild.cloneNode(true);
+            // cloneNode copies the already-rendered bootstrap-select wrapper markup (not the jQuery
+            // plugin instance) and the ids bootstrap-select assigned; drop both before re-initializing.
+            clone.querySelectorAll('.bootstrap-select').forEach(function (wrapper) {
+                wrapper.replaceWith(wrapper.querySelector('select'));
+            });
+            clone.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
             clone.querySelectorAll('input').forEach(function (i) { i.value = ''; });
             clone.querySelectorAll('select').forEach(function (s) { s.selectedIndex = 0; });
             clone.querySelectorAll('.line-error').forEach(function (e) { e.textContent = ''; });
             lines.appendChild(clone);
+            initSelectPickers($(clone));
         });
 
         document.getElementById('lines').addEventListener('click', function (e) {
