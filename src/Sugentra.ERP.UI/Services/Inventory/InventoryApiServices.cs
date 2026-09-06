@@ -33,6 +33,19 @@ public class GoodsReceiptApiService(ApiClient apiClient)
 
 public class QuarantineHoldApiService(ApiClient apiClient) : CrudApiService<QuarantineHold>(apiClient, "api/inventory/quarantine-holds");
 
+public class InventoryStatsApiService(ApiClient apiClient)
+{
+    public Task<ApiResult<InventoryStats>> GetAsync(DateTime? dateFrom = null, DateTime? dateTo = null)
+    {
+        var query = new List<string>();
+        if (dateFrom.HasValue) query.Add($"dateFrom={dateFrom:yyyy-MM-dd}");
+        if (dateTo.HasValue) query.Add($"dateTo={dateTo:yyyy-MM-dd}");
+        var url = "api/inventory/stats" + (query.Count > 0 ? "?" + string.Join("&", query) : "");
+        return apiClient.GetAsync<InventoryStats>(url);
+    }
+}
+
+
 /// <summary>Read-only: stock balances are a system-computed snapshot, never edited directly from the UI.</summary>
 public class StockBalanceApiService(ApiClient apiClient)
 {

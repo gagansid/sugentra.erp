@@ -11,4 +11,6 @@ public class ItemDirectoryService(GenericRepository<Item> itemRepository) : IIte
         var item = await itemRepository.GetByIdAsync(itemId);
         return item?.UnitOfMeasurementId;
     }
+
+    public async Task<int> GetActiveCountAsync() => (await itemRepository.GetAllAsync()).Count;
 }

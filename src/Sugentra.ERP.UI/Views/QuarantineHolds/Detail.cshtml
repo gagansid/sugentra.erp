@@ -24,26 +24,28 @@
             }
         </div>
         <div class="card-body">
-            <table class="table table-borderless table-hover mb-0 detail-info-table">
+            <div class="mb-5">
+                <h6>Information</h6>
+                <table class="table table-borderless table-hover detail-info-table">
                 <tbody>
                     <tr>
-                        <td>Item</td>
+                        <td class="fw-medium">Item</td>
                         <td class="fw-bold">@(items.FirstOrDefault(i => i.Id == Model.ItemId)?.Name)</td>
                     </tr>
                     <tr>
-                        <td>Batch</td>
+                        <td class="fw-medium">Batch</td>
                         <td>@(batches.FirstOrDefault(b => b.Id == Model.BatchId)?.Code)</td>
                     </tr>
                     <tr>
-                        <td>Warehouse</td>
+                        <td class="fw-medium">Warehouse</td>
                         <td>@(warehouses.FirstOrDefault(w => w.Id == Model.WarehouseId)?.Name)</td>
                     </tr>
                     <tr>
-                        <td>Hold Reason</td>
+                        <td class="fw-medium">Hold Reason</td>
                         <td>@Model.HoldReason</td>
                     </tr>
                     <tr>
-                        <td>Status</td>
+                        <td class="fw-medium">Status</td>
                         <td>
                             <span class="badge bg-label-@(Model.Status switch
                                                            {
@@ -55,18 +57,19 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>Placed At</td>
+                        <td class="fw-medium">Placed At</td>
                         <td>@Model.PlacedAt.ToString("dd MMM yyyy HH:mm")</td>
                     </tr>
                     <tr>
-                        <td>Released At</td>
+                        <td class="fw-medium">Released At</td>
                         <td>@(Model.ReleasedAt?.ToString("dd MMM yyyy HH:mm"))</td>
                     </tr>
                     <tr>
-                        <td>Notes</td>
+                        <td class="fw-medium">Notes</td>
                         <td>@Model.Notes</td>
                     </tr>
                 </tbody>
-            </table>
+                </table>
+            </div>
         </div>
     </div>

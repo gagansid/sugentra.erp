@@ -55,6 +55,8 @@ public static class InventoryModuleExtensions
         services.AddScoped<IStockOpnameLineRepository, StockOpnameLineRepository>();
         services.AddScoped<StockOpnameUseCase>();
 
+        services.AddScoped<InventoryStatsQuery>();
+
         return services;
     }
 }

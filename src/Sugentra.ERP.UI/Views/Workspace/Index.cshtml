@@ -1,18 +1,113 @@
 @model IReadOnlyList<Sugentra.ERP.UI.Models.Layout.MenuNodeDto>
+@{
+    var inventoryStats = ViewBag.InventoryStats as Sugentra.ERP.UI.Models.Inventory.InventoryStats;
+}
 
-<div class="mb-5">
-    <h4 class="mb-1"><i class="icon-base ri @ViewBag.ModuleIcon me-2"></i>@ViewBag.ModuleTitle</h4>
-    <p class="mb-0 text-body-secondary">Select a page to get started.</p>
-</div>
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/apex-charts/apex-charts.css" />
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/apex-charts/apexcharts.js"></script>
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
 
-<div class="d-flex flex-wrap gap-4">
-    @foreach (var item in Model)
+<div class="mb-5 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1"><i class="icon-base ri @ViewBag.ModuleIcon me-2"></i>@ViewBag.ModuleTitle</h4>
+        <p class="mb-0 text-body-secondary">
+            @(inventoryStats is not null ? "Overview of your inventory statistics." : "Select a page to get started.")
+        </p>
+    </div>
+    @if (inventoryStats is not null)
     {
-        <a asp-controller="@item.Controller" asp-action="@item.Action" class="module-tile">
-            <span class="module-tile-box">
-                <i class="icon-base ri @item.Icon module-tile-icon"></i>
-            </span>
-            <p class="module-tile-name">@item.Name</p>
-        </a>
+        <form id="inventoryStatsFilterForm" class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm received-date-group" style="width: 160px;">
+                <input name="dateFrom" type="text" class="form-control form-control-sm received-date-flatpickr"
+                       autocomplete="off" placeholder="From" value="@inventoryStats.DateFrom.ToString("yyyy-MM-dd")" />
+                <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+            </div>
+            <div class="input-group input-group-sm received-date-group" style="width: 160px;">
+                <input name="dateTo" type="text" class="form-control form-control-sm received-date-flatpickr"
+                       autocomplete="off" placeholder="To" value="@inventoryStats.DateTo.ToString("yyyy-MM-dd")" />
+                <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="ri ri-filter-3-line me-1"></i>Filter</button>
+        </form>
     }
 </div>
+
+@if (inventoryStats is not null)
+{
+    <div class="row g-4 mb-4" id="inventoryStatCards">
+        @await Html.PartialAsync("_InventoryStatCards", inventoryStats)
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Document Activity</h5>
+        </div>
+        <div class="card-body">
+            <div id="inventoryActivityChart"></div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            $(function () {
+                initDateGroupPickers('.received-date-flatpickr');
+            });
+
+            var inventoryActivityChart = null;
+
+            function renderInventoryActivityChart(monthlyActivity) {
+                var categories = monthlyActivity.map(function (p) { return p.month; });
+                var series = [];
+                if (monthlyActivity.some(function (p) { return p.goodsReceipts !== null; })) {
+                    series.push({ name: 'Goods Receipts', data: monthlyActivity.map(function (p) { return p.goodsReceipts ?? 0; }) });
+                }
+                if (monthlyActivity.some(function (p) { return p.stockMutations !== null; })) {
+                    series.push({ name: 'Stock Mutations', data: monthlyActivity.map(function (p) { return p.stockMutations ?? 0; }) });
+                }
+                if (monthlyActivity.some(function (p) { return p.stockOpnames !== null; })) {
+                    series.push({ name: 'Stock Opnames', data: monthlyActivity.map(function (p) { return p.stockOpnames ?? 0; }) });
+                }
+                if (monthlyActivity.some(function (p) { return p.quarantineHolds !== null; })) {
+                    series.push({ name: 'Quarantine Holds', data: monthlyActivity.map(function (p) { return p.quarantineHolds ?? 0; }) });
+                }
+
+                var options = {
+                    chart: { type: 'bar', height: 320, toolbar: { show: false } },
+                    plotOptions: { bar: { borderRadius: 4, columnWidth: '45%' } },
+                    dataLabels: { enabled: false },
+                    colors: ['#696cff', '#71dd37', '#ffab00', '#ff3e1d'],
+                    series: series,
+                    xaxis: { categories: categories },
+                    legend: { position: 'top' }
+                };
+
+                if (inventoryActivityChart) {
+                    inventoryActivityChart.destroy();
+                }
+                inventoryActivityChart = new ApexCharts(document.querySelector('#inventoryActivityChart'), options);
+                inventoryActivityChart.render();
+            }
+
+            function fetchAndRenderInventoryStats() {
+                var params = new URLSearchParams(new FormData(document.getElementById('inventoryStatsFilterForm')));
+                return fetch('@Url.Action("GetInventoryStats", "Workspace")?' + params.toString())
+                    .then(function (res) { return res.json(); })
+                    .then(function (stats) { renderInventoryActivityChart(stats.monthlyActivity); });
+            }
+
+            // Route the first paint through the same fetch as a manual filter, so behavior is consistent from the start.
+            fetchAndRenderInventoryStats();
+
+            // Stat cards show current status snapshots (not date-filtered), so the filter only re-renders the chart.
+            document.getElementById('inventoryStatsFilterForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                fetchAndRenderInventoryStats();
+            });
+        </script>
+    }
+}

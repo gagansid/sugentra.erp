@@ -12,10 +12,17 @@
     });
 }
 
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+}
+
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
 
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-6 col-sm-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">@ViewData["Title"]</h5>
@@ -25,20 +32,24 @@
                      style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
                 <form id="quarantineHoldForm" method="post" novalidate>
                     <div class="row g-2 align-items-center">
-                        <label class="col-sm-3 col-form-label col-form-label-sm">Item</label>
-                        <div class="col-sm-9">
-                            <select asp-for="ItemId" class="form-select form-select-sm" required>
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Item</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select name="itemId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%" required data-required-message="Item is required.">
+                                <option value="" selected disabled>-- Select Item --</option>
                                 @foreach (var item in items)
                                 {
                                     <option value="@item.Id">@item.Code - @item.Name</option>
                                 }
                             </select>
+                            <div class="text-danger small line-error"></div>
                         </div>
                     </div>
                     <div class="row g-2 align-items-center">
-                        <label class="col-sm-3 col-form-label col-form-label-sm">Batch (optional)</label>
-                        <div class="col-sm-9">
-                            <select asp-for="BatchId" class="form-select form-select-sm">
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Batch (optional)</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select name="batchId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%">
                                 <option value="">-- None --</option>
                                 @foreach (var batch in batches)
                                 {
@@ -48,52 +59,72 @@
                         </div>
                     </div>
                     <div class="row g-2 align-items-center">
-                        <label class="col-sm-3 col-form-label col-form-label-sm">Warehouse</label>
-                        <div class="col-sm-9">
-                            <select asp-for="WarehouseId" class="form-select form-select-sm" required>
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Warehouse</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select name="warehouseId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%" required data-required-message="Warehouse is required.">
+                                <option value="" selected disabled>-- Select Warehouse --</option>
                                 @foreach (var w in warehouses)
                                 {
                                     <option value="@w.Id">@w.Code - @w.Name</option>
                                 }
                             </select>
+                            <div class="text-danger small line-error"></div>
                         </div>
                     </div>
                     <div class="row g-2 align-items-center">
-                        <label class="col-sm-3 col-form-label col-form-label-sm">Hold Reason</label>
-                        <div class="col-sm-9">
-                            <select asp-for="HoldReason" class="form-select form-select-sm" required>
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Hold Reason</label>
+                        <div class="col-md-8 col-sm-8">
+                            <select name="holdReason" class="selectpicker form-control form-control-sm gr-select" data-style="btn-default"
+                                    data-width="100%" required data-required-message="Hold reason is required.">
                                 <option value="QcFailed">QC Failed</option>
                                 <option value="CustomerReturn">Customer Return</option>
                                 <option value="FumigationPending">Fumigation Pending</option>
                             </select>
+                            <div class="text-danger small line-error"></div>
                         </div>
                     </div>
                     <div class="row g-2 align-items-center">
-                        <label asp-for="Notes" class="col-sm-3 col-form-label col-form-label-sm"></label>
-                        <div class="col-sm-9"><textarea asp-for="Notes" class="form-control form-control-sm"
-                                                            rows="2"></textarea></div>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-footer d-flex justify-content-end gap-2">
-                    <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
-                    <button type="submit" form="quarantineHoldForm"
-                            class="btn btn-primary btn-sm btn-filter-action">Save</button>
-                </div>
+                        <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm">Notes</label>
+                        <div class="col-md-8 col-sm-8"><textarea name="notes" class="form-control form-control-sm" rows="4"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+                <button type="submit" form="quarantineHoldForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
             </div>
         </div>
     </div>
+</div>
 
-    @section Scripts {
-        <script>
-            document.getElementById('quarantineHoldForm').addEventListener('submit', function (event) {
-                var valid = true;
-                this.querySelectorAll('[required]').forEach(function (field) {
-                    var isFieldValid = field.checkValidity();
-                    field.classList.toggle('is-invalid', !isFieldValid);
-                    valid = valid && isFieldValid;
-                });
-                if (!valid) { event.preventDefault(); event.stopPropagation(); }
+@section Scripts {
+    <script>
+        $(function () {
+            initSelectpickers();
+        });
+
+        // Shows the small `data-required-message` text under a required field, or clears it when valid.
+        function setFieldError(field, message) {
+            var errorEl = field.closest('.col-md-8, .col-sm-8')?.querySelector('.line-error');
+            if (errorEl) errorEl.textContent = message || '';
+        }
+
+        $('#quarantineHoldForm').on('change', 'select[required]', function () {
+            if (this.checkValidity()) setFieldError(this, '');
+        });
+
+        document.getElementById('quarantineHoldForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                setFieldError(field, isFieldValid ? '' : field.dataset.requiredMessage);
+                valid = valid && isFieldValid;
             });
-        </script>
-    }
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    </script>
+}

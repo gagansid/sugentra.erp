@@ -75,6 +75,7 @@
                     <table class="table table-sm table-hover">
                         <thead>
                             <tr>
+                                <th class="col-fit">No</th>
                                 <th>Item</th>
                                 <th>Batch</th>
                                 <th class="text-end">System Qty</th>
@@ -84,19 +85,24 @@
                             </tr>
                         </thead>
                         <tbody class="table-border-bottom-0">
+                            @{
+                                var lineNumber = 0;
+                            }
                             @foreach (var line in Model.Lines)
                             {
+                                lineNumber++;
                                 <tr>
+                                    <td class="text-center">@lineNumber</td>
                                     <td>@(items.FirstOrDefault(i => i.Id == line.ItemId)?.Name)</td>
                                     <td>@(batches.FirstOrDefault(b => b.Id == line.BatchId)?.Code)</td>
                                     <td class="text-end">@line.SystemQuantity.ToString("N4")</td>
                                     <td class="text-end">@line.CountedQuantity.ToString("N4")</td>
                                     <td class="text-end @(line.VarianceQuantity != 0 ? "text-danger" : "")">
                                         @line.VarianceQuantity.ToString("N4")</td>
-                                        <td>@line.Notes</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                                    <td>@line.Notes</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                     </div>
                 </div>

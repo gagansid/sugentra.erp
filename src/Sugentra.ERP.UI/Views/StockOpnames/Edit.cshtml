@@ -11,6 +11,15 @@
     });
 }
 
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
 
 <div class="card">
@@ -19,99 +28,218 @@
     </div>
     <div class="card-body">
         <form id="opnameForm" method="post" novalidate>
-            <div class="row g-2 align-items-center">
-                <label class="col-sm-3 col-form-label col-form-label-sm">Opname Date</label>
-                <div class="col-sm-9"><input name="opnameDate" type="date" class="form-control form-control-sm"
-                                                 value="@Model.OpnameDate.ToString("yyyy-MM-dd")" required /></div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Opname Date</label>
+                <div class="col-md-4 col-sm-8">
+                    <div class="input-group input-group-sm received-date-group">
+                        <input name="opnameDate" type="text" class="form-control form-control-sm received-date-flatpickr"
+                               autocomplete="off" value="@Model.OpnameDate.ToString("yyyy-MM-dd")"
+                               required data-required-message="Opname date is required." />
+                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                    </div>
+                    <div class="text-danger small line-error"></div>
                 </div>
-                <div class="row g-2 align-items-center">
-                    <label class="col-sm-3 col-form-label col-form-label-sm">Notes</label>
-                    <div class="col-sm-9"><textarea name="notes" class="form-control form-control-sm"
-                                                        rows="2">@Model.Notes</textarea></div>
-                    </div>
+            </div>
+            <div class="row g-2 mb-3">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Notes</label>
+                <div class="col-md-4 col-sm-8"><textarea name="notes" class="form-control form-control-sm" rows="4">@Model.Notes</textarea></div>
+            </div>
 
-                    <h6 class="mb-3">Lines</h6>
-                    <div id="lines">
-                        @foreach (var line in Model.Lines)
-                        {
-                            <div class="row g-2 mb-2 line-row">
-                                <div class="col-md-3">
-                                    <select name="itemId" class="form-select form-select-sm">
-                                        @foreach (var item in items)
-                                        {
-                                            <option value="@item.Id" selected="@(item.Id == line.ItemId ? "selected" : null)">@item.Code
-                                                - @item.Name</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <select name="batchId" class="form-select form-select-sm">
-                                            <option value="">-- No Batch --</option>
-                                            @foreach (var batch in batches)
-                                            {
-                                                <option value="@batch.Id" selected="@(batch.Id == line.BatchId ? "selected" : null)">
-                                                    @batch.Code</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input name="systemQuantity" type="number" step="0.0001" class="form-control form-control-sm"
-                                                   value="@line.SystemQuantity" required />
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input name="countedQuantity" type="number" step="0.0001" class="form-control form-control-sm"
-                                                   value="@line.CountedQuantity" required />
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input name="lineNotes" class="form-control form-control-sm" value="@line.Notes"
-                                                   placeholder="Notes" />
-                                        </div>
-                                        <div class="col-md-1 d-flex align-items-center">
-                                            <button type="button" class="btn btn-icon btn-text-danger remove-line" data-bs-toggle="tooltip"
-                                                    title="Remove">
-                                                <i class="ri ri-delete-bin-line icon-14px"></i></button>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                                <button type="button" id="addLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Line</button>
-                            </form>
-                        </div>
-                        <div class="card-footer d-flex justify-content-end gap-2">
-                            <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
-                            <button type="submit" form="opnameForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
-                        </div>
-                    </div>
-
-                    @section Scripts {
-                        <script>
-                            document.getElementById('addLine').addEventListener('click', function () {
-                                var lines = document.getElementById('lines');
-                                var clone = lines.firstElementChild.cloneNode(true);
-                                clone.querySelectorAll('input').forEach(function (i) { i.value = ''; });
-                                lines.appendChild(clone);
-                            });
-
-                            document.getElementById('lines').addEventListener('click', function (e) {
-                                var btn = e.target.closest('.remove-line');
-                                if (!btn) return;
-                                var lines = document.getElementById('lines');
-                                var row = btn.closest('.line-row');
-                                if (lines.children.length > 1) {
-                                    row.remove();
-                                } else {
-                                    row.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+            <h6 class="mb-3">Lines</h6>
+            <div class="row g-2 mb-1">
+                <label class="col-md-2 form-label mb-0 small">Batch</label>
+                <label class="col-md-3 form-label mb-0 small required-label">Item</label>
+                <label class="col-md-2 form-label mb-0 small required-label">System Qty</label>
+                <label class="col-md-2 form-label mb-0 small required-label">Counted Qty</label>
+                <label class="col-md-3 form-label mb-0 small">Notes</label>
+            </div>
+            <div id="lines">
+                @foreach (var line in Model.Lines)
+                {
+                    <div class="row g-2 mb-2 line-row">
+                        <div class="col-md-2">
+                            <select name="batchId" class="selectpicker form-control form-control-sm gr-select batch-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%">
+                                <option value="">-- No Batch --</option>
+                                @foreach (var batch in batches)
+                                {
+                                    <option value="@batch.Id" data-item-id="@batch.ItemId" selected="@(batch.Id == line.BatchId ? "selected" : null)">@batch.Code</option>
                                 }
-                            });
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="selectpicker form-control form-control-sm gr-select item-select" data-live-search="true"
+                                    data-style="btn-default" data-width="100%" disabled="@(line.BatchId != null ? "disabled" : null)">
+                                <option value="">-- Select Item --</option>
+                                @foreach (var item in items)
+                                {
+                                    <option value="@item.Id" selected="@(item.Id == line.ItemId ? "selected" : null)">@item.Code - @item.Name</option>
+                                }
+                            </select>
+                            <input type="hidden" name="itemId" class="item-hidden" value="@line.ItemId" />
+                            <div class="text-danger small line-error item-error"></div>
+                        </div>
+                        <div class="col-md-2">
+                            <input name="systemQuantity" type="number" step="0.0001" class="form-control form-control-sm"
+                                   value="@line.SystemQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                   required data-required-message="Required." />
+                            <div class="text-danger small line-error"></div>
+                        </div>
+                        <div class="col-md-2">
+                            <input name="countedQuantity" type="number" step="0.0001" class="form-control form-control-sm"
+                                   value="@line.CountedQuantity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                   required data-required-message="Required." />
+                            <div class="text-danger small line-error"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm unit-cost-group">
+                                <input name="lineNotes" class="form-control form-control-sm" value="@line.Notes" placeholder="Notes" />
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-line" data-bs-toggle="tooltip"
+                                        title="Remove">
+                                    <i class="ri ri-delete-bin-line icon-14px"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button type="button" id="addLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Line</button>
+        </form>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+        <button type="submit" form="opnameForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+    </div>
+</div>
 
-                            document.getElementById('opnameForm').addEventListener('submit', function (event) {
-                                var valid = true;
-                                this.querySelectorAll('[required]').forEach(function (field) {
-                                    var isFieldValid = field.checkValidity();
-                                    field.classList.toggle('is-invalid', !isFieldValid);
-                                    valid = valid && isFieldValid;
-                                });
-                                if (!valid) { event.preventDefault(); event.stopPropagation(); }
-                            });
-                        </script>
-                    }
+@section Scripts {
+    <script>
+        // Self-heals against double-wrapping the same <select> (bootstrap-select always
+        // wraps on init) so re-initializing a clone doesn't create a duplicated menu.
+        function initSelectPickers($scope) {
+            $scope.find('select.gr-select').each(function () {
+                var $select = $(this);
+                if ($select.closest('.bootstrap-select').length) {
+                    $select.selectpicker('destroy');
+                }
+                $select.selectpicker();
+            });
+        }
+
+        // selectpicker('refresh') duplicates the rendered title text in this bootstrap-select build,
+        // so re-render by destroying and re-initializing the widget instead.
+        function rerenderSelectPicker($select) {
+            $select.selectpicker('destroy');
+            $select.selectpicker();
+        }
+
+        $(function () {
+            initSelectPickers($(document));
+            initDateGroupPickers('.received-date-flatpickr');
+        });
+
+        // Shows the small `data-required-message` text under a required field, or clears it when valid.
+        function setFieldError(field, message) {
+            var errorEl = field.closest('.col-md-2, .col-md-3, .col-md-4, .col-sm-8')?.querySelector('.line-error');
+            if (errorEl) errorEl.textContent = message || '';
+        }
+
+        function syncItemFromBatch(row) {
+            var batchSelect = row.querySelector('select.batch-select');
+            var itemSelect = row.querySelector('select.item-select');
+            var itemHidden = row.querySelector('.item-hidden');
+            var selectedOption = batchSelect.options[batchSelect.selectedIndex];
+            var itemId = selectedOption ? (selectedOption.getAttribute('data-item-id') || '') : '';
+            if (itemId) {
+                // Batch has a known item — lock the Item picker to it, no manual override.
+                $(itemSelect).val(itemId);
+                itemSelect.disabled = true;
+                rerenderSelectPicker($(itemSelect));
+                itemHidden.value = itemId;
+                var itemErrorEl = row.querySelector('.item-error');
+                if (itemErrorEl) itemErrorEl.textContent = '';
+            } else {
+                // No batch selected — let the user pick the Item manually.
+                itemSelect.disabled = false;
+                rerenderSelectPicker($(itemSelect));
+                itemHidden.value = itemSelect.value || '';
+            }
+        }
+
+        document.getElementById('addLine').addEventListener('click', function () {
+            var lines = document.getElementById('lines');
+            var clone = lines.firstElementChild.cloneNode(true);
+            // cloneNode copies the rendered bootstrap-select wrapper markup, not the jQuery plugin
+            // instance — drop it and any ids before re-initializing to avoid cross-wired toggles.
+            clone.querySelectorAll('.bootstrap-select').forEach(function (wrapper) {
+                wrapper.replaceWith(wrapper.querySelector('select'));
+            });
+            clone.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+            clone.querySelectorAll('input:not(.item-hidden)').forEach(function (i) { i.value = ''; });
+            clone.querySelector('.item-hidden').value = '';
+            clone.querySelector('select.batch-select').value = '';
+            var clonedItemSelect = clone.querySelector('select.item-select');
+            clonedItemSelect.value = '';
+            clonedItemSelect.disabled = false;
+            clone.querySelectorAll('.line-error').forEach(function (el) { el.textContent = ''; });
+            lines.appendChild(clone);
+            initSelectPickers($(clone));
+        });
+
+        $('#lines').on('change', '.batch-select', function (e) {
+            syncItemFromBatch(e.target.closest('.line-row'));
+        });
+
+        $('#lines').on('change', '.item-select', function (e) {
+            var row = e.target.closest('.line-row');
+            var itemHidden = row.querySelector('.item-hidden');
+            itemHidden.value = e.target.value || '';
+            if (itemHidden.value) {
+                var itemErrorEl = row.querySelector('.item-error');
+                if (itemErrorEl) itemErrorEl.textContent = '';
+            }
+        });
+
+        document.getElementById('lines').addEventListener('click', function (e) {
+            var btn = e.target.closest('.remove-line');
+            if (!btn) return;
+            var lines = document.getElementById('lines');
+            var row = btn.closest('.line-row');
+            if (lines.children.length > 1) {
+                row.remove();
+            } else {
+                row.querySelectorAll('input:not(.item-hidden)').forEach(function (i) { i.value = ''; });
+                row.querySelector('.item-hidden').value = '';
+                row.querySelector('select.batch-select').value = '';
+                var rowItemSelect = row.querySelector('select.item-select');
+                rowItemSelect.value = '';
+                rowItemSelect.disabled = false;
+                initSelectPickers($(row));
+                row.querySelectorAll('.line-error').forEach(function (el) { el.textContent = ''; });
+            }
+        });
+
+        $('#opnameForm').on('change input', 'select.gr-select, input[required]', function () {
+            if (this.checkValidity()) setFieldError(this, '');
+        });
+
+        document.getElementById('opnameForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                setFieldError(field, isFieldValid ? '' : field.dataset.requiredMessage);
+                valid = valid && isFieldValid;
+            });
+            document.querySelectorAll('.item-hidden').forEach(function (hidden) {
+                var isValid = !!hidden.value;
+                var itemErrorEl = hidden.closest('.line-row').querySelector('.item-error');
+                if (itemErrorEl) itemErrorEl.textContent = isValid ? '' : 'Item is required.';
+                valid = valid && isValid;
+            });
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    </script>
+}

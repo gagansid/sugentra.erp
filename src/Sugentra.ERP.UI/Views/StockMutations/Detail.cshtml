@@ -87,15 +87,21 @@
                     <table class="table table-sm table-hover">
                         <thead>
                             <tr>
+                                <th class="col-fit">No</th>
                                 <th>Item</th>
                                 <th>Batch</th>
                                 <th class="text-end">Quantity</th>
                             </tr>
                         </thead>
                         <tbody class="table-border-bottom-0">
+                            @{
+                                var lineNumber = 0;
+                            }
                             @foreach (var line in Model.Lines)
                             {
+                                lineNumber++;
                                 <tr>
+                                    <td class="text-center">@lineNumber</td>
                                     <td>@(items.FirstOrDefault(i => i.Id == line.ItemId)?.Name)</td>
                                     <td>@(batches.FirstOrDefault(b => b.Id == line.BatchId)?.Code)</td>
                                     <td class="text-end">@line.Quantity.ToString("N4")</td>

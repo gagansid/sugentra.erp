@@ -55,6 +55,7 @@ builder.Services.AddScoped<BatchApiService>();
 builder.Services.AddScoped<GoodsReceiptApiService>();
 builder.Services.AddScoped<LandedCostAllocationApiService>();
 builder.Services.AddScoped<QuarantineHoldApiService>();
+builder.Services.AddScoped<InventoryStatsApiService>();
 builder.Services.AddScoped<StockBalanceApiService>();
 builder.Services.AddScoped<StockLedgerApiService>();
 builder.Services.AddScoped<StockMutationApiService>();

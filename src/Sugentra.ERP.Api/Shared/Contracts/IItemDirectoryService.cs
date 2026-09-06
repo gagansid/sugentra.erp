@@ -6,4 +6,6 @@ namespace Sugentra.ERP.Api.Shared.Contracts;
 public interface IItemDirectoryService
 {
     Task<long?> GetUnitOfMeasurementIdAsync(long itemId);
+
+    Task<int> GetActiveCountAsync();
 }

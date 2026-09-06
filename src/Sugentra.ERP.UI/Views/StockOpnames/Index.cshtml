@@ -61,15 +61,21 @@
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label mb-1 small">Date From</label>
-                                    <input name="dateFrom" type="text" class="form-control form-control-sm stock-opname-date-flatpickr"
-                                           autocomplete="off"
-                                           value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateFrom" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label mb-1 small">Date To</label>
-                                    <input name="dateTo" type="text" class="form-control form-control-sm stock-opname-date-flatpickr"
-                                           autocomplete="off"
-                                           value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateTo" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label mb-1 small">Status</label>
@@ -193,8 +199,6 @@
                 }
 
                 document.addEventListener('DOMContentLoaded', function () {
-                    document.querySelectorAll('.stock-opname-date-flatpickr').forEach(function (input) {
-                        flatpickr(input, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
-                    });
+                    initDateGroupPickers('.received-date-flatpickr');
                 });
             </script>
