@@ -24,6 +24,10 @@ public static class InventoryModuleExtensions
             sp.GetRequiredService<GenericRepository<LandedCostAllocation>>(), sp.GetRequiredService<Shared.Logging.IAuditLogService>(),
             sp.GetRequiredService<Shared.Auth.ICurrentUserService>(), "Inventory_LandedCostAllocations"));
 
+        services.AddScoped<GenericRepository<LandedCostDocument>>();
+        services.AddScoped<ILandedCostDocumentLineRepository, LandedCostDocumentLineRepository>();
+        services.AddScoped<LandedCostDocumentUseCase>();
+
         services.AddScoped<GenericRepository<QuarantineHold>>();
         services.AddScoped(sp => new CrudUseCase<QuarantineHold>(
             sp.GetRequiredService<GenericRepository<QuarantineHold>>(), sp.GetRequiredService<Shared.Logging.IAuditLogService>(),

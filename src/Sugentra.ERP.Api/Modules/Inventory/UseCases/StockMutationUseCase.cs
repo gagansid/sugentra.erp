@@ -18,6 +18,7 @@ public class StockMutationUseCase(
     IDocumentNumberGeneratorService documentNumberGeneratorService,
     IApprovalService approvalService,
     IUserDirectoryService userDirectoryService,
+    IWarehouseDirectoryService warehouseDirectoryService,
     IAuditLogService auditLogService,
     ICurrentUserService currentUserService)
 {
@@ -109,6 +110,12 @@ public class StockMutationUseCase(
             return Result<StockMutationResponse>.Failure("Only Draft mutations can be posted.");
         }
 
+        var warehouseTypeError = await ValidateWarehouseTypesAsync(mutation);
+        if (warehouseTypeError is not null)
+        {
+            return Result<StockMutationResponse>.Failure(warehouseTypeError);
+        }
+
         // FromVendor mutations bring stock in from an external, unlimited source — no balance check needed.
         if (mutation.MutationType != "FromVendor")
         {
@@ -192,6 +199,44 @@ public class StockMutationUseCase(
         await auditLogService.LogAsync("Inventory_StockMutations", mutation.Id, "Completed", oldValues, JsonSerializer.Serialize(response), currentUserService.UserId);
 
         return Result<StockMutationResponse>.Success(response);
+    }
+
+    // Ensures each warehouse in the mutation matches the WarehouseType its MutationType expects
+    // (Quarantine-type warehouses must go through the QuarantineHold release flow, not a plain transfer).
+    private async Task<string?> ValidateWarehouseTypesAsync(StockMutation mutation)
+    {
+        var sourceType = await warehouseDirectoryService.GetWarehouseTypeAsync(mutation.SourceWarehouseId);
+        var destinationType = mutation.DestinationWarehouseId is long destinationId
+            ? await warehouseDirectoryService.GetWarehouseTypeAsync(destinationId)
+            : null;
+
+        switch (mutation.MutationType)
+        {
+            case "Internal":
+                if (sourceType == "Quarantine" || destinationType == "Quarantine")
+                {
+                    return "Quarantine warehouses cannot be used in an Internal stock mutation — release the quarantine hold first.";
+                }
+                if (sourceType == "Vendor" || destinationType == "Vendor")
+                {
+                    return "Vendor warehouses can only be used with ToVendor/FromVendor mutation types.";
+                }
+                break;
+            case "ToVendor":
+                if (destinationType != "Vendor")
+                {
+                    return "ToVendor mutations must target a warehouse of type Vendor.";
+                }
+                break;
+            case "FromVendor":
+                if (sourceType != "Vendor")
+                {
+                    return "FromVendor mutations must originate from a warehouse of type Vendor.";
+                }
+                break;
+        }
+
+        return null;
     }
 
     // Ensures the source warehouse actually holds enough stock before it's decremented on completion.

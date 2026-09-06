@@ -7,6 +7,7 @@ using Sugentra.ERP.UI.Services.Settings;
 
 namespace Sugentra.ERP.UI.Controllers.Inventory;
 
+// Read-only: allocations are now computed by posting a LandedCostDocument (see LandedCostDocumentsController).
 [Authorize(Policy = "Batch_View")]
 public class LandedCostAllocationsController(LandedCostAllocationApiService service, BatchApiService batchService, CurrencyApiService currencyService) : Controller
 {
@@ -51,69 +52,5 @@ public class LandedCostAllocationsController(LandedCostAllocationApiService serv
             TotalCount = all.Count
         });
     }
-
-    [Authorize(Policy = "Batch_Create")]
-    public async Task<IActionResult> Create()
-    {
-        await PopulateLookupsAsync();
-        return View(new LandedCostAllocation());
-    }
-
-    [HttpPost]
-    [Authorize(Policy = "Batch_Create")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(LandedCostAllocation model)
-    {
-        var result = await service.CreateAsync(model);
-        if (!result.Success)
-        {
-            ModelState.AddModelError(string.Empty, result.Message ?? "Failed to create landed cost allocation.");
-            await PopulateLookupsAsync();
-            return View(model);
-        }
-
-        TempData["SuccessMessage"] = result.Message ?? "Landed cost allocation created successfully.";
-        return RedirectToAction(nameof(Index));
-    }
-
-    [Authorize(Policy = "Batch_Edit")]
-    public async Task<IActionResult> Edit(long id)
-    {
-        var result = await service.GetByIdAsync(id);
-        if (!result.Success || result.Data is null)
-        {
-            TempData["ErrorMessage"] = result.Message ?? "Landed cost allocation not found.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        await PopulateLookupsAsync();
-        return View(result.Data);
-    }
-
-    [HttpPost]
-    [Authorize(Policy = "Batch_Edit")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(long id, LandedCostAllocation model)
-    {
-        var result = await service.UpdateAsync(id, model);
-        if (!result.Success)
-        {
-            ModelState.AddModelError(string.Empty, result.Message ?? "Failed to update landed cost allocation.");
-            await PopulateLookupsAsync();
-            return View(model);
-        }
-
-        TempData["SuccessMessage"] = result.Message ?? "Landed cost allocation updated successfully.";
-        return RedirectToAction(nameof(Index));
-    }
-
-    [Authorize(Policy = "Batch_Delete")]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(long id)
-    {
-        var result = await service.DeleteAsync(id);
-        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
-        return RedirectToAction(nameof(Index));
-    }
 }
+

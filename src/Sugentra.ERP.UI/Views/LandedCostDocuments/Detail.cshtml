@@ -1,0 +1,138 @@
+@model Sugentra.ERP.UI.Models.Inventory.LandedCostDocumentResponse
+@{
+    ViewData["Title"] = "Landed Cost Document Detail";
+    var receipts = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.GoodsReceiptResponse>)ViewBag.GoodsReceipts;
+    var currencies = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Currency>)ViewBag.Currencies;
+    var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-coin-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Landed Cost Documents", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.DocumentNumber, null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Landed Cost Document Detail</h5>
+        <div class="d-flex gap-2">
+            @if (Model.Status == "Draft" && User.HasPermission("Batch_Edit"))
+            {
+                <form method="post" asp-action="Post" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="ri ri-check-double-line me-1"></i>Post</button>
+                </form>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="mb-5">
+            <h6>Information</h6>
+            <table class="table table-borderless table-hover detail-info-table">
+                <tbody>
+                    <tr>
+                        <td class="fw-medium">Document Number</td>
+                        <td class="fw-bold">@Model.DocumentNumber</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Status</td>
+                        <td><span class="badge bg-label-@(Model.Status == "Posted" ? "primary" : "secondary")">@Model.Status</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Goods Receipt</td>
+                        <td>@(receipts.FirstOrDefault(r => r.Id == Model.GoodsReceiptId)?.ReceiptNumber)</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Allocation Method</td>
+                        <td>@Model.AllocationMethod</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Notes</td>
+                        <td>@Model.Notes</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Created At</td>
+                        <td>@Model.CreatedAt.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-5">
+            <h6>Cost Lines</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Cost Type</th>
+                            <th class="text-end">Amount</th>
+                            <th>Currency</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var lineNumber = 0;
+                        }
+                        @foreach (var line in Model.Lines)
+                        {
+                            lineNumber++;
+                            <tr>
+                                <td>@lineNumber</td>
+                                <td>@line.CostType</td>
+                                <td class="text-end">@line.Amount.ToString("N2")</td>
+                                <td>@(currencies.FirstOrDefault(c => c.Id == line.CurrencyId)?.Code)</td>
+                                <td>@line.Notes</td>
+                            </tr>
+                        }
+                        @if (Model.Lines.Count == 0)
+                        {
+                            <tr><td colspan="5" class="text-muted text-center">No cost lines.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (Model.Status == "Posted")
+        {
+            <div class="mb-5">
+                <h6>Allocation Results</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th class="col-fit">No</th>
+                                <th>Batch</th>
+                                <th class="text-end">Allocated Amount</th>
+                                <th>Currency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var allocationNumber = 0;
+                            }
+                            @foreach (var allocation in Model.Allocations)
+                            {
+                                allocationNumber++;
+                                <tr>
+                                    <td>@allocationNumber</td>
+                                    <td>@(batches.FirstOrDefault(b => b.Id == allocation.BatchId)?.Code)</td>
+                                    <td class="text-end">@allocation.Amount.ToString("N2")</td>
+                                    <td>@(currencies.FirstOrDefault(c => c.Id == allocation.CurrencyId)?.Code)</td>
+                                </tr>
+                            }
+                            @if (Model.Allocations.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-muted text-center">No allocations recorded.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -4,13 +4,11 @@ using Sugentra.ERP.Api.Shared.Common;
 
 namespace Sugentra.ERP.Api.Modules.Inventory.Entities;
 
-[Table("Inventory_LandedCostAllocations")]
-public class LandedCostAllocation : BaseAuditableEntity
+[Table("Inventory_LandedCostDocumentLines")]
+public class LandedCostDocumentLine : BaseAuditableEntity
 {
     [Required]
-    public long BatchId { get; set; }
-    // Set when auto-computed by LandedCostDocumentUseCase.PostAsync; null for legacy manually-entered rows.
-    public long? LandedCostDocumentId { get; set; }
+    public long LandedCostDocumentId { get; set; }
     [Required, StringLength(20)]
     public string CostType { get; set; } = string.Empty; // Freight | Insurance | Handling | Duty | Other
     public decimal Amount { get; set; }

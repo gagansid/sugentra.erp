@@ -22,6 +22,7 @@ public static class SettingsModuleExtensions
         services.AddScoped(sp => new CrudUseCase<Warehouse>(
             sp.GetRequiredService<GenericRepository<Warehouse>>(), sp.GetRequiredService<Shared.Logging.IAuditLogService>(),
             sp.GetRequiredService<Shared.Auth.ICurrentUserService>(), "Setting_Warehouses"));
+        services.AddScoped<IWarehouseDirectoryService, WarehouseDirectoryService>();
 
         services.AddScoped<GenericRepository<Currency>>();
         services.AddScoped(sp => new CrudUseCase<Currency>(

@@ -9,7 +9,7 @@ namespace Sugentra.ERP.UI.Controllers.Settings;
 [Authorize(Policy = "Warehouse_View")]
 public class WarehousesController(WarehouseApiService service) : Controller
 {
-    public async Task<IActionResult> Index(string? keyword = null, int page = 1, int pageSize = 10, bool? isActive = null)
+    public async Task<IActionResult> Index(string? keyword = null, int page = 1, int pageSize = 10, bool? isActive = null, string? warehouseType = null)
     {
         var result = await service.GetAllAsync();
         if (!result.Success)
@@ -32,9 +32,14 @@ public class WarehousesController(WarehouseApiService service) : Controller
         {
             all = all.Where(w => w.IsActive == isActive.Value).ToList();
         }
+        if (!string.IsNullOrWhiteSpace(warehouseType))
+        {
+            all = all.Where(w => w.WarehouseType == warehouseType).ToList();
+        }
 
         ViewBag.Keyword = keyword;
         ViewBag.IsActive = isActive;
+        ViewBag.WarehouseType = warehouseType;
         return View(new PagedResult<Warehouse>
         {
             Items = all.Skip((page - 1) * pageSize).Take(pageSize).ToList(),

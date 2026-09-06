@@ -72,7 +72,7 @@
             </div>
             @if (User.HasPermission("Batch_Create"))
             {
-                <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add New</a>
+                <a asp-controller="LandedCostDocuments" asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>New Landed Cost Document</a>
             }
         </form>
     </div>
@@ -86,14 +86,13 @@
                     <th>Amount</th>
                     <th>Currency</th>
                     <th>Notes</th>
-                    <th class="text-center" style="width: 110px;">Actions</th>
                 </tr>
             </thead>
             <tbody class="table-border-bottom-0">
                 @if (Model.Items.Count == 0)
                 {
                     <tr>
-                        <td colspan="7" class="text-muted text-center">No landed cost allocations recorded.</td>
+                        <td colspan="6" class="text-muted text-center">No landed cost allocations recorded.</td>
                     </tr>
                 }
                 else
@@ -109,23 +108,6 @@
                             <td>@allocation.Amount.ToString("N2")</td>
                             <td>@(currencies.FirstOrDefault(c => c.Id == allocation.CurrencyId)?.Code)</td>
                             <td>@allocation.Notes</td>
-                            <td>
-                                <div class="d-flex gap-2 justify-content-center">
-                                    @if (User.HasPermission("Batch_Edit"))
-                                    {
-                                        <a asp-action="Edit" asp-route-id="@allocation.Id" class="btn btn-icon btn-text-secondary"
-                                           data-bs-toggle="tooltip" title="Edit"><i class="ri ri-edit-line icon-14px"></i></a>
-                                    }
-                                    @if (User.HasPermission("Batch_Delete"))
-                                    {
-                                        <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
-                                                title="Delete" onclick="confirmDelete(this)"
-                                                data-name="@allocation.CostType"
-                                                data-delete-url="@Url.Action("Delete", new { id = allocation.Id })"><i
-                                            class="ri ri-delete-bin-line icon-14px"></i></button>
-                                    }
-                                </div>
-                            </td>
                         </tr>
                     }
                 }
@@ -135,4 +117,3 @@
     @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
 </div>
 
-@await Html.PartialAsync("_DeleteConfirmModal", "Landed Cost Allocation")

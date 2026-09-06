@@ -10,7 +10,26 @@ public class BatchApiService(ApiClient apiClient) : CrudApiService<Batch>(apiCli
     public Task<ApiResult<InventoryAdjacentDto>> GetAdjacentAsync(long id) => ApiClient.GetAsync<InventoryAdjacentDto>($"api/inventory/batches/{id}/adjacent");
 }
 
-public class LandedCostAllocationApiService(ApiClient apiClient) : CrudApiService<LandedCostAllocation>(apiClient, "api/inventory/landed-cost-allocations");
+/// <summary>Read-only: allocations are now computed by posting a LandedCostDocument, never entered manually.</summary>
+public class LandedCostAllocationApiService(ApiClient apiClient)
+{
+    public Task<ApiResult<IReadOnlyList<LandedCostAllocation>>> GetAllAsync() => apiClient.GetAsync<IReadOnlyList<LandedCostAllocation>>("api/inventory/landed-cost-allocations");
+
+    public Task<ApiResult<LandedCostAllocation>> GetByIdAsync(long id) => apiClient.GetAsync<LandedCostAllocation>($"api/inventory/landed-cost-allocations/{id}");
+}
+
+public class LandedCostDocumentApiService(ApiClient apiClient)
+{
+    private const string BaseRoute = "api/inventory/landed-cost-documents";
+
+    public Task<ApiResult<IReadOnlyList<LandedCostDocumentResponse>>> GetAllAsync() => apiClient.GetAsync<IReadOnlyList<LandedCostDocumentResponse>>(BaseRoute);
+
+    public Task<ApiResult<LandedCostDocumentResponse>> GetByIdAsync(long id) => apiClient.GetAsync<LandedCostDocumentResponse>($"{BaseRoute}/{id}");
+
+    public Task<ApiResult<LandedCostDocumentResponse>> CreateAsync(CreateLandedCostDocumentRequest request) => apiClient.PostAsync<LandedCostDocumentResponse>(BaseRoute, request);
+
+    public Task<ApiResult<LandedCostDocumentResponse>> PostDocumentAsync(long id) => apiClient.PostAsync<LandedCostDocumentResponse>($"{BaseRoute}/{id}/post", new { });
+}
 
 public class GoodsReceiptApiService(ApiClient apiClient)
 {
