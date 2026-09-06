@@ -16,40 +16,43 @@
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Batch @Model.Code</h5>
+        <h5 class="mb-0">Batch Detail</h5>
     </div>
     <div class="card-body">
-            <table class="table table-borderless table-hover mb-0 detail-info-table">
+        <div class="mb-5">
+            <h6>Information</h6>
+            <table class="table table-borderless table-hover detail-info-table">
                 <tbody>
                     <tr>
-                        <td>Code</td>
+                        <td class="fw-medium">Code</td>
                         <td class="fw-bold">@Model.Code</td>
                     </tr>
                     <tr>
-                        <td>Item</td>
+                        <td class="fw-medium">Item</td>
                         <td>@(items.FirstOrDefault(i => i.Id == Model.ItemId)?.Name)</td>
                     </tr>
                     <tr>
-                        <td>Grade</td>
+                        <td class="fw-medium">Grade</td>
                         <td>@Model.Grade</td>
                     </tr>
                     <tr>
-                        <td>Warehouse</td>
+                        <td class="fw-medium">Warehouse</td>
                         <td>@(warehouses.FirstOrDefault(w => w.Id == Model.WarehouseId)?.Name)</td>
                     </tr>
                     <tr>
-                        <td>Received Date</td>
+                        <td class="fw-medium">Received Date</td>
                         <td>@Model.ReceivedDate.ToString("dd MMM yyyy")</td>
                     </tr>
                     <tr>
-                        <td>Legality Document</td>
+                        <td class="fw-medium">Legality Document</td>
                         <td>@Model.LegalityDocumentType @Model.LegalityDocumentNumber</td>
                     </tr>
                     <tr>
-                        <td>Source Reference</td>
+                        <td class="fw-medium">Source Reference</td>
                         <td>@Model.SourceReference</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+</div>
