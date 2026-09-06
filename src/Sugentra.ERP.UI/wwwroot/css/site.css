@@ -290,6 +290,17 @@ span.text-danger.small,
     padding-block: 0.4415rem !important;
 }
 
+.line-notes-group .form-control {
+    border-start-end-radius: 0 !important;
+    border-end-end-radius: 0 !important;
+}
+
+.line-notes-group .remove-line {
+    border-start-start-radius: 0 !important;
+    border-end-start-radius: 0 !important;
+    padding-block: 0.4415rem !important;
+}
+
 .btn-filter-action {
     width: 90px !important;
     flex-shrink: 0;
