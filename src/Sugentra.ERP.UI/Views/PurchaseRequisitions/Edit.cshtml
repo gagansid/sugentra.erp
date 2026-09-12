@@ -1,0 +1,177 @@
+@model Sugentra.ERP.UI.Models.Procurement.PurchaseRequisitionResponse
+@{
+    ViewData["Title"] = "Edit Purchase Requisition";
+    var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-file-list-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Procurement", Url.Action("Index", "Workspace", new { id = "Procurement" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Purchase Requisitions", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Edit", null)
+    });
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/bootstrap-select/bootstrap-select.css" />
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/bootstrap-select/bootstrap-select.js"></script>
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">@ViewData["Title"]</h5>
+    </div>
+    <div class="card-body">
+        <form id="requisitionForm" method="post" novalidate>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Warehouse</label>
+                <div class="col-md-4 col-sm-8">
+                    <select name="warehouseId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                            data-style="btn-default" data-width="100%" required data-required-message="Warehouse is required.">
+                        <option value="" disabled>-- Select Warehouse --</option>
+                        @foreach (var w in warehouses)
+                        {
+                            <option value="@w.Id" selected="@(w.Id == Model.WarehouseId ? "selected" : null)">@w.Code - @w.Name</option>
+                        }
+                    </select>
+                    <div class="text-danger small line-error"></div>
+                </div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Requisition Date</label>
+                <div class="col-md-4 col-sm-8">
+                    <div class="input-group input-group-sm received-date-group">
+                        <input name="requisitionDate" type="text"
+                               class="form-control form-control-sm received-date-flatpickr"
+                               autocomplete="off" value="@Model.RequisitionDate.ToString("yyyy-MM-dd")"
+                               required data-required-message="Requisition date is required." />
+                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                    </div>
+                    <div class="text-danger small line-error"></div>
+                </div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Notes</label>
+                <div class="col-md-4 col-sm-8"><textarea name="notes" class="form-control form-control-sm" rows="4">@Model.Notes</textarea></div>
+            </div>
+
+            <h6 class="mb-3">Lines</h6>
+            <div class="row g-2 mb-1">
+                <label class="col-md-4 form-label mb-0 small required-label">Item</label>
+                <label class="col-md-3 form-label mb-0 small required-label">Quantity</label>
+                <label class="col-md-5 form-label mb-0 small">Notes</label>
+            </div>
+            <div id="lines">
+                @foreach (var line in Model.Lines)
+                {
+                    <div class="row g-2 mb-2 line-row">
+                        <div class="col-md-4">
+                            <select name="itemId" class="selectpicker form-control form-control-sm gr-select item-select"
+                                    data-live-search="true" data-style="btn-default" data-width="100%" required
+                                    data-required-message="Item is required.">
+                                <option value="" disabled>-- Select Item --</option>
+                                @foreach (var item in items)
+                                {
+                                    <option value="@item.Id" selected="@(item.Id == line.ItemId ? "selected" : null)">@item.Code - @item.Name</option>
+                                }
+                            </select>
+                            <div class="text-danger small line-error"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <input name="quantity" type="number" step="0.01" class="form-control form-control-sm"
+                                   value="@line.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)" placeholder="Qty" required data-required-message="Quantity is required." />
+                            <div class="text-danger small line-error"></div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="input-group input-group-sm has-validation pr-line-group">
+                                <input name="lineNotes" class="form-control form-control-sm" value="@line.Notes" placeholder="Notes" />
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-line" data-bs-toggle="tooltip"
+                                        title="Remove">
+                                    <i class="ri ri-delete-bin-line icon-14px"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button type="button" id="addLine" class="btn btn-sm btn-outline-primary mb-4">+ Add Line</button>
+        </form>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-label-dark waves-effect btn-sm btn-filter-action">Cancel</a>
+        <button type="submit" form="requisitionForm" class="btn btn-primary btn-sm btn-filter-action">Save</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function initSelectPickers($scope) {
+            $scope.find('select.gr-select').each(function () {
+                var $select = $(this);
+                if ($select.closest('.bootstrap-select').length) {
+                    $select.selectpicker('destroy');
+                }
+                $select.selectpicker();
+            });
+        }
+
+        $(function () {
+            initSelectPickers($(document));
+            $('.received-date-flatpickr').each(function () {
+                var picker = flatpickr(this, { dateFormat: 'Y-m-d', allowInput: true, appendTo: document.body });
+                $(this).closest('.received-date-group').find('.received-date-toggle').on('click', function () {
+                    picker.open();
+                });
+            });
+        });
+
+        function setFieldError(field, message) {
+            var errorEl = field.closest('.col-md-3, .col-md-4, .col-md-5, .col-sm-8')?.querySelector('.line-error');
+            if (errorEl) errorEl.textContent = message || '';
+        }
+
+        document.getElementById('addLine').addEventListener('click', function () {
+            var lines = document.getElementById('lines');
+            var clone = lines.firstElementChild.cloneNode(true);
+            clone.querySelectorAll('.bootstrap-select').forEach(function (wrapper) {
+                wrapper.replaceWith(wrapper.querySelector('select'));
+            });
+            clone.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+            clone.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+            clone.querySelector('select.item-select').value = '';
+            lines.appendChild(clone);
+            initSelectPickers($(clone));
+        });
+
+        document.getElementById('lines').addEventListener('click', function (e) {
+            var button = e.target.closest('.remove-line');
+            if (!button) return;
+            var lines = document.getElementById('lines');
+            if (lines.children.length > 1) {
+                button.closest('.line-row').remove();
+            }
+        });
+
+        $('#requisitionForm').on('change input', 'select.item-select, select[name="warehouseId"], input[required]', function () {
+            if (this.checkValidity()) setFieldError(this, '');
+        });
+
+        document.getElementById('requisitionForm').addEventListener('submit', function (event) {
+            var valid = true;
+            this.querySelectorAll('[required]').forEach(function (field) {
+                var isFieldValid = field.checkValidity();
+                setFieldError(field, isFieldValid ? '' : field.dataset.requiredMessage);
+                valid = valid && isFieldValid;
+            });
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    </script>
+}

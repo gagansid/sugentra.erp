@@ -1,0 +1,206 @@
+@model Sugentra.ERP.UI.Models.PagedResult<Sugentra.ERP.UI.Models.Procurement.PurchaseOrderResponse>
+@{
+    ViewData["Title"] = "Purchase Orders";
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shopping-cart-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Procurement", Url.Action("Index", "Workspace", new { id = "Procurement" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Purchase Orders", null)
+    });
+    var hasStatusFilter = !string.IsNullOrEmpty(ViewBag.Status as string);
+    var hasAdvancedFilter = hasStatusFilter
+        || !string.IsNullOrEmpty(ViewBag.Number as string)
+        || !string.IsNullOrEmpty(ViewBag.Sourced as string)
+        || ViewBag.DateFrom != null
+        || ViewBag.DateTo != null;
+}
+
+@section VendorStyles {
+    <link rel="stylesheet" href="~/vendor/libs/flatpickr/flatpickr.css" />
+}
+@section VendorScripts {
+    <script src="~/vendor/libs/flatpickr/flatpickr.js"></script>
+}
+
+@await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Purchase Orders</h5>
+    </div>
+    <!-- _ShowEntries partial's own <form>, avoiding invalid nested <form> elements -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-4 mb-2">
+        @await Html.PartialAsync("_ShowEntries", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+        <form method="get" id="purchaseOrdersFilterForm" class="d-flex align-items-center gap-2">
+            <input type="text" name="keyword" class="form-control form-control-sm"
+                   style="width: 250px;" value="@ViewBag.Keyword" placeholder="Search.." />
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-primary position-relative"
+                        id="purchaseOrdersFilterDropdown" data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside" aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    <i class="ri ri-filter-3-line me-1"></i>Filter
+                    @if (hasAdvancedFilter)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">Filter active</span>
+                        </span>
+                    }
+                </button>
+                <div class="dropdown-menu dropdown-menu-end w-px-500 p-0" aria-labelledby="purchaseOrdersFilterDropdown">
+                    <div class="card mb-0 shadow-none">
+                        <div class="card-header py-2">
+                            <h6 class="mb-3">Filter</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Number</label>
+                                    <input type="text" name="number" class="form-control form-control-sm"
+                                           value="@ViewBag.Number" placeholder="Order number" />
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Status</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">All Status</option>
+                                        <option value="Draft" selected="@("Draft".Equals(ViewBag.Status) ? "selected" : null)">Draft</option>
+                                        <option value="WaitingApproval" selected="@("WaitingApproval".Equals(ViewBag.Status) ? "selected" : null)">Waiting Approval</option>
+                                        <option value="Approved" selected="@("Approved".Equals(ViewBag.Status) ? "selected" : null)">Approved</option>
+                                        <option value="PartiallyReceived" selected="@("PartiallyReceived".Equals(ViewBag.Status) ? "selected" : null)">Partially Received</option>
+                                        <option value="FullyReceived" selected="@("FullyReceived".Equals(ViewBag.Status) ? "selected" : null)">Fully Received</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Date From</label>
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateFrom" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateFrom != null ? ((DateTime)ViewBag.DateFrom).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Date To</label>
+                                    <div class="input-group input-group-sm received-date-group">
+                                        <input name="dateTo" type="text" class="form-control form-control-sm received-date-flatpickr"
+                                               autocomplete="off"
+                                               value="@(ViewBag.DateTo != null ? ((DateTime)ViewBag.DateTo).ToString("yyyy-MM-dd") : null)" />
+                                        <span class="input-group-text received-date-toggle"><i class="ri ri-calendar-line"></i></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label mb-1 small">Source PR</label>
+                                    <select name="sourced" class="form-select form-select-sm">
+                                        <option value="">All</option>
+                                        <option value="FromRequisition" selected="@("FromRequisition".Equals(ViewBag.Sourced) ? "selected" : null)">From Requisition</option>
+                                        <option value="Manual" selected="@("Manual".Equals(ViewBag.Sourced) ? "selected" : null)">Manual (No Requisition)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-sm btn-label-dark waves-effect btn-filter-action">Clear</a>
+                            <button type="submit" class="btn btn-sm btn-primary btn-filter-action">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (User.HasPermission("PurchaseOrder_Create"))
+            {
+                <a asp-action="Create" class="btn btn-sm btn-primary"><i class="ri ri-add-line me-1"></i>Add New</a>
+            }
+        </form>
+    </div>
+    <div class="table-responsive text-nowrap">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 60px;">No</th>
+                    <th>Number</th>
+                    <th>Vendor</th>
+                    <th>Date</th>
+                    <th class="col-fit">Status</th>
+                    <th>Source PR</th>
+                    <th class="text-center" style="width: 110px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="table-border-bottom-0">
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="text-muted text-center">No purchase orders recorded.</td>
+                    </tr>
+                }
+                else
+                {
+                    var rowNo = (Model.Page - 1) * Model.PageSize;
+                    @foreach (var order in Model.Items)
+                    {
+                        rowNo++;
+                        <tr>
+                            <td class="text-center">@rowNo</td>
+                            <td><a asp-action="Detail" asp-route-id="@order.Id">@order.OrderNumber</a></td>
+                            <td>@order.VendorName</td>
+                            <td>@order.OrderDate.ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
+                            <td>
+                                <span class="badge bg-label-@StatusBadgeHelper.GetColor(order.Status)">@(order.Status == "WaitingApproval"
+                                                                     ? $"Waiting Approval - {order.CurrentApprovalLevel}"
+                                                                     : order.Status)</span>
+                            </td>
+                            <td>
+                                @if (order.SourceRequisitions.Count == 0)
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                                else
+                                {
+                                    var prShown = Math.Min(2, order.SourceRequisitions.Count);
+                                    @for (var i = 0; i < prShown; i++)
+                                    {
+                                        var pr = order.SourceRequisitions[i];
+                                        <a asp-controller="PurchaseRequisitions" asp-action="Detail" asp-route-id="@pr.Id">@pr.RequisitionNumber</a>
+                                        @(i < prShown - 1 ? ", " : "")
+                                    }
+                                    @(order.SourceRequisitions.Count > 2 ? (object)new Microsoft.AspNetCore.Html.HtmlString(" <span class=\"text-muted\" data-bs-toggle=\"tooltip\" title=\"" + string.Join(", ", order.SourceRequisitions.Select(r => r.RequisitionNumber)) + "\">...</span>") : "")
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2 justify-content-center">
+                                    @if (order.Status == "Draft" && User.HasPermission("PurchaseOrder_Edit"))
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@order.Id" class="btn btn-icon btn-text-secondary"
+                                           data-bs-toggle="tooltip" title="Edit"><i class="ri ri-edit-line icon-14px"></i></a>
+                                    }
+                                    @if (order.Status == "Draft" && User.HasPermission("PurchaseOrder_Delete"))
+                                    {
+                                        <button type="button" class="btn btn-icon btn-text-danger" data-bs-toggle="tooltip"
+                                                title="Delete" onclick="confirmDelete(this)"
+                                                data-name="@order.OrderNumber"
+                                                data-delete-url="@Url.Action("Delete", new { id = order.Id })"><i
+                                            class="ri ri-delete-bin-line icon-14px"></i></button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @await Html.PartialAsync("_PagingFooter", Sugentra.ERP.UI.Models.Layout.PagingInfo.From(Model))
+</div>
+
+@await Html.PartialAsync("_DeleteConfirmModal", "Purchase Order")
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initDateGroupPickers('.received-date-flatpickr');
+    });
+
+    // Drop empty filter fields so only params with a value are sent in the GET query string.
+    document.getElementById('purchaseOrdersFilterForm').addEventListener('submit', function () {
+        this.querySelectorAll('input, select').forEach(function (field) {
+            if (!field.value) {
+                field.disabled = true;
+            }
+        });
+    });
+</script>

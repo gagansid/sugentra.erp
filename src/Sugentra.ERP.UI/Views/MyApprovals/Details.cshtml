@@ -17,13 +17,7 @@
         return names.Count == 0 ? "-" : string.Join(", ", names);
     }
 
-    var statusColor = Model.Status switch
-    {
-        "Approved" => "success",
-        "Rejected" => "danger",
-        "Pending" => "secondary",
-        _ => "secondary"
-    };
+    var statusColor = StatusBadgeHelper.GetColor(Model.Status);
 }
 
 @await Html.PartialAsync("~/Views/Shared/_Breadcrumb.cshtml", breadcrumb)

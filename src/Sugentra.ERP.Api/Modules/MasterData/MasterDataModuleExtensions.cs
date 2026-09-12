@@ -16,6 +16,7 @@ public static class MasterDataModuleExtensions
         services.AddScoped<IBusinessPartnerContactRepository, BusinessPartnerContactRepository>();
         services.AddScoped<BusinessPartnerUseCase>();
         services.AddScoped<BusinessPartnerListQuery>();
+        services.AddScoped<Shared.Contracts.IBusinessPartnerDirectoryService, Services.BusinessPartnerDirectoryService>();
 
         services.AddScoped<GenericRepository<Item>>();
         services.AddScoped(sp => new CrudUseCase<Item>(

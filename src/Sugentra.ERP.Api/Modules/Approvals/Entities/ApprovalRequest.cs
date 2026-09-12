@@ -10,7 +10,7 @@ public class ApprovalRequest : BaseAuditableEntity
     public string DocumentType { get; set; } = string.Empty;
     public long DocumentId { get; set; }
     public string DocumentNumber { get; set; } = string.Empty;
-    public long FlowDefinitionId { get; set; }
+    public long? FlowDefinitionId { get; set; }
     public decimal? Amount { get; set; }
     public long? CurrencyId { get; set; }
     public long? WarehouseId { get; set; }

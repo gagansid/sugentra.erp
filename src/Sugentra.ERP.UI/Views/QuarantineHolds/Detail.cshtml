@@ -43,13 +43,7 @@
                     <tr>
                         <td class="fw-medium">Status</td>
                         <td>
-                            <span class="badge bg-label-@(Model.Status switch
-                                                           {
-                                                               "OnHold" => "warning",
-                                                                   "Released" => "primary",
-                                                               "Rejected" => "danger",
-                                                               _ => "secondary"
-                                                           })">@Model.Status</span>
+                            <span class="badge bg-label-@StatusBadgeHelper.GetColor(Model.Status)">@Model.Status</span>
                         </td>
                     </tr>
                     <tr>

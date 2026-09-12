@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +12,7 @@ using Sugentra.ERP.Api.Modules.Inventory;
 using Sugentra.ERP.Api.Modules.MasterData;
 using Sugentra.ERP.Api.Modules.Settings;
 using Sugentra.ERP.Api.Modules.Approvals;
+using Sugentra.ERP.Api.Modules.Procurement;
 using Sugentra.ERP.Api.Shared.Auth;
 using Sugentra.ERP.Api.Shared.Common;
 using Sugentra.ERP.Api.Shared.Logging;
@@ -28,6 +31,10 @@ if (builder.Environment.IsDevelopment())
 // Add services to the container.
 
 builder.Services.AddControllers();
+// Auto-validates action parameters against registered FluentValidation validators and folds failures into
+// ModelState, so they flow through the existing InvalidModelStateResponseFactory (422 ApiResponse) below.
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Sugentra.ERP.Api.Modules.Procurement.Validators.CreatePurchaseRequisitionRequestValidator>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -139,6 +146,7 @@ builder.Services.AddSettingsModule();
 builder.Services.AddMasterDataModule();
 builder.Services.AddApprovalsModule();
 builder.Services.AddInventoryModule();
+builder.Services.AddProcurementModule();
 
 var app = builder.Build();
 

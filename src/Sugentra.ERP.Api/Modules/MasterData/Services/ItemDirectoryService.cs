@@ -13,4 +13,10 @@ public class ItemDirectoryService(GenericRepository<Item> itemRepository) : IIte
     }
 
     public async Task<int> GetActiveCountAsync() => (await itemRepository.GetAllAsync()).Count;
+
+    public async Task<ItemSummary?> GetSummaryAsync(long itemId)
+    {
+        var item = await itemRepository.GetByIdAsync(itemId);
+        return item is null ? null : new ItemSummary(item.Id, item.Code, item.Name);
+    }
 }

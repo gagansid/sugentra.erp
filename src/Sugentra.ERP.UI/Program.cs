@@ -7,6 +7,7 @@ using Sugentra.ERP.UI.Services.Approvals;
 using Sugentra.ERP.UI.Services.Identity;
 using Sugentra.ERP.UI.Services.Inventory;
 using Sugentra.ERP.UI.Services.MasterData;
+using Sugentra.ERP.UI.Services.Procurement;
 using Sugentra.ERP.UI.Services.Settings;
 using Sugentra.ERP.UI.Services.Shared;
 
@@ -61,6 +62,8 @@ builder.Services.AddScoped<StockBalanceApiService>();
 builder.Services.AddScoped<StockLedgerApiService>();
 builder.Services.AddScoped<StockMutationApiService>();
 builder.Services.AddScoped<StockOpnameApiService>();
+builder.Services.AddScoped<PurchaseRequisitionApiService>();
+builder.Services.AddScoped<PurchaseOrderApiService>();
 builder.Services.AddScoped<ApprovalFlowApiService>();
 builder.Services.AddScoped<ApprovalRequestApiService>();
 builder.Services.AddScoped<ApprovalRoleCategoryApiService>();

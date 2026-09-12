@@ -135,13 +135,7 @@
                                     <td>@(warehouses.FirstOrDefault(w => w.Id == opname.WarehouseId)?.Name)</td>
                                     <td>@opname.OpnameDate.ToString("dd MMM yyyy")</td>
                                     <td>
-                                        <span class="badge bg-label-@(opname.Status switch
-                                                                       {
-                                                                           "Draft" => "secondary",
-                                                                           "WaitingApproval" => "warning",
-                                                                           "Completed" => "primary",
-                                                                           _ => "secondary"
-                                                                       })">@(opname.Status == "WaitingApproval"
+                                        <span class="badge bg-label-@StatusBadgeHelper.GetColor(opname.Status)">@(opname.Status == "WaitingApproval"
                                                                             ? $"Waiting Approval - {opname.CurrentApprovalLevel}"
                                                                             : opname.Status)</span>
                                     </td>

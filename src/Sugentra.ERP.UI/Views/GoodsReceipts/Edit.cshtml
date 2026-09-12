@@ -36,15 +36,7 @@
             <div class="row g-2">
                 <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Status</label>
                 <div class="col-md-4 col-sm-8 d-flex align-items-center">
-                    <span class="badge bg-label-@(Model.Status switch
-                                                   {
-                                                       "Draft" => "secondary",
-                                                       "Reject" => "danger",
-                                                       "Pending" => "warning",
-                                                       var s when s.StartsWith("Waiting Approval - ") => "warning",
-                                                       "Approve" or "Post" or "Posted" => "primary",
-                                                       _ => "secondary"
-                                                   })">@Model.Status</span>
+                    <span class="badge bg-label-@StatusBadgeHelper.GetColor(Model.Status)">@Model.Status</span>
                 </div>
             </div>
             <div class="row g-2">

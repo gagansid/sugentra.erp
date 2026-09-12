@@ -141,13 +141,7 @@
                             <td>@receipt.VendorReference</td>
                             <td>@receipt.ReceiptDate.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
                             <td>
-                                <span class="badge bg-label-@(receipt.Status switch
-                                                               {
-                                                                   "Draft" => "secondary",
-                                                                   "WaitingApproval" => "warning",
-                                                                   "Posted" => "primary",
-                                                                   _ => "secondary"
-                                                               })">@(receipt.Status == "WaitingApproval"
+                                <span class="badge bg-label-@StatusBadgeHelper.GetColor(receipt.Status)">@(receipt.Status == "WaitingApproval"
                                                                      ? $"Waiting Approval - {receipt.CurrentApprovalLevel}"
                                                                      : receipt.Status)</span>
                             </td>

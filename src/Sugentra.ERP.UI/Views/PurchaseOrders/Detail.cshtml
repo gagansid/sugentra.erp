@@ -1,0 +1,254 @@
+@model Sugentra.ERP.UI.Models.Procurement.PurchaseOrderResponse
+@{
+    ViewData["Title"] = "Purchase Order Detail";
+    var currencies = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Currency>)ViewBag.Currencies;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-shopping-cart-2-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Procurement", Url.Action("Index", "Workspace", new { id = "Procurement" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Purchase Orders", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.OrderNumber, null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", Model.Status == "Draft" && User.HasPermission("PurchaseOrder_Edit") } })
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Purchase Order Detail</h5>
+        <div class="d-flex gap-2">
+            @if (Model.Status == "Draft" && User.HasPermission("PurchaseOrder_Approve"))
+            {
+                <form method="post" asp-action="Submit" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="ri ri-check-double-line me-1"></i>Submit</button>
+                </form>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="mb-5">
+            <h6>Information</h6>
+            <table class="table table-borderless table-hover detail-info-table">
+                <tbody>
+                    <tr>
+                        <td class="fw-medium">Order Number</td>
+                        <td class="fw-bold">@Model.OrderNumber</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Status</td>
+                        <td>
+                            <span class="badge bg-label-@StatusBadgeHelper.GetColor(Model.Status)">@(Model.Status == "WaitingApproval"
+                                                                ? $"Waiting Approval - {Model.CurrentApprovalLevel}"
+                                                                : Model.Status)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Vendor</td>
+                        <td>@(Model.VendorCode is not null ? $"{Model.VendorCode} - {Model.VendorName}" : Model.VendorName)</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Currency</td>
+                        <td>@(currencies.FirstOrDefault(c => c.Id == Model.CurrencyId)?.Name)</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Payment Term</td>
+                        <td>@(Model.PaymentTermDays.HasValue ? $"{Model.PaymentTermDays} days" : "-")</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Order Date</td>
+                        <td>@Model.OrderDate.ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Expected Delivery</td>
+                        <td>@(Model.ExpectedDeliveryDate.HasValue ? Model.ExpectedDeliveryDate.Value.ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture) : "-")</td>
+                    </tr>
+                    @if (Model.SourceRequisitions.Count > 0)
+                    {
+                        <tr>
+                            <td class="fw-medium">Source Requisition@(Model.SourceRequisitions.Count > 1 ? "s" : "")</td>
+                            <td>
+                                @{ var prShown = Math.Min(2, Model.SourceRequisitions.Count); }
+                                @for (var i = 0; i < prShown; i++)
+                                {
+                                    var pr = Model.SourceRequisitions[i];
+                                    <a asp-controller="PurchaseRequisitions" asp-action="Detail" asp-route-id="@pr.Id">@pr.RequisitionNumber</a>
+                                    @(i < prShown - 1 ? ", " : "")
+                                }
+                                @(Model.SourceRequisitions.Count > 2 ? (object)new Microsoft.AspNetCore.Html.HtmlString(" <span class=\"text-muted\" data-bs-toggle=\"tooltip\" title=\"" + string.Join(", ", Model.SourceRequisitions.Select(r => r.RequisitionNumber)) + "\">...</span>") : "")
+                            </td>
+                        </tr>
+                    }
+                    <tr>
+                        <td class="fw-medium">Notes</td>
+                        <td>@Model.Notes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-5">
+            <h6>Lines</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Item</th>
+                            <th class="text-end">Quantity</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Discount (%)</th>
+                            <th class="text-end">Received Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var lineNumber = 0;
+                        }
+                        @foreach (var line in Model.Lines)
+                        {
+                            lineNumber++;
+                            <tr>
+                                <td>@lineNumber</td>
+                                <td>
+                                    @(line.ItemCode is not null ? $"{line.ItemCode} - {line.ItemName}" : line.ItemName)
+                                    @if (line.Sources.Count > 0 && Model.SourceRequisitions.Count > 1)
+                                    {
+                                        <div class="mt-1">
+                                            @foreach (var s in line.Sources)
+                                            {
+                                                <span class="badge bg-label-info me-1 mb-1" style="font-size: 0.7rem;">
+                                                    @(s.PurchaseRequisitionId.HasValue ? $"{s.RequisitionNumber}: {s.Quantity:N2}" : $"Manual: {s.Quantity:N2}")
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end">@line.Quantity.ToString("N4")</td>
+                                <td class="text-end">@line.UnitPrice.ToString("N2")</td>
+                                <td class="text-end">@line.DiscountPercent.ToString("N2")</td>
+                                <td class="text-end">@line.ReceivedQuantity.ToString("N4")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mb-5">
+            <h6>Approval History</h6>
+            @{
+                var approvalHistory = (IReadOnlyList<Sugentra.ERP.UI.Models.Approvals.ApprovalHistoryEntry>)ViewBag.ApprovalHistory;
+            }
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Level</th>
+                            <th>User</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td class="fw-medium">Draft Created</td>
+                            <td>@(Model.CreatedByName ?? "-")</td>
+                            <td>@Model.CreatedAt.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+                            <td><span class="badge bg-label-secondary">Draft</span></td>
+                            <td>-</td>
+                        </tr>
+                        @if (approvalHistory.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-muted small">No further approval history for this document.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            var historyNumber = 1;
+                            @foreach (var entry in approvalHistory)
+                            {
+                                historyNumber++;
+                                var badgeClass = entry.Status switch
+                                {
+                                    "Approved" => "info",
+                                    "Rejected" => "danger",
+                                    "Waiting" => "warning",
+                                    "Submitted" => "primary",
+                                    _ => "secondary"
+                                };
+                                <tr>
+                                    <td>@historyNumber</td>
+                                    <td class="fw-medium">@entry.LevelName</td>
+                                    <td>@(entry.ApproverName ?? "-")</td>
+                                    <td>@(entry.ActionedAt.HasValue ? entry.ActionedAt.Value.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture) : "-")</td>
+                                    <td><span class="badge bg-label-@badgeClass">@entry.Status</span></td>
+                                    <td>@(string.IsNullOrWhiteSpace(entry.Comment) ? "-" : entry.Comment)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="prDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Purchase Requisition Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="prDetailModalBody"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var requisitionDetails = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            ((IReadOnlyList<Sugentra.ERP.UI.Models.Procurement.PurchaseRequisitionResponse>)ViewBag.RequisitionDetails).ToDictionary(
+                pr => pr.Id.ToString(),
+                pr => new
+                {
+                    requisitionNumber = pr.RequisitionNumber,
+                    requisitionDate = pr.RequisitionDate.ToString("yyyy-MM-dd"),
+                    requesterName = pr.RequesterName,
+                    notes = pr.Notes,
+                    lines = pr.Lines.Select(l => new { itemCode = l.ItemCode, itemName = l.ItemName, quantity = l.Quantity, notes = l.Notes })
+                })));
+
+        function showPrDetailModal(requisitionId) {
+            var pr = requisitionDetails[requisitionId];
+            if (!pr) return;
+            var linesHtml = pr.lines.map(function (l) {
+                return '<tr><td>' + (l.itemCode ? l.itemCode + ' - ' + l.itemName : l.itemName) + '</td>'
+                    + '<td class="text-end">' + l.quantity + '</td>'
+                    + '<td>' + (l.notes || '') + '</td></tr>';
+            }).join('');
+            var html = '<div class="row g-2 mb-3">'
+                + '<div class="col-md-6"><strong>Requisition No.</strong><div>' + pr.requisitionNumber + '</div></div>'
+                + '<div class="col-md-6"><strong>Date</strong><div>' + pr.requisitionDate + '</div></div>'
+                + '<div class="col-md-6"><strong>Requester</strong><div>' + (pr.requesterName || '-') + '</div></div>'
+                + '<div class="col-md-6"><strong>Notes</strong><div>' + (pr.notes || '-') + '</div></div>'
+                + '</div>'
+                + '<table class="table table-sm"><thead><tr><th>Item</th><th class="text-end">Quantity</th><th>Notes</th></tr></thead>'
+                + '<tbody>' + linesHtml + '</tbody></table>';
+            document.getElementById('prDetailModalBody').innerHTML = html;
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('prDetailModal'));
+            modal.show();
+        }
+
+        document.addEventListener('click', function (e) {
+            var badge = e.target.closest('.pr-source-badge');
+            if (!badge) return;
+            showPrDetailModal(badge.dataset.requisitionId);
+        });
+    </script>
+}

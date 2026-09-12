@@ -1,0 +1,186 @@
+@model Sugentra.ERP.UI.Models.Procurement.PurchaseRequisitionResponse
+@{
+    ViewData["Title"] = "Purchase Requisition Detail";
+    var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
+    var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-file-list-3-line", new[]
+    {
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Procurement", Url.Action("Index", "Workspace", new { id = "Procurement" })),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Purchase Requisitions", Url.Action("Index")),
+        new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem(Model.RequisitionNumber, null)
+    });
+}
+
+@await Html.PartialAsync("~/Views/Shared/_DetailNavHeader.cshtml", breadcrumb, new ViewDataDictionary(ViewData) { {
+"CurrentId", Model.Id }, { "EditRouteId", Model.Id }, { "CanEdit", Model.Status == "Draft" && User.HasPermission("PurchaseRequisition_Edit") } })
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Purchase Requisition Detail</h5>
+        <div class="d-flex gap-2">
+            @if (Model.Status == "Draft" && User.HasPermission("PurchaseRequisition_Approve"))
+            {
+                <form method="post" asp-action="Submit" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="ri ri-check-double-line me-1"></i>Submit</button>
+                </form>
+            }
+            @if (Model.Status == "Approved" && User.HasPermission("PurchaseOrder_Create"))
+            {
+                <a asp-controller="PurchaseOrders" asp-action="Create" asp-route-purchaseRequisitionId="@Model.Id"
+                   class="btn btn-sm btn-outline-primary"><i class="ri ri-shopping-cart-2-line me-1"></i>Create Purchase Order</a>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="mb-5">
+            <h6>Information</h6>
+            <table class="table table-borderless table-hover detail-info-table">
+                <tbody>
+                    <tr>
+                        <td class="fw-medium">Requisition Number</td>
+                        <td class="fw-bold">@Model.RequisitionNumber</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Status</td>
+                        <td>
+                            <span class="badge bg-label-@StatusBadgeHelper.GetColor(Model.Status)">@(Model.Status == "WaitingApproval"
+                                                                ? $"Waiting Approval - {Model.CurrentApprovalLevel}"
+                                                                : Model.Status)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Order Status</td>
+                        <td>
+                            @{
+                                var (orderStatusColor, orderStatusLabel) = StatusBadgeHelper.GetOrderStatus(Model.OrderStatus);
+                            }
+                            <span class="badge bg-label-@orderStatusColor">@orderStatusLabel</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Requester</td>
+                        <td>@Model.RequesterName</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Warehouse</td>
+                        <td>@(warehouses.FirstOrDefault(w => w.Id == Model.WarehouseId)?.Name)</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-medium">Requisition Date</td>
+                        <td>@Model.RequisitionDate.ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
+                    </tr>
+                    @if (Model.LinkedOrders.Count > 0)
+                    {
+                        <tr>
+                            <td class="fw-medium">Linked Purchase Order@(Model.LinkedOrders.Count > 1 ? "s" : "")</td>
+                            <td>
+                                @for (var i = 0; i < Model.LinkedOrders.Count; i++)
+                                {
+                                    var po = Model.LinkedOrders[i];
+                                    <a asp-controller="PurchaseOrders" asp-action="Detail" asp-route-id="@po.Id">@po.OrderNumber</a>
+                                    @(i < Model.LinkedOrders.Count - 1 ? ", " : "")
+                                }
+                            </td>
+                        </tr>
+                    }
+                    <tr>
+                        <td class="fw-medium">Notes</td>
+                        <td>@Model.Notes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-5">
+            <h6>Lines</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Item</th>
+                            <th class="text-end">Quantity</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var lineNumber = 0;
+                        }
+                        @foreach (var line in Model.Lines)
+                        {
+                            lineNumber++;
+                            <tr>
+                                <td>@lineNumber</td>
+                                <td>@(line.ItemCode is not null ? $"{line.ItemCode} - {line.ItemName}" : line.ItemName)</td>
+                                <td class="text-end">@line.Quantity.ToString("N4")</td>
+                                <td>@line.Notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mb-5">
+            <h6>Approval History</h6>
+            @{
+                var approvalHistory = (IReadOnlyList<Sugentra.ERP.UI.Models.Approvals.ApprovalHistoryEntry>)ViewBag.ApprovalHistory;
+            }
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th class="col-fit">No</th>
+                            <th>Level</th>
+                            <th>User</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td class="fw-medium">Draft Created</td>
+                            <td>@(Model.CreatedByName ?? "-")</td>
+                            <td>@Model.CreatedAt.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+                            <td><span class="badge bg-label-secondary">Draft</span></td>
+                            <td>-</td>
+                        </tr>
+                        @if (approvalHistory.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-muted small">No further approval history for this document.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            var historyNumber = 1;
+                            @foreach (var entry in approvalHistory)
+                            {
+                                historyNumber++;
+                                var badgeClass = entry.Status switch
+                                {
+                                    "Approved" => "info",
+                                    "Rejected" => "danger",
+                                    "Waiting" => "warning",
+                                    "Submitted" => "primary",
+                                    _ => "secondary"
+                                };
+                                <tr>
+                                    <td>@historyNumber</td>
+                                    <td class="fw-medium">@entry.LevelName</td>
+                                    <td>@(entry.ApproverName ?? "-")</td>
+                                    <td>@(entry.ActionedAt.HasValue ? entry.ActionedAt.Value.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture) : "-")</td>
+                                    <td><span class="badge bg-label-@badgeClass">@entry.Status</span></td>
+                                    <td>@(string.IsNullOrWhiteSpace(entry.Comment) ? "-" : entry.Comment)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

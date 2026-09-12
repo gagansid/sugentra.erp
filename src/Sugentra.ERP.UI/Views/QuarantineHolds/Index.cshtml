@@ -150,13 +150,7 @@
                                         <td>@hold.HoldReason</td>
                                         <td>@hold.PlacedAt.ToString("dd MMM yyyy")</td>
                                         <td>
-                                            <span class="badge bg-label-@(hold.Status switch
-                                                                           {
-                                                                               "OnHold" => "warning",
-                                                                                   "Released" => "primary",
-                                                                               "Rejected" => "danger",
-                                                                               _ => "secondary"
-                                                                           })">@hold.Status</span>
+                                            <span class="badge bg-label-@StatusBadgeHelper.GetColor(hold.Status)">@hold.Status</span>
                                         </td>
                                         <td>
                                             <div class="d-flex gap-2 justify-content-center">

@@ -42,13 +42,7 @@
                     <tr>
                         <td class="fw-medium">Status</td>
                         <td>
-                            <span class="badge bg-label-@(Model.Status switch
-                                                        {
-                                                            "Draft" => "secondary",
-                                                            "WaitingApproval" => "warning",
-                                                            "Completed" => "primary",
-                                                            _ => "secondary"
-                                                        })">@(Model.Status == "WaitingApproval"
+                            <span class="badge bg-label-@StatusBadgeHelper.GetColor(Model.Status)">@(Model.Status == "WaitingApproval"
                                                                 ? $"Waiting Approval - {Model.CurrentApprovalLevel}"
                                                                 : Model.Status)</span>
                         </td>

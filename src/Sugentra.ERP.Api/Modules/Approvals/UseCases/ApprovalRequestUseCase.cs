@@ -34,15 +34,30 @@ public class ApprovalRequestUseCase(
         }
 
         var flow = await MatchFlowAsync(request);
-        if (flow is null)
+        var levels = flow is null ? [] : await flowRepository.GetLevelsAsync(flow.Id);
+        if (flow is null || levels.Count == 0)
         {
-            return new ApprovalSubmissionResult(false, null, null);
-        }
+            // No flow configured — still record who submitted so the document's history isn't blank.
+            var autoApprovedId = await requestRepository.AddAsync(new ApprovalRequest
+            {
+                DocumentType = request.DocumentType,
+                DocumentId = request.DocumentId,
+                DocumentNumber = request.DocumentNumber,
+                FlowDefinitionId = null,
+                Amount = request.Amount,
+                CurrencyId = request.CurrencyId,
+                WarehouseId = request.WarehouseId,
+                Status = "Approved",
+                CurrentLevelNumber = 0,
+                RequestedBy = request.RequestedByUserId,
+                RequestedAt = DateTime.UtcNow,
+                CompletedAt = DateTime.UtcNow,
+                CreatedBy = request.RequestedByUserId
+            });
+            await auditLogService.LogAsync("Approval_Requests", autoApprovedId, "SubmittedNoFlow", null,
+                JsonSerializer.Serialize(request), request.RequestedByUserId);
 
-        var levels = await flowRepository.GetLevelsAsync(flow.Id);
-        if (levels.Count == 0)
-        {
-            return new ApprovalSubmissionResult(false, null, null);
+            return new ApprovalSubmissionResult(false, autoApprovedId, null);
         }
 
         var approvalRequest = new ApprovalRequest
@@ -262,6 +277,13 @@ public class ApprovalRequestUseCase(
             var levels = await requestQueryRepository.GetLevelsAsync(request.Id);
             var levelsByNumber = levels.ToDictionary(l => l.LevelNumber);
             var actions = await requestQueryRepository.GetHistoryAsync(request.Id);
+
+            // Not a level approver action — synthesized from the request itself so the timeline shows who/when submitted.
+            var requester = await userDirectoryService.GetByIdAsync(request.RequestedBy);
+            var submittedLevelName = request.FlowDefinitionId.HasValue ? "Submitted for Approval" : "Submitted";
+            entries.Add(new ApprovalHistoryEntryDto(
+                request.Id, 0, submittedLevelName, request.RequestedBy, requester?.FullName,
+                "Submitted", null, request.RequestedAt));
 
             foreach (var action in actions)
             {
