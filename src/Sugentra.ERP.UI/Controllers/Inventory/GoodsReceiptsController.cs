@@ -65,10 +65,11 @@ public class GoodsReceiptsController(
         return Json(new { success = true, lines });
     }
 
-    public record CreateBatchInlineRequest(long ItemId, long WarehouseId, string Code, string? Grade, DateTime ReceivedDate,
+    public record CreateBatchInlineRequest(long ItemId, long WarehouseId, string? Grade, DateTime ReceivedDate,
         string? LegalityDocumentType, string? LegalityDocumentNumber, string? LegalityDocumentUrl);
 
     // Lets the Create/Edit form register a new Batch without leaving the Goods Receipt form.
+    // Code is left blank here - the API generates it via document numbering.
     [HttpPost]
     [Authorize(Policy = "Batch_Create")]
     public async Task<IActionResult> CreateBatchInline([FromBody] CreateBatchInlineRequest request)
@@ -77,7 +78,6 @@ public class GoodsReceiptsController(
         {
             ItemId = request.ItemId,
             WarehouseId = request.WarehouseId,
-            Code = request.Code,
             Grade = request.Grade,
             ReceivedDate = request.ReceivedDate,
             LegalityDocumentType = request.LegalityDocumentType,

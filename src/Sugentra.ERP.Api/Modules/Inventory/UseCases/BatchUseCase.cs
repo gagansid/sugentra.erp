@@ -2,6 +2,7 @@ using Sugentra.ERP.Api.Modules.Inventory.Entities;
 using Sugentra.ERP.Api.Modules.Inventory.Repositories;
 using Sugentra.ERP.Api.Shared.Auth;
 using Sugentra.ERP.Api.Shared.Common;
+using Sugentra.ERP.Api.Shared.Contracts;
 using Sugentra.ERP.Api.Shared.Logging;
 using Sugentra.ERP.Api.Shared.Persistence;
 
@@ -13,6 +14,7 @@ public class BatchUseCase(
     CrudUseCase<Batch> crudUseCase,
     IStockBalanceRepository balanceRepository,
     GenericRepository<Batch> repository,
+    IDocumentNumberGeneratorService documentNumberGeneratorService,
     IAuditLogService auditLogService,
     ICurrentUserService currentUserService)
 {
@@ -20,7 +22,13 @@ public class BatchUseCase(
 
     public Task<IReadOnlyList<Batch>> GetAllAsync() => crudUseCase.GetAllAsync();
 
-    public Task<Batch> CreateAsync(Batch entity) => crudUseCase.CreateAsync(entity);
+    // Code is always server-generated (like PO/PR/GR numbers) so it's unique and consistent regardless of client.
+    public async Task<Batch> CreateAsync(Batch entity)
+    {
+        var number = await documentNumberGeneratorService.GetNextAsync("Batch");
+        entity.Code = number.FormattedNumber;
+        return await crudUseCase.CreateAsync(entity);
+    }
 
     public async Task<Result<Batch>> UpdateAsync(long id, Batch entity)
     {

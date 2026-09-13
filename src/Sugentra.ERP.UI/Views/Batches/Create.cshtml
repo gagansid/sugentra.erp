@@ -33,13 +33,6 @@
                      style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
                 <form id="batchForm" method="post" novalidate>
                     <div class="row g-2 align-items-center">
-                        <label asp-for="Code" class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Batch Code</label>
-                        <div class="col-md-8 col-sm-8">
-                            <input asp-for="Code" class="form-control form-control-sm" required data-required-message="Batch code is required." />
-                            <span asp-validation-for="Code" class="text-danger small"></span>
-                        </div>
-                    </div>
-                    <div class="row g-2 align-items-center">
                         <label class="col-md-4 col-sm-4 col-form-label col-form-label-sm required-label">Item</label>
                         <div class="col-md-8 col-sm-8">
                             <select asp-for="ItemId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"

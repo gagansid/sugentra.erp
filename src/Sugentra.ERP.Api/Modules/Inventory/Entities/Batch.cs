@@ -7,7 +7,9 @@ namespace Sugentra.ERP.Api.Modules.Inventory.Entities;
 [Table("Inventory_Batches")]
 public class Batch : BaseAuditableEntity
 {
-    [Required, StringLength(50)]
+    // Generated via IDocumentNumberGeneratorService.GetNextAsync("Batch") on create, never hand-entered -
+    // AllowEmptyStrings so the incoming Create request (which omits Code) still passes model validation.
+    [Required(AllowEmptyStrings = true), StringLength(50)]
     public string Code { get; set; } = string.Empty;
     [Range(1, long.MaxValue, ErrorMessage = "Item is required.")]
     public long ItemId { get; set; }
