@@ -19,6 +19,9 @@ public class PurchaseRequisitionApiService(ApiClient apiClient)
 
     public Task<ApiResult<bool>> DeleteAsync(long id) => apiClient.DeleteAsync($"{BaseRoute}/{id}");
 
+    public Task<ApiResult<PurchaseRequisitionResponse>> CloseRemainderAsync(long id, string reason) =>
+        apiClient.PostAsync<PurchaseRequisitionResponse>($"{BaseRoute}/{id}/close", new CloseRemainderPurchaseRequisitionRequest(reason));
+
     public Task<ApiResult<PurchaseRequisitionAdjacentDto>> GetAdjacentAsync(long id) => apiClient.GetAsync<PurchaseRequisitionAdjacentDto>($"{BaseRoute}/{id}/adjacent");
 
     public Task<ApiResult<IReadOnlyList<ApprovalHistoryEntry>>> GetApprovalHistoryAsync(long id) => apiClient.GetAsync<IReadOnlyList<ApprovalHistoryEntry>>($"{BaseRoute}/{id}/approval-history");

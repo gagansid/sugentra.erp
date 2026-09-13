@@ -8,13 +8,15 @@ public record CreatePurchaseRequisitionRequest(
 public record UpdatePurchaseRequisitionRequest(
     long WarehouseId, DateTime RequisitionDate, string? Notes, List<PurchaseRequisitionLineRequest> Lines);
 
-public record PurchaseRequisitionLineResponse(long Id, long ItemId, string? ItemCode, string? ItemName, decimal Quantity, string? Notes, decimal OrderedQuantity);
+public record PurchaseRequisitionLineResponse(long Id, long ItemId, string? ItemCode, string? ItemName, decimal Quantity, string? Notes, decimal OrderedQuantity, decimal ClosedQuantity);
 
 public record PurchaseRequisitionOrderResponse(long Id, string OrderNumber);
 
+public record CloseRemainderPurchaseRequisitionRequest(string Reason);
+
 public record PurchaseRequisitionResponse(
     long Id, string RequisitionNumber, long RequesterUserId, string? RequesterName, long WarehouseId,
-    DateTime RequisitionDate, string Status, string? CurrentApprovalLevel, string? Notes,
+    DateTime RequisitionDate, string Status, string? LifecycleStatus, string? CurrentApprovalLevel, string? Notes,
     DateTime CreatedAt, long? CreatedBy, string? CreatedByName, IReadOnlyList<PurchaseRequisitionLineResponse> Lines,
     IReadOnlyList<PurchaseRequisitionOrderResponse> LinkedOrders, string OrderStatus);
 

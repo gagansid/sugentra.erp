@@ -17,6 +17,7 @@ public class PurchaseRequisitionUseCaseTests
     private readonly Mock<IPurchaseOrderRequisitionRepository> orderRequisitionRepository = new();
     private readonly Mock<GenericRepository<PurchaseOrder>> orderRepository = new(Mock.Of<IDbConnectionFactory>());
     private readonly Mock<IPurchaseOrderLineSourceRepository> lineSourceRepository = new();
+    private readonly Mock<IStatusTransitionRepository> statusTransitionRepository = new();
     private readonly Mock<IItemDirectoryService> itemDirectoryService = new();
     private readonly Mock<IDocumentNumberGeneratorService> documentNumberGeneratorService = new();
     private readonly Mock<IApprovalService> approvalService = new();
@@ -26,12 +27,13 @@ public class PurchaseRequisitionUseCaseTests
 
     private PurchaseRequisitionUseCase CreateUseCase() => new(
         requisitionRepository.Object, lineRepository.Object, orderRequisitionRepository.Object, orderRepository.Object, lineSourceRepository.Object,
-        itemDirectoryService.Object, documentNumberGeneratorService.Object, approvalService.Object, userDirectoryService.Object,
+        statusTransitionRepository.Object, itemDirectoryService.Object, documentNumberGeneratorService.Object, approvalService.Object, userDirectoryService.Object,
         auditLogService.Object, currentUserService.Object);
 
     public PurchaseRequisitionUseCaseTests()
     {
         currentUserService.SetupGet(x => x.UserId).Returns(1);
+        statusTransitionRepository.Setup(x => x.IsAllowedAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
         documentNumberGeneratorService.Setup(x => x.GetNextAsync("PurchaseRequisition"))
             .ReturnsAsync(new NextDocumentNumberResult(1, "PR/2026/0001"));
         lineRepository.Setup(x => x.GetByRequisitionIdAsync(It.IsAny<long>()))

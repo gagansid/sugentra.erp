@@ -12,6 +12,9 @@ public class GoodsReceipt : BaseAuditableEntity
     public string ReceiptNumber { get; set; } = string.Empty;
     [Required]
     public long WarehouseId { get; set; }
+    // Optional: when set, posting this receipt reports received quantities back to Procurement's PO
+    // via IPurchaseOrderReceiptService, without Inventory reading Procurement's tables directly.
+    public long? PurchaseOrderId { get; set; }
     [StringLength(200)]
     public string? VendorReference { get; set; }
     [Required]

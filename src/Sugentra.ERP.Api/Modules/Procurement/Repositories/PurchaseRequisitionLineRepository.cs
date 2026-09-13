@@ -9,6 +9,7 @@ public interface IPurchaseRequisitionLineRepository
     Task<IReadOnlyList<PurchaseRequisitionLine>> GetByIdsAsync(IEnumerable<long> ids);
     Task<long> AddAsync(PurchaseRequisitionLine entity);
     Task SoftDeleteByRequisitionIdAsync(long requisitionId, long deletedBy);
+    Task UpdateClosedQuantityAsync(long lineId, decimal closedQuantity);
 }
 
 public class PurchaseRequisitionLineRepository(IDbConnectionFactory connectionFactory)
@@ -36,5 +37,12 @@ public class PurchaseRequisitionLineRepository(IDbConnectionFactory connectionFa
         using var connection = ConnectionFactory.CreateConnection();
         const string sql = "UPDATE Procurement_PurchaseRequisitionLines SET IsDeleted = 1, DeletedAt = GETDATE(), DeletedBy = @DeletedBy WHERE RequisitionId = @RequisitionId";
         await connection.ExecuteCommandAsync(sql, new { RequisitionId = requisitionId, DeletedBy = deletedBy });
+    }
+
+    public async Task UpdateClosedQuantityAsync(long lineId, decimal closedQuantity)
+    {
+        using var connection = ConnectionFactory.CreateConnection();
+        const string sql = "UPDATE Procurement_PurchaseRequisitionLines SET ClosedQuantity = @ClosedQuantity WHERE Id = @LineId";
+        await connection.ExecuteCommandAsync(sql, new { LineId = lineId, ClosedQuantity = closedQuantity });
     }
 }

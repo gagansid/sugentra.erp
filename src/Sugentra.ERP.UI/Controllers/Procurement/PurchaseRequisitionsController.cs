@@ -184,4 +184,14 @@ public class PurchaseRequisitionsController(PurchaseRequisitionApiService servic
         TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
         return RedirectToAction(nameof(Index));
     }
+
+    [Authorize(Policy = "PurchaseRequisition_Cancel")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CloseRemainder(long id, string reason)
+    {
+        var result = await service.CloseRemainderAsync(id, reason);
+        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Detail), new { id });
+    }
 }

@@ -16,6 +16,7 @@ public class PurchaseRequisitionUseCase(
     IPurchaseOrderRequisitionRepository orderRequisitionRepository,
     GenericRepository<PurchaseOrder> orderRepository,
     IPurchaseOrderLineSourceRepository lineSourceRepository,
+    IStatusTransitionRepository statusTransitionRepository,
     IItemDirectoryService itemDirectoryService,
     IDocumentNumberGeneratorService documentNumberGeneratorService,
     IApprovalService approvalService,
@@ -189,11 +190,56 @@ public class PurchaseRequisitionUseCase(
         return Result<bool>.Success(true);
     }
 
+    // Force-closes the un-ordered remainder of an Approved PR's lines; already-ordered qty is untouched.
+    public async Task<Result<PurchaseRequisitionResponse>> CloseRemainderAsync(long id, string reason)
+    {
+        var requisition = await requisitionRepository.GetByIdAsync(id);
+        if (requisition is null)
+        {
+            return Result<PurchaseRequisitionResponse>.Failure($"Purchase requisition {id} not found.");
+        }
+
+        if (requisition.Status != "Approved" || requisition.LifecycleStatus != "Open")
+        {
+            return Result<PurchaseRequisitionResponse>.Failure("Only an Open, Approved requisition can be closed.");
+        }
+
+        if (!await statusTransitionRepository.IsAllowedAsync("PurchaseRequisition", requisition.LifecycleStatus, "Closed"))
+        {
+            return Result<PurchaseRequisitionResponse>.Failure("Requisition cannot transition to Closed.");
+        }
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(requisition));
+
+        var lines = await lineRepository.GetByRequisitionIdAsync(id);
+        var orderedQtyByLine = await lineSourceRepository.GetOrderedQuantityByRequisitionLineIdsAsync(lines.Select(l => l.Id));
+        foreach (var line in lines)
+        {
+            var orderedQty = orderedQtyByLine.TryGetValue(line.Id, out var oq) ? oq : 0m;
+            var remainder = line.Quantity - orderedQty - line.ClosedQuantity;
+            if (remainder > 0)
+            {
+                await lineRepository.UpdateClosedQuantityAsync(line.Id, line.ClosedQuantity + remainder);
+            }
+        }
+
+        requisition.LifecycleStatus = "Closed";
+        requisition.UpdatedBy = currentUserService.UserId;
+        requisition.UpdatedAt = DateTime.UtcNow;
+        await requisitionRepository.UpdateAsync(requisition);
+
+        var response = await ToResponseAsync(requisition);
+        await auditLogService.LogAsync("Procurement_PurchaseRequisitions", id, "Closed", oldValues, JsonSerializer.Serialize(new { Response = response, Reason = reason }), currentUserService.UserId);
+
+        return Result<PurchaseRequisitionResponse>.Success(response);
+    }
+
     private async Task<Result<PurchaseRequisitionResponse>> FinalizeApprovedAsync(PurchaseRequisition requisition)
     {
         var oldValues = JsonSerializer.Serialize(await ToResponseAsync(requisition));
 
         requisition.Status = "Approved";
+        requisition.LifecycleStatus = "Open"; // enters the fulfillment axis fresh; see docs/modules/procurement.md
         requisition.CurrentApprovalLevel = null;
         requisition.UpdatedBy = currentUserService.UserId;
         requisition.UpdatedAt = DateTime.UtcNow;
@@ -246,7 +292,7 @@ public class PurchaseRequisitionUseCase(
         {
             var item = await itemDirectoryService.GetSummaryAsync(l.ItemId);
             var orderedLineQty = orderedQtyByLine.TryGetValue(l.Id, out var olq) ? olq : 0m;
-            return new PurchaseRequisitionLineResponse(l.Id, l.ItemId, item?.Code, item?.Name, l.Quantity, l.Notes, orderedLineQty);
+            return new PurchaseRequisitionLineResponse(l.Id, l.ItemId, item?.Code, item?.Name, l.Quantity, l.Notes, orderedLineQty, l.ClosedQuantity);
         }));
 
         var createdByUser = requisition.CreatedBy.HasValue && userCache.TryGetValue(requisition.CreatedBy.Value, out var createdBy) ? createdBy : null;
@@ -258,11 +304,14 @@ public class PurchaseRequisitionUseCase(
 
         var totalRequestedQty = lines.Sum(l => l.Quantity);
         var orderedQty = orderedQtyByRequisition.TryGetValue(requisition.Id, out var oq) ? oq : 0m;
-        var orderStatus = orderedQty <= 0 ? "NotOrdered" : orderedQty >= totalRequestedQty ? "FullyOrdered" : "PartiallyOrdered";
+        var totalClosedQty = lines.Sum(l => l.ClosedQuantity);
+        var orderStatus = orderedQty <= 0
+            ? (totalClosedQty > 0 ? "Closed" : "NotOrdered")
+            : (orderedQty + totalClosedQty >= totalRequestedQty ? "FullyOrdered" : "PartiallyOrdered");
 
         return new PurchaseRequisitionResponse(
             requisition.Id, requisition.RequisitionNumber, requisition.RequesterUserId, requesterUser?.FullName, requisition.WarehouseId,
-            requisition.RequisitionDate, requisition.Status, requisition.CurrentApprovalLevel, requisition.Notes,
+            requisition.RequisitionDate, requisition.Status, requisition.LifecycleStatus, requisition.CurrentApprovalLevel, requisition.Notes,
             requisition.CreatedAt, requisition.CreatedBy, createdByUser?.FullName, lineResponses, linkedOrders, orderStatus);
     }
 

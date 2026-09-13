@@ -12,6 +12,8 @@ public class PurchaseRequisitionLine : BaseAuditableEntity
     [Required]
     public long ItemId { get; set; }
     public decimal Quantity { get; set; }
+    // Portion of the un-ordered remainder force-closed via PR Cancel/Close; see docs/modules/procurement.md.
+    public decimal ClosedQuantity { get; set; }
     [StringLength(200)]
     public string? Notes { get; set; }
 }

@@ -15,6 +15,7 @@ public class PurchaseOrderUseCase(
     IPurchaseOrderLineRepository lineRepository,
     IPurchaseOrderLineSourceRepository lineSourceRepository,
     IPurchaseOrderRequisitionRepository orderRequisitionRepository,
+    IStatusTransitionRepository statusTransitionRepository,
     GenericRepository<PurchaseRequisition> requisitionRepository,
     IPurchaseRequisitionLineRepository requisitionLineRepository,
     IItemDirectoryService itemDirectoryService,
@@ -242,25 +243,44 @@ public class PurchaseOrderUseCase(
 
     // Called by Inventory (via this IPurchaseOrderReceiptService contract) after posting a Goods Receipt
     // referencing this PO, so Procurement can track received quantity without Inventory reading its tables.
-    public async Task ApplyReceiptAsync(long purchaseOrderId, IReadOnlyList<PurchaseOrderReceiptLineUpdate> lines)
+    public async Task ApplyReceiptAsync(long purchaseOrderId, IReadOnlyList<PurchaseOrderReceiptItemUpdate> items)
     {
         var order = await orderRepository.GetByIdAsync(purchaseOrderId);
         if (order is null) return;
 
-        foreach (var lineUpdate in lines)
+        var allLines = await lineRepository.GetByOrderIdAsync(purchaseOrderId);
+        // Inventory only knows ItemId/qty, not our internal PurchaseOrderLineId - distribute each item's
+        // received qty across this PO's line(s) for that item, in order, up to each line's remaining qty.
+        foreach (var item in items)
         {
-            await lineRepository.UpdateReceivedQuantityAsync(lineUpdate.PurchaseOrderLineId, lineUpdate.ReceivedQuantity);
+            var toDistribute = item.ReceivedQuantity;
+            foreach (var line in allLines.Where(l => l.ItemId == item.ItemId))
+            {
+                if (toDistribute <= 0) break;
+                var remaining = line.Quantity - line.ReceivedQuantity;
+                if (remaining <= 0) continue;
+
+                var applied = Math.Min(remaining, toDistribute);
+                await lineRepository.UpdateReceivedQuantityAsync(line.Id, applied);
+                line.ReceivedQuantity += applied;
+                toDistribute -= applied;
+            }
         }
 
-        var allLines = await lineRepository.GetByOrderIdAsync(purchaseOrderId);
         var isFullyReceived = allLines.All(l => l.ReceivedQuantity >= l.Quantity);
         var isPartiallyReceived = allLines.Any(l => l.ReceivedQuantity > 0);
+        var targetLifecycleStatus = isFullyReceived ? "FullyReceived" : isPartiallyReceived ? "PartiallyReceived" : order.LifecycleStatus;
 
-        order.Status = isFullyReceived ? "FullyReceived" : isPartiallyReceived ? "PartiallyReceived" : order.Status;
-        order.UpdatedAt = DateTime.UtcNow;
-        await orderRepository.UpdateAsync(order);
+        if (targetLifecycleStatus is not null && targetLifecycleStatus != order.LifecycleStatus
+            && await statusTransitionRepository.IsAllowedAsync("PurchaseOrder", order.LifecycleStatus ?? "Open", targetLifecycleStatus))
+        {
+            order.Status = targetLifecycleStatus == "FullyReceived" ? "FullyReceived" : "PartiallyReceived";
+            order.LifecycleStatus = targetLifecycleStatus;
+            order.UpdatedAt = DateTime.UtcNow;
+            await orderRepository.UpdateAsync(order);
+        }
 
-        await auditLogService.LogAsync("Procurement_PurchaseOrders", purchaseOrderId, "ReceiptApplied", null, JsonSerializer.Serialize(order.Status), null);
+        await auditLogService.LogAsync("Procurement_PurchaseOrders", purchaseOrderId, "ReceiptApplied", null, JsonSerializer.Serialize(order.LifecycleStatus), null);
     }
 
     private async Task<Result<PurchaseOrderResponse>> FinalizeApprovedAsync(PurchaseOrder order)
@@ -268,6 +288,7 @@ public class PurchaseOrderUseCase(
         var oldValues = JsonSerializer.Serialize(await ToResponseAsync(order));
 
         order.Status = "Approved";
+        order.LifecycleStatus = "Open"; // enters the fulfillment axis fresh; see docs/modules/procurement.md
         order.CurrentApprovalLevel = null;
         order.UpdatedBy = currentUserService.UserId;
         order.UpdatedAt = DateTime.UtcNow;
@@ -423,7 +444,7 @@ public class PurchaseOrderUseCase(
         return new PurchaseOrderResponse(
             order.Id, order.OrderNumber, sourceRequisitions, order.VendorId, vendor?.Code, vendor?.Name,
             order.CurrencyId, order.PaymentTermDays, order.OrderDate, order.ExpectedDeliveryDate,
-            order.Status, order.CurrentApprovalLevel, order.Notes,
+            order.Status, order.LifecycleStatus, order.CurrentApprovalLevel, order.Notes,
             order.CreatedAt, order.CreatedBy, createdByUser?.FullName, lineResponses);
     }
 

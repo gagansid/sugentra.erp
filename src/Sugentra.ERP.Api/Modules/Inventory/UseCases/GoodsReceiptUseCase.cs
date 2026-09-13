@@ -16,6 +16,7 @@ public class GoodsReceiptUseCase(
     GenericRepository<StockLedger> ledgerRepository,
     IStockBalanceRepository balanceRepository,
     IItemDirectoryService itemDirectoryService,
+    IPurchaseOrderReceiptService purchaseOrderReceiptService,
     IDocumentNumberGeneratorService documentNumberGeneratorService,
     IApprovalService approvalService,
     IUserDirectoryService userDirectoryService,
@@ -49,6 +50,7 @@ public class GoodsReceiptUseCase(
         {
             ReceiptNumber = number.FormattedNumber,
             WarehouseId = request.WarehouseId,
+            PurchaseOrderId = request.PurchaseOrderId,
             VendorReference = request.VendorReference,
             ReceiptDate = request.ReceiptDate,
             Status = "Draft",
@@ -99,6 +101,7 @@ public class GoodsReceiptUseCase(
         var oldValues = JsonSerializer.Serialize(await ToResponseAsync(receipt));
 
         receipt.WarehouseId = request.WarehouseId;
+        receipt.PurchaseOrderId = request.PurchaseOrderId;
         receipt.VendorReference = request.VendorReference;
         receipt.ReceiptDate = request.ReceiptDate;
         receipt.Notes = request.Notes;
@@ -201,6 +204,15 @@ public class GoodsReceiptUseCase(
         await receiptRepository.UpdateAsync(receipt);
 
         await ApplyStockReceiptAsync(receipt);
+
+        if (receipt.PurchaseOrderId.HasValue)
+        {
+            var lines = await lineRepository.GetByReceiptIdAsync(receipt.Id);
+            var itemUpdates = lines.GroupBy(l => l.ItemId)
+                .Select(g => new PurchaseOrderReceiptItemUpdate(g.Key, g.Sum(l => l.Quantity)))
+                .ToList();
+            await purchaseOrderReceiptService.ApplyReceiptAsync(receipt.PurchaseOrderId.Value, itemUpdates);
+        }
 
         var response = await ToResponseAsync(receipt);
         await auditLogService.LogAsync("Inventory_GoodsReceipts", receipt.Id, "Posted", oldValues, JsonSerializer.Serialize(response), currentUserService.UserId);
@@ -309,7 +321,7 @@ public class GoodsReceiptUseCase(
         var lineResponses = lines.Select(l => new GoodsReceiptLineResponse(l.Id, l.ItemId, l.BatchId, l.Quantity, l.UnitCost)).ToList();
         var createdByUser = receipt.CreatedBy.HasValue && userCache.TryGetValue(receipt.CreatedBy.Value, out var user) ? user : null;
         return new GoodsReceiptResponse(
-            receipt.Id, receipt.ReceiptNumber, receipt.WarehouseId, receipt.VendorReference, receipt.ReceiptDate,
+            receipt.Id, receipt.ReceiptNumber, receipt.WarehouseId, receipt.PurchaseOrderId, receipt.VendorReference, receipt.ReceiptDate,
             receipt.Status, receipt.CurrentApprovalLevel, receipt.Notes, receipt.CreatedAt, receipt.CreatedBy,
             createdByUser?.FullName, lineResponses);
     }

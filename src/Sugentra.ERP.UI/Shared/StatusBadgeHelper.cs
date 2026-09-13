@@ -19,6 +19,7 @@ public static class StatusBadgeHelper
     {
         "FullyOrdered" => ("primary", "Fully Ordered"),
         "PartiallyOrdered" => ("warning", "Partially Ordered"),
+        "Closed" => ("dark", "Closed"),
         _ => ("secondary", "Not Ordered")
     };
 }

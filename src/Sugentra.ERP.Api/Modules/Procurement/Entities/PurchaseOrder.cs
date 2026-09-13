@@ -20,6 +20,9 @@ public class PurchaseOrder : BaseAuditableEntity
     public DateTime? ExpectedDeliveryDate { get; set; }
     [Required, StringLength(20)]
     public string Status { get; set; } = "Draft"; // Draft | WaitingApproval | Approved | Rejected | PartiallyReceived | FullyReceived | Closed
+    // Second, independent status axis (only meaningful once Status == "Approved"); null before that.
+    [StringLength(20)]
+    public string? LifecycleStatus { get; set; } // Open | PartiallyReceived | FullyReceived | Cancelled | Closed | Superseded
     // Set alongside Status == "WaitingApproval"; the human-readable label is composed in the UI, not stored.
     [StringLength(100)]
     public string? CurrentApprovalLevel { get; set; }

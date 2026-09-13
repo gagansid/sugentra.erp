@@ -29,6 +29,12 @@
                 <a asp-controller="PurchaseOrders" asp-action="Create" asp-route-purchaseRequisitionId="@Model.Id"
                    class="btn btn-sm btn-outline-primary"><i class="ri ri-shopping-cart-2-line me-1"></i>Create Purchase Order</a>
             }
+            @if (Model.Status == "Approved" && Model.LifecycleStatus == "Open" && User.HasPermission("PurchaseRequisition_Cancel"))
+            {
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closeRemainderModal">
+                    <i class="ri ri-close-circle-line me-1"></i>Close Remainder
+                </button>
+            }
         </div>
     </div>
     <div class="card-body">
@@ -184,3 +190,45 @@
         </div>
     </div>
 </div>
+
+@if (Model.Status == "Approved" && Model.LifecycleStatus == "Open" && User.HasPermission("PurchaseRequisition_Cancel"))
+{
+    <div class="modal fade" id="closeRemainderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="CloseRemainder" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Close Remainder</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>The un-ordered remainder of every line will be force-closed and will no longer count as orderable. Already-ordered quantities are not affected.</p>
+                        <label class="form-label" for="closeRemainderReason">Reason</label>
+                        <textarea class="form-control" id="closeRemainderReason" name="reason" rows="3" required></textarea>
+                        <div class="text-danger small mt-1 d-none" id="closeRemainderReasonError">Reason is required.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-dark waves-effect btn-filter-action" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-filter-action">Close Remainder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            document.querySelector('#closeRemainderModal form').addEventListener('submit', function (event) {
+                var reason = document.getElementById('closeRemainderReason');
+                var error = document.getElementById('closeRemainderReasonError');
+                if (!reason.value.trim()) {
+                    event.preventDefault();
+                    error.classList.remove('d-none');
+                } else {
+                    error.classList.add('d-none');
+                }
+            });
+        </script>
+    }
+}

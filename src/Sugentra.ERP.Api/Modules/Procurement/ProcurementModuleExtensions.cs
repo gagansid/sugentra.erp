@@ -21,6 +21,7 @@ public static class ProcurementModuleExtensions
         services.AddScoped<IPurchaseOrderLineRepository, PurchaseOrderLineRepository>();
         services.AddScoped<IPurchaseOrderRequisitionRepository, PurchaseOrderRequisitionRepository>();
         services.AddScoped<IPurchaseOrderLineSourceRepository, PurchaseOrderLineSourceRepository>();
+        services.AddScoped<IStatusTransitionRepository, StatusTransitionRepository>();
         services.AddScoped<PurchaseOrderUseCase>();
         services.AddScoped<IPurchaseOrderReceiptService>(sp => sp.GetRequiredService<PurchaseOrderUseCase>());
         services.AddScoped<IApprovalDocumentHandler, PurchaseOrderApprovalHandler>();

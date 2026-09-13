@@ -29,7 +29,7 @@ public record PurchaseOrderSourceRequisitionResponse(long Id, string Requisition
 public record PurchaseOrderResponse(
     long Id, string OrderNumber, IReadOnlyList<PurchaseOrderSourceRequisitionResponse> SourceRequisitions, long VendorId, string? VendorCode, string? VendorName,
     long CurrencyId, int? PaymentTermDays, DateTime OrderDate, DateTime? ExpectedDeliveryDate,
-    string Status, string? CurrentApprovalLevel, string? Notes,
+    string Status, string? LifecycleStatus, string? CurrentApprovalLevel, string? Notes,
     DateTime CreatedAt, long? CreatedBy, string? CreatedByName, IReadOnlyList<PurchaseOrderLineResponse> Lines);
 
 

@@ -18,6 +18,9 @@ public class PurchaseRequisition : BaseAuditableEntity
     public DateTime RequisitionDate { get; set; }
     [Required, StringLength(20)]
     public string Status { get; set; } = "Draft"; // Draft | WaitingApproval | Approved | Rejected | Closed
+    // Second, independent status axis (only meaningful once Status == "Approved"); null before that.
+    [StringLength(20)]
+    public string? LifecycleStatus { get; set; } // Open | Closed
     // Set alongside Status == "WaitingApproval"; the human-readable label is composed in the UI, not stored.
     [StringLength(100)]
     public string? CurrentApprovalLevel { get; set; }

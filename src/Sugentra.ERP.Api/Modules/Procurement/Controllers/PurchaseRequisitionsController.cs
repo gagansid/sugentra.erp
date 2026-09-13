@@ -69,4 +69,14 @@ public class PurchaseRequisitionsController(PurchaseRequisitionUseCase useCase, 
             ? SuccessMessage("Purchase requisition deleted successfully.")
             : Failure(result.Error!, StatusCodes.Status400BadRequest);
     }
+
+    [HttpPost("{id:long}/close")]
+    [Authorize(Policy = "PurchaseRequisition_Cancel")]
+    public async Task<IActionResult> CloseRemainder(long id, [FromBody] CloseRemainderPurchaseRequisitionRequest request)
+    {
+        var result = await useCase.CloseRemainderAsync(id, request.Reason);
+        return result.IsSuccess
+            ? Success(result.Value, "Purchase requisition closed successfully.")
+            : Failure(result.Error!, StatusCodes.Status400BadRequest);
+    }
 }

@@ -16,6 +16,7 @@ public class PurchaseOrderUseCaseTests
     private readonly Mock<IPurchaseOrderLineRepository> lineRepository = new();
     private readonly Mock<IPurchaseOrderLineSourceRepository> lineSourceRepository = new();
     private readonly Mock<IPurchaseOrderRequisitionRepository> orderRequisitionRepository = new();
+    private readonly Mock<IStatusTransitionRepository> statusTransitionRepository = new();
     private readonly Mock<GenericRepository<PurchaseRequisition>> requisitionRepository = new(Mock.Of<IDbConnectionFactory>());
     private readonly Mock<IPurchaseRequisitionLineRepository> requisitionLineRepository = new();
     private readonly Mock<IItemDirectoryService> itemDirectoryService = new();
@@ -27,7 +28,7 @@ public class PurchaseOrderUseCaseTests
     private readonly Mock<ICurrentUserService> currentUserService = new();
 
     private PurchaseOrderUseCase CreateUseCase() => new(
-        orderRepository.Object, lineRepository.Object, lineSourceRepository.Object, orderRequisitionRepository.Object, requisitionRepository.Object,
+        orderRepository.Object, lineRepository.Object, lineSourceRepository.Object, orderRequisitionRepository.Object, statusTransitionRepository.Object, requisitionRepository.Object,
         requisitionLineRepository.Object, itemDirectoryService.Object,
         businessPartnerDirectoryService.Object, documentNumberGeneratorService.Object, approvalService.Object,
         userDirectoryService.Object, auditLogService.Object, currentUserService.Object);
@@ -35,6 +36,7 @@ public class PurchaseOrderUseCaseTests
     public PurchaseOrderUseCaseTests()
     {
         currentUserService.SetupGet(x => x.UserId).Returns(1);
+        statusTransitionRepository.Setup(x => x.IsAllowedAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
         documentNumberGeneratorService.Setup(x => x.GetNextAsync("PurchaseOrder"))
             .ReturnsAsync(new NextDocumentNumberResult(1, "PO/2026/0001"));
         lineRepository.Setup(x => x.GetByOrderIdAsync(It.IsAny<long>()))
@@ -127,10 +129,10 @@ public class PurchaseOrderUseCaseTests
         var order = new PurchaseOrder { Id = 1, Status = "Approved", VendorId = 1, CurrencyId = 1 };
         orderRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(order);
         lineRepository.Setup(x => x.GetByOrderIdAsync(1))
-            .ReturnsAsync(new List<PurchaseOrderLine> { new() { Id = 10, Quantity = 10, ReceivedQuantity = 10 } });
+            .ReturnsAsync(new List<PurchaseOrderLine> { new() { Id = 10, ItemId = 5, Quantity = 10, ReceivedQuantity = 0 } });
 
         var useCase = CreateUseCase();
-        await useCase.ApplyReceiptAsync(1, [new PurchaseOrderReceiptLineUpdate(10, 10)]);
+        await useCase.ApplyReceiptAsync(1, [new PurchaseOrderReceiptItemUpdate(5, 10)]);
 
         lineRepository.Verify(x => x.UpdateReceivedQuantityAsync(10, 10), Times.Once);
         Assert.Equal("FullyReceived", order.Status);
@@ -142,10 +144,10 @@ public class PurchaseOrderUseCaseTests
         var order = new PurchaseOrder { Id = 1, Status = "Approved", VendorId = 1, CurrencyId = 1 };
         orderRepository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(order);
         lineRepository.Setup(x => x.GetByOrderIdAsync(1))
-            .ReturnsAsync(new List<PurchaseOrderLine> { new() { Id = 10, Quantity = 10, ReceivedQuantity = 4 } });
+            .ReturnsAsync(new List<PurchaseOrderLine> { new() { Id = 10, ItemId = 5, Quantity = 10, ReceivedQuantity = 0 } });
 
         var useCase = CreateUseCase();
-        await useCase.ApplyReceiptAsync(1, [new PurchaseOrderReceiptLineUpdate(10, 4)]);
+        await useCase.ApplyReceiptAsync(1, [new PurchaseOrderReceiptItemUpdate(5, 4)]);
 
         Assert.Equal("PartiallyReceived", order.Status);
     }
