@@ -1,0 +1,19 @@
+flowchart TD
+    A[1. Buat Purchase Requisition - Draft] --> B[Submit -> WaitingApproval]
+    B --> C{Approval Matrix}
+    C -->|Approved| D[PR: Approved, LifecycleStatus=Open]
+    C -->|Rejected| Z1[PR: Rejected]
+    D --> E[2. Buat Purchase Order dari PR terpilih - Draft]
+    E --> F[Submit PO -> WaitingApproval]
+    F --> G{Approval Matrix}
+    G -->|Approved| H[PO: Approved, LifecycleStatus=Open]
+    G -->|Rejected| Z2[PO: Rejected]
+    H --> I[3. Vendor kirim barang]
+    I --> J[Buat Goods Receipt, pilih PurchaseOrderId + lines]
+    J --> K[Post/Finalize Goods Receipt]
+    K --> L[IPurchaseOrderReceiptService.ApplyReceiptAsync]
+    L --> M[PO.ReceivedQuantity terisi per line]
+    M --> N{Semua line ReceivedQty = Qty?}
+    N -->|Ya| O[PO LifecycleStatus=FullyReceived]
+    N -->|Sebagian| P[PO LifecycleStatus=PartiallyReceived]
+    K --> Q[Inventory_Batches + Stock Ledger + Stock Balance ter-update]

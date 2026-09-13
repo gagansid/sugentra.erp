@@ -31,6 +31,12 @@
                     <button type="submit" class="btn btn-sm btn-outline-warning"><i class="ri ri-file-copy-2-line me-1"></i>Revise</button>
                 </form>
             }
+            @if (Model.Status == "Approved" && Model.LifecycleStatus is "Open" or "PartiallyReceived" && User.HasPermission("GoodsReceipt_Create"))
+            {
+                <a class="btn btn-sm btn-outline-success" asp-controller="GoodsReceipts" asp-action="Create" asp-route-purchaseOrderId="@Model.Id">
+                    <i class="ri ri-truck-line me-1"></i>Create Goods Receipt
+                </a>
+            }
             @if (Model.Status == "Approved" && Model.LifecycleStatus == "Open" && User.HasPermission("PurchaseOrder_Cancel"))
             {
                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">

@@ -3,6 +3,8 @@
     var items = (IReadOnlyList<Sugentra.ERP.UI.Models.MasterData.Item>)ViewBag.Items;
     var warehouses = (IReadOnlyList<Sugentra.ERP.UI.Models.Settings.Warehouse>)ViewBag.Warehouses;
     var batches = (IReadOnlyList<Sugentra.ERP.UI.Models.Inventory.Batch>)ViewBag.Batches;
+    var purchaseOrders = (IReadOnlyList<Sugentra.ERP.UI.Models.Procurement.PurchaseOrderResponse>)ViewBag.PurchaseOrders;
+    var selectedPurchaseOrderId = ViewBag.SelectedPurchaseOrderId as long?;
     var breadcrumb = new Sugentra.ERP.UI.Models.Layout.BreadcrumbViewModel("ri-truck-line", new[]
     {
         new Sugentra.ERP.UI.Models.Layout.BreadcrumbItem("Inventory", Url.Action("Index", "Workspace", new { id = "Inventory" })),
@@ -45,6 +47,19 @@
             <div class="row g-2">
                 <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Vendor Reference</label>
                 <div class="col-md-4 col-sm-8"><input name="vendorReference" class="form-control form-control-sm" /></div>
+            </div>
+            <div class="row g-2">
+                <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm">Purchase Order</label>
+                <div class="col-md-4 col-sm-8">
+                    <select name="purchaseOrderId" class="selectpicker form-control form-control-sm gr-select" data-live-search="true"
+                            data-style="btn-default" data-width="100%">
+                        <option value="">-- No Purchase Order --</option>
+                        @foreach (var po in purchaseOrders)
+                        {
+                            <option value="@po.Id" selected="@(selectedPurchaseOrderId == po.Id ? "selected" : null)">@po.OrderNumber - @po.VendorName</option>
+                        }
+                    </select>
+                </div>
             </div>
             <div class="row g-2">
                 <label class="col-md-2 col-sm-4 col-form-label col-form-label-sm required-label">Receipt Date</label>

@@ -4,18 +4,38 @@ using Sugentra.ERP.UI.Models;
 using Sugentra.ERP.UI.Models.Inventory;
 using Sugentra.ERP.UI.Services.Inventory;
 using Sugentra.ERP.UI.Services.MasterData;
+using Sugentra.ERP.UI.Services.Procurement;
 using Sugentra.ERP.UI.Services.Settings;
 
 namespace Sugentra.ERP.UI.Controllers.Inventory;
 
 [Authorize(Policy = "GoodsReceipt_View")]
-public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiService itemService, WarehouseApiService warehouseService, BatchApiService batchService) : Controller
+public class GoodsReceiptsController(
+    GoodsReceiptApiService service, ItemApiService itemService, WarehouseApiService warehouseService, BatchApiService batchService,
+    PurchaseOrderApiService purchaseOrderService) : Controller
 {
     private async Task PopulateLookupsAsync()
     {
         ViewBag.Items = (await itemService.GetAllAsync()).Data ?? [];
         ViewBag.Warehouses = (await warehouseService.GetAllAsync()).Data ?? [];
         ViewBag.Batches = (await batchService.GetAllAsync()).Data ?? [];
+
+        // Only orders still expecting delivery can be linked to a new Goods Receipt.
+        var purchaseOrders = (await purchaseOrderService.GetAllAsync()).Data ?? [];
+        ViewBag.PurchaseOrders = purchaseOrders.Where(o => o.Status == "Approved" && o.LifecycleStatus is "Open" or "PartiallyReceived").ToList();
+    }
+
+    // An existing GR's own receipt may have already moved its linked PO past Open/PartiallyReceived - keep it selectable/displayable regardless.
+    private async Task EnsureLinkedPurchaseOrderInLookupAsync(long? purchaseOrderId)
+    {
+        var purchaseOrders = (List<Sugentra.ERP.UI.Models.Procurement.PurchaseOrderResponse>)ViewBag.PurchaseOrders;
+        if (!purchaseOrderId.HasValue || purchaseOrders.Any(o => o.Id == purchaseOrderId.Value)) return;
+
+        var currentOrder = await purchaseOrderService.GetByIdAsync(purchaseOrderId.Value);
+        if (currentOrder.Success && currentOrder.Data is not null)
+        {
+            purchaseOrders.Add(currentOrder.Data);
+        }
     }
 
     public async Task<IActionResult> Index(string? keyword = null, int page = 1, int pageSize = 10, string? status = null,
@@ -74,16 +94,17 @@ public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiServ
     }
 
     [Authorize(Policy = "GoodsReceipt_Create")]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(long? purchaseOrderId = null)
     {
         await PopulateLookupsAsync();
+        ViewBag.SelectedPurchaseOrderId = purchaseOrderId;
         return View();
     }
 
     [HttpPost]
     [Authorize(Policy = "GoodsReceipt_Create")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(long warehouseId, string? vendorReference, DateTime receiptDate, string? notes,
+    public async Task<IActionResult> Create(long warehouseId, long? purchaseOrderId, string? vendorReference, DateTime receiptDate, string? notes,
         List<long> itemId, List<long> batchId, List<decimal> quantity, List<decimal> unitCost)
     {
         if (itemId.Count != quantity.Count)
@@ -94,7 +115,7 @@ public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiServ
         }
 
         var lines = itemId.Select((id, i) => new GoodsReceiptLineRequest(id, batchId.ElementAtOrDefault(i), quantity[i], unitCost.ElementAtOrDefault(i))).ToList();
-        var request = new CreateGoodsReceiptRequest(warehouseId, vendorReference, receiptDate, notes, lines);
+        var request = new CreateGoodsReceiptRequest(warehouseId, purchaseOrderId, vendorReference, receiptDate, notes, lines);
         var result = await service.CreateAsync(request);
         if (!result.Success)
         {
@@ -118,13 +139,14 @@ public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiServ
         }
 
         await PopulateLookupsAsync();
+        await EnsureLinkedPurchaseOrderInLookupAsync(result.Data.PurchaseOrderId);
         return View(result.Data);
     }
 
     [HttpPost]
     [Authorize(Policy = "GoodsReceipt_Edit")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(long id, long warehouseId, string? vendorReference, DateTime receiptDate, string? notes,
+    public async Task<IActionResult> Edit(long id, long warehouseId, long? purchaseOrderId, string? vendorReference, DateTime receiptDate, string? notes,
         List<long> itemId, List<long> batchId, List<decimal> quantity, List<decimal> unitCost)
     {
         if (itemId.Count != quantity.Count)
@@ -134,7 +156,7 @@ public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiServ
         }
 
         var lines = itemId.Select((iid, i) => new GoodsReceiptLineRequest(iid, batchId.ElementAtOrDefault(i), quantity[i], unitCost.ElementAtOrDefault(i))).ToList();
-        var request = new UpdateGoodsReceiptRequest(warehouseId, vendorReference, receiptDate, notes, lines);
+        var request = new UpdateGoodsReceiptRequest(warehouseId, purchaseOrderId, vendorReference, receiptDate, notes, lines);
         var result = await service.UpdateAsync(id, request);
         if (!result.Success)
         {
@@ -156,6 +178,7 @@ public class GoodsReceiptsController(GoodsReceiptApiService service, ItemApiServ
         }
 
         await PopulateLookupsAsync();
+        await EnsureLinkedPurchaseOrderInLookupAsync(result.Data.PurchaseOrderId);
         var adjacentResult = await service.GetAdjacentAsync(id);
         ViewBag.PreviousId = adjacentResult.Data?.PreviousId;
         ViewBag.NextId = adjacentResult.Data?.NextId;

@@ -54,6 +54,13 @@
                                 <td class="fw-medium">Vendor Reference</td>
                                 <td>@Model.VendorReference</td>
                             </tr>
+                            @if (Model.PurchaseOrderId.HasValue)
+                            {
+                                <tr>
+                                    <td class="fw-medium">Purchase Order</td>
+                                    <td><a asp-controller="PurchaseOrders" asp-action="Detail" asp-route-id="@Model.PurchaseOrderId">@((ViewBag.PurchaseOrders as IReadOnlyList<Sugentra.ERP.UI.Models.Procurement.PurchaseOrderResponse>)?.FirstOrDefault(o => o.Id == Model.PurchaseOrderId)?.OrderNumber ?? $"#{Model.PurchaseOrderId}")</a></td>
+                                </tr>
+                            }
                             <tr>
                                 <td class="fw-medium">Receipt Date</td>
                                 <td>@Model.ReceiptDate.ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
