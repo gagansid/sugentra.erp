@@ -38,6 +38,62 @@ public class GoodsReceiptsController(
         }
     }
 
+    // Feeds the Create/Edit form's "auto-fill lines from PO" behavior - the PO already knows exactly
+    // which items (and quantities still owed) are expected, so there is no need to pick the item again.
+    [HttpGet]
+    [Authorize(Policy = "GoodsReceipt_Create")]
+    public async Task<IActionResult> PurchaseOrderLines(long purchaseOrderId)
+    {
+        var result = await purchaseOrderService.GetByIdAsync(purchaseOrderId);
+        if (!result.Success || result.Data is null)
+        {
+            return Json(new { success = false, message = result.Message ?? "Purchase order not found." });
+        }
+
+        var lines = result.Data.Lines
+            .Where(l => l.Quantity - l.ReceivedQuantity > 0)
+            .Select(l => new
+            {
+                itemId = l.ItemId,
+                itemCode = l.ItemCode,
+                itemName = l.ItemName,
+                warehouseId = l.WarehouseId,
+                remainingQuantity = l.Quantity - l.ReceivedQuantity,
+                unitPrice = l.UnitPrice
+            });
+
+        return Json(new { success = true, lines });
+    }
+
+    public record CreateBatchInlineRequest(long ItemId, long WarehouseId, string Code, string? Grade, DateTime ReceivedDate,
+        string? LegalityDocumentType, string? LegalityDocumentNumber, string? LegalityDocumentUrl);
+
+    // Lets the Create/Edit form register a new Batch without leaving the Goods Receipt form.
+    [HttpPost]
+    [Authorize(Policy = "Batch_Create")]
+    public async Task<IActionResult> CreateBatchInline([FromBody] CreateBatchInlineRequest request)
+    {
+        var batch = new Sugentra.ERP.UI.Models.Inventory.Batch
+        {
+            ItemId = request.ItemId,
+            WarehouseId = request.WarehouseId,
+            Code = request.Code,
+            Grade = request.Grade,
+            ReceivedDate = request.ReceivedDate,
+            LegalityDocumentType = request.LegalityDocumentType,
+            LegalityDocumentNumber = request.LegalityDocumentNumber,
+            LegalityDocumentUrl = request.LegalityDocumentUrl
+        };
+
+        var result = await batchService.CreateAsync(batch);
+        if (!result.Success || result.Data is null)
+        {
+            return Json(new { success = false, message = result.Message ?? "Failed to create batch." });
+        }
+
+        return Json(new { success = true, id = result.Data.Id, code = result.Data.Code, itemId = result.Data.ItemId });
+    }
+
     public async Task<IActionResult> Index(string? keyword = null, int page = 1, int pageSize = 10, string? status = null,
         string? number = null, string? vendorReference = null, DateTime? dateFrom = null, DateTime? dateTo = null)
     {
