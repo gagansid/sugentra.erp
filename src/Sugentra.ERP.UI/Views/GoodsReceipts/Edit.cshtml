@@ -89,7 +89,10 @@
                     </div>
                 </div>
 
-            <h6 class="mb-3">Lines</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Lines</h6>
+                <button type="button" id="addBatchBtn" class="btn btn-sm btn-outline-primary">+ Add Batch</button>
+            </div>
             <div class="row g-2 mb-1">
                 <label class="col-md-2 form-label mb-0 small required-label">Batch</label>
                 <label class="col-md-4 form-label mb-0 small">Item</label>
@@ -101,21 +104,16 @@
                 {
                     <div class="row g-2 mb-2 line-row">
                         <div class="col-md-2">
-                            <div class="input-group input-group-sm">
-                                <select name="batchId" class="selectpicker form-control form-control-sm gr-select batch-select"
-                                        data-live-search="true" data-style="btn-default" data-width="100%" required
-                                        data-required-message="Batch is required.">
-                                    <option value="">-- Select Batch --</option>
-                                    @foreach (var batch in batches)
-                                    {
-                                        <option value="@batch.Id" data-item-id="@batch.ItemId"
-                                                selected="@(batch.Id == line.BatchId ? "selected" : null)">@batch.Code</option>
-                                    }
-                                </select>
-                                <button type="button" class="btn btn-sm btn-outline-primary new-batch-btn" data-bs-toggle="tooltip" title="New Batch">
-                                    <i class="ri ri-add-line icon-14px"></i>
-                                </button>
-                            </div>
+                            <select name="batchId" class="selectpicker form-control form-control-sm gr-select batch-select"
+                                    data-live-search="true" data-style="btn-default" data-width="100%" required
+                                    data-required-message="Batch is required.">
+                                <option value="">-- Select Batch --</option>
+                                @foreach (var batch in batches)
+                                {
+                                    <option value="@batch.Id" data-item-id="@batch.ItemId"
+                                            selected="@(batch.Id == line.BatchId ? "selected" : null)">@batch.Code</option>
+                                }
+                            </select>
                             <div class="text-danger small line-error"></div>
                         </div>
                         <div class="col-md-4">
@@ -358,14 +356,13 @@
         });
 
         // ---- Create Batch inline, without leaving the Goods Receipt form ----
-        var newBatchRow = null;
+        // Global action (button lives above the Lines list, not per-row) - the new batch is
+        // just added as an option to every Batch dropdown, the user still picks it from there.
         var newBatchModal = new bootstrap.Modal(document.getElementById('newBatchModal'));
 
-        $('#lines').on('click', '.new-batch-btn', function () {
-            newBatchRow = $(this).closest('.line-row')[0];
-            var lockedItemId = newBatchRow.dataset.poItem || '';
+        $('#addBatchBtn').on('click', function () {
             var $itemSelect = $('#newBatchItemId');
-            $itemSelect.val(lockedItemId).prop('disabled', !!lockedItemId);
+            $itemSelect.val('').prop('disabled', false);
             rerenderSelectPicker($itemSelect);
             $('#newBatchGrade, #newBatchLegalityNumber, #newBatchLegalityUrl').val('');
             $('#newBatchLegalityType').val('');
@@ -403,12 +400,11 @@
                         $('#newBatchError').text(result.message || 'Failed to create batch.');
                         return;
                     }
-                    var $batchSelect = $(newBatchRow).find('select.batch-select');
-                    $batchSelect.append(new Option(result.code, result.id, false, false));
-                    $batchSelect.find('option[value="' + result.id + '"]').attr('data-item-id', String(result.itemId));
-                    $batchSelect.val(result.id);
-                    rerenderSelectPicker($batchSelect);
-                    syncItemFromBatch(newBatchRow);
+                    $('select.batch-select').each(function () {
+                        var $select = $(this);
+                        $select.append(new Option(result.code, result.id, false, false));
+                        $select.find('option[value="' + result.id + '"]').attr('data-item-id', String(result.itemId));
+                    });
                     refreshBatchOptions();
                     newBatchModal.hide();
                 })
