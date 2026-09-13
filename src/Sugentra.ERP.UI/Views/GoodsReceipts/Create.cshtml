@@ -160,14 +160,14 @@
                                 <option value="">-- Select Item --</option>
                                 @foreach (var item in items)
                                 {
-                                    <option value="@item.Id">@item.Code - @item.Name</option>
+                                    <option value="@item.Id" data-code="@item.Code">@item.Code - @item.Name</option>
                                 }
                             </select>
                             <div class="text-danger small" id="newBatchItemError"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small required-label">Code</label>
-                            <input type="text" class="form-control form-control-sm" id="newBatchCode" />
+                            <input type="text" class="form-control form-control-sm" id="newBatchCode" readonly />
                             <div class="text-danger small" id="newBatchCodeError"></div>
                         </div>
                         <div class="mb-3">
@@ -361,17 +361,31 @@
                 var newBatchRow = null;
                 var newBatchModal = new bootstrap.Modal(document.getElementById('newBatchModal'));
 
+                // Code is a lot identifier, not something users need to invent - derive it from the
+                // item code + a timestamp so it's unique without a round-trip to the server.
+                function generateBatchCode(itemSelect) {
+                    var option = itemSelect.options[itemSelect.selectedIndex];
+                    var itemCode = option ? (option.getAttribute('data-code') || 'BATCH') : 'BATCH';
+                    var stamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+                    $('#newBatchCode').val(itemCode + '-' + stamp);
+                }
+
                 $('#lines').on('click', '.new-batch-btn', function () {
                     newBatchRow = $(this).closest('.line-row')[0];
                     var lockedItemId = newBatchRow.dataset.poItem || '';
                     var $itemSelect = $('#newBatchItemId');
                     $itemSelect.val(lockedItemId).prop('disabled', !!lockedItemId);
                     rerenderSelectPicker($itemSelect);
-                    $('#newBatchCode, #newBatchGrade, #newBatchLegalityNumber, #newBatchLegalityUrl').val('');
+                    $('#newBatchGrade, #newBatchLegalityNumber, #newBatchLegalityUrl').val('');
                     $('#newBatchLegalityType').val('');
                     $('#newBatchReceivedDate').val(new Date().toISOString().slice(0, 10));
                     $('#newBatchItemError, #newBatchCodeError, #newBatchError').text('');
+                    generateBatchCode($itemSelect[0]);
                     newBatchModal.show();
+                });
+
+                $('#newBatchItemId').on('change', function () {
+                    generateBatchCode(this);
                 });
 
                 $('#newBatchSave').on('click', function () {
