@@ -242,4 +242,34 @@ public class PurchaseOrdersController(
         TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
         return RedirectToAction(nameof(Index));
     }
+
+    [Authorize(Policy = "PurchaseOrder_Revise")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Revise(long id)
+    {
+        var result = await service.ReviseAsync(id);
+        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return result.Success ? RedirectToAction(nameof(Detail), new { id = result.Data!.Id }) : RedirectToAction(nameof(Detail), new { id });
+    }
+
+    [Authorize(Policy = "PurchaseOrder_Cancel")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(long id, string reason)
+    {
+        var result = await service.CancelAsync(id, reason);
+        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Detail), new { id });
+    }
+
+    [Authorize(Policy = "PurchaseOrder_Close")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Close(long id, string reason)
+    {
+        var result = await service.CloseAsync(id, reason);
+        TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+        return RedirectToAction(nameof(Detail), new { id });
+    }
 }

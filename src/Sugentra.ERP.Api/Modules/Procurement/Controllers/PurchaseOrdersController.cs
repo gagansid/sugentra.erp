@@ -71,4 +71,34 @@ public class PurchaseOrdersController(PurchaseOrderUseCase useCase, ProcurementA
             ? SuccessMessage("Purchase order deleted successfully.")
             : Failure(result.Error!, StatusCodes.Status400BadRequest);
     }
+
+    [HttpPost("{id:long}/revise")]
+    [Authorize(Policy = "PurchaseOrder_Revise")]
+    public async Task<IActionResult> Revise(long id)
+    {
+        var result = await useCase.ReviseAsync(id);
+        return result.IsSuccess
+            ? SuccessCreated($"api/procurement/purchase-orders/{result.Value!.Id}", result.Value, "Purchase order revision created successfully.")
+            : Failure(result.Error!, StatusCodes.Status400BadRequest);
+    }
+
+    [HttpPost("{id:long}/cancel")]
+    [Authorize(Policy = "PurchaseOrder_Cancel")]
+    public async Task<IActionResult> Cancel(long id, [FromBody] CancelPurchaseOrderRequest request)
+    {
+        var result = await useCase.CancelAsync(id, request.Reason);
+        return result.IsSuccess
+            ? Success(result.Value, "Purchase order cancelled successfully.")
+            : Failure(result.Error!, StatusCodes.Status400BadRequest);
+    }
+
+    [HttpPost("{id:long}/close")]
+    [Authorize(Policy = "PurchaseOrder_Close")]
+    public async Task<IActionResult> Close(long id, [FromBody] ClosePurchaseOrderRequest request)
+    {
+        var result = await useCase.CloseAsync(id, request.Reason);
+        return result.IsSuccess
+            ? Success(result.Value, "Purchase order closed successfully.")
+            : Failure(result.Error!, StatusCodes.Status400BadRequest);
+    }
 }

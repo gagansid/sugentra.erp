@@ -28,4 +28,6 @@ public class PurchaseOrder : BaseAuditableEntity
     public string? CurrentApprovalLevel { get; set; }
     [StringLength(500)]
     public string? Notes { get; set; }
+    // Single-level link: set on the NEW PO created by a "Revise" action; the OLD PO gets LifecycleStatus = "Superseded".
+    public long? RevisesPurchaseOrderId { get; set; }
 }

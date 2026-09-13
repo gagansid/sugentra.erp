@@ -24,6 +24,25 @@
                     <button type="submit" class="btn btn-sm btn-primary"><i class="ri ri-check-double-line me-1"></i>Submit</button>
                 </form>
             }
+            @if (Model.Status == "Approved" && Model.LifecycleStatus is "Open" or "PartiallyReceived" && User.HasPermission("PurchaseOrder_Revise"))
+            {
+                <form method="post" asp-action="Revise" asp-route-id="@Model.Id" onsubmit="return confirm('Create a revision of this purchase order? The current order will be marked Superseded.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-warning"><i class="ri ri-file-copy-2-line me-1"></i>Revise</button>
+                </form>
+            }
+            @if (Model.Status == "Approved" && Model.LifecycleStatus == "Open" && User.HasPermission("PurchaseOrder_Cancel"))
+            {
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                    <i class="ri ri-close-circle-line me-1"></i>Cancel
+                </button>
+            }
+            @if (Model.Status == "Approved" && Model.LifecycleStatus is "Open" or "PartiallyReceived" && User.HasPermission("PurchaseOrder_Close"))
+            {
+                <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#closeOrderModal">
+                    <i class="ri ri-lock-line me-1"></i>Close
+                </button>
+            }
         </div>
     </div>
     <div class="card-body">
@@ -63,6 +82,20 @@
                         <td class="fw-medium">Expected Delivery</td>
                         <td>@(Model.ExpectedDeliveryDate.HasValue ? Model.ExpectedDeliveryDate.Value.ToString("dd MMM yyyy", System.Globalization.CultureInfo.InvariantCulture) : "-")</td>
                     </tr>
+                    @if (Model.RevisesPurchaseOrderId.HasValue)
+                    {
+                        <tr>
+                            <td class="fw-medium">Revises</td>
+                            <td><a asp-action="Detail" asp-route-id="@Model.RevisesPurchaseOrderId">@Model.RevisesOrderNumber</a></td>
+                        </tr>
+                    }
+                    @if (Model.RevisedByPurchaseOrderId.HasValue)
+                    {
+                        <tr>
+                            <td class="fw-medium">Revised By</td>
+                            <td><a asp-action="Detail" asp-route-id="@Model.RevisedByPurchaseOrderId">@Model.RevisedByOrderNumber</a></td>
+                        </tr>
+                    }
                     @if (Model.SourceRequisitions.Count > 0)
                     {
                         <tr>
@@ -210,6 +243,60 @@
     </div>
 </div>
 
+@if (Model.Status == "Approved" && Model.LifecycleStatus == "Open" && User.HasPermission("PurchaseOrder_Cancel"))
+{
+    <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="Cancel" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cancel Purchase Order</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>This purchase order has no Goods Receipt yet and will be fully cancelled; any linked requisition quantity is released.</p>
+                        <label class="form-label" for="cancelOrderReason">Reason</label>
+                        <textarea class="form-control" id="cancelOrderReason" name="reason" rows="3" required></textarea>
+                        <div class="text-danger small mt-1 d-none" id="cancelOrderReasonError">Reason is required.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-dark waves-effect btn-filter-action" data-bs-dismiss="modal">Back</button>
+                        <button type="submit" class="btn btn-danger btn-filter-action">Cancel Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Status == "Approved" && Model.LifecycleStatus is "Open" or "PartiallyReceived" && User.HasPermission("PurchaseOrder_Close"))
+{
+    <div class="modal fade" id="closeOrderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="Close" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Close Purchase Order</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>The un-fulfilled remainder of every line will be released back to the source requisition(s). Already-received quantities are not affected.</p>
+                        <label class="form-label" for="closeOrderReason">Reason</label>
+                        <textarea class="form-control" id="closeOrderReason" name="reason" rows="3" required></textarea>
+                        <div class="text-danger small mt-1 d-none" id="closeOrderReasonError">Reason is required.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-dark waves-effect btn-filter-action" data-bs-dismiss="modal">Back</button>
+                        <button type="submit" class="btn btn-dark btn-filter-action">Close Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
 @section Scripts {
     <script>
         var requisitionDetails = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
@@ -250,5 +337,22 @@
             if (!badge) return;
             showPrDetailModal(badge.dataset.requisitionId);
         });
+
+        function wireReasonValidation(formSelector, textareaId, errorId) {
+            var form = document.querySelector(formSelector);
+            if (!form) return;
+            form.addEventListener('submit', function (event) {
+                var reason = document.getElementById(textareaId);
+                var error = document.getElementById(errorId);
+                if (!reason.value.trim()) {
+                    event.preventDefault();
+                    error.classList.remove('d-none');
+                } else {
+                    error.classList.add('d-none');
+                }
+            });
+        }
+        wireReasonValidation('#cancelOrderModal form', 'cancelOrderReason', 'cancelOrderReasonError');
+        wireReasonValidation('#closeOrderModal form', 'closeOrderReason', 'closeOrderReasonError');
     </script>
 }

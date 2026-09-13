@@ -30,7 +30,10 @@ public class PurchaseOrderUseCase(
     {
         var orders = await orderRepository.GetAllAsync();
         var userCache = await ResolveUsersAsync(orders.Select(o => o.CreatedBy));
-        return await Task.WhenAll(orders.Select(o => ToResponseAsync(o, userCache)));
+        var orderNumberById = orders.ToDictionary(o => o.Id, o => o.OrderNumber);
+        var revisedByIdByOriginalId = orders.Where(o => o.RevisesPurchaseOrderId.HasValue)
+            .ToDictionary(o => o.RevisesPurchaseOrderId!.Value, o => o.Id);
+        return await Task.WhenAll(orders.Select(o => ToResponseAsync(o, userCache, orderNumberById, revisedByIdByOriginalId)));
     }
 
     public async Task<PurchaseOrderResponse?> GetByIdAsync(long id)
@@ -241,6 +244,184 @@ public class PurchaseOrderUseCase(
         return Result<bool>.Success(true);
     }
 
+    // Creates a new Draft PO copying vendor/lines/sources from an Approved, not-fully-received PO, and
+    // immediately marks the original Superseded so it stops accepting further receipts/counting as orderable.
+    public async Task<Result<PurchaseOrderResponse>> ReviseAsync(long id)
+    {
+        var order = await orderRepository.GetByIdAsync(id);
+        if (order is null)
+        {
+            return Result<PurchaseOrderResponse>.Failure($"Purchase order {id} not found.");
+        }
+
+        if (order.Status != "Approved" || order.LifecycleStatus is not ("Open" or "PartiallyReceived"))
+        {
+            return Result<PurchaseOrderResponse>.Failure("Only an Open or PartiallyReceived, Approved purchase order can be revised.");
+        }
+
+        if (!await statusTransitionRepository.IsAllowedAsync("PurchaseOrder", order.LifecycleStatus, "Superseded"))
+        {
+            return Result<PurchaseOrderResponse>.Failure("Purchase order cannot transition to Superseded.");
+        }
+
+        var number = await documentNumberGeneratorService.GetNextAsync("PurchaseOrder");
+        var revision = new PurchaseOrder
+        {
+            OrderNumber = number.FormattedNumber,
+            VendorId = order.VendorId,
+            CurrencyId = order.CurrencyId,
+            PaymentTermDays = order.PaymentTermDays,
+            OrderDate = DateTime.UtcNow,
+            ExpectedDeliveryDate = order.ExpectedDeliveryDate,
+            Status = "Draft",
+            Notes = order.Notes,
+            RevisesPurchaseOrderId = order.Id,
+            CreatedBy = currentUserService.UserId
+        };
+        var revisionId = await orderRepository.AddAsync(revision);
+
+        var oldLines = await lineRepository.GetByOrderIdAsync(id);
+        var oldSources = await lineSourceRepository.GetByOrderLineIdsAsync(oldLines.Select(l => l.Id));
+        foreach (var oldLine in oldLines)
+        {
+            var newLineId = await lineRepository.AddAsync(new PurchaseOrderLine
+            {
+                PurchaseOrderId = revisionId,
+                ItemId = oldLine.ItemId,
+                WarehouseId = oldLine.WarehouseId,
+                Quantity = oldLine.Quantity,
+                UnitPrice = oldLine.UnitPrice,
+                DiscountPercent = oldLine.DiscountPercent,
+                CreatedBy = currentUserService.UserId
+            });
+            foreach (var source in oldSources.Where(s => s.PurchaseOrderLineId == oldLine.Id))
+            {
+                await lineSourceRepository.AddAsync(new PurchaseOrderLineSource
+                {
+                    PurchaseOrderLineId = newLineId,
+                    PurchaseRequisitionId = source.PurchaseRequisitionId,
+                    PurchaseRequisitionLineId = source.PurchaseRequisitionLineId,
+                    Quantity = source.Quantity,
+                    CreatedBy = currentUserService.UserId
+                });
+            }
+        }
+
+        foreach (var link in await orderRequisitionRepository.GetByOrderIdAsync(id))
+        {
+            await orderRequisitionRepository.AddAsync(new PurchaseOrderRequisition
+            {
+                PurchaseOrderId = revisionId,
+                PurchaseRequisitionId = link.PurchaseRequisitionId,
+                CreatedBy = currentUserService.UserId
+            });
+        }
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(order));
+        order.LifecycleStatus = "Superseded";
+        order.UpdatedBy = currentUserService.UserId;
+        order.UpdatedAt = DateTime.UtcNow;
+        await orderRepository.UpdateAsync(order);
+        await auditLogService.LogAsync("Procurement_PurchaseOrders", id, "Superseded", oldValues, JsonSerializer.Serialize(await ToResponseAsync(order)), currentUserService.UserId);
+
+        var response = await ToResponseAsync(revision);
+        await auditLogService.LogAsync("Procurement_PurchaseOrders", revisionId, "Create", null, JsonSerializer.Serialize(response), currentUserService.UserId);
+
+        return Result<PurchaseOrderResponse>.Success(response);
+    }
+
+    // Only allowed before any Goods Receipt was posted - fully releases all PR-line commitments back to the source PR(s).
+    public async Task<Result<PurchaseOrderResponse>> CancelAsync(long id, string reason)
+    {
+        var order = await orderRepository.GetByIdAsync(id);
+        if (order is null)
+        {
+            return Result<PurchaseOrderResponse>.Failure($"Purchase order {id} not found.");
+        }
+
+        if (order.Status != "Approved" || order.LifecycleStatus != "Open")
+        {
+            return Result<PurchaseOrderResponse>.Failure("Only an Open, Approved purchase order with no Goods Receipt yet can be cancelled.");
+        }
+
+        if (!await statusTransitionRepository.IsAllowedAsync("PurchaseOrder", order.LifecycleStatus, "Cancelled"))
+        {
+            return Result<PurchaseOrderResponse>.Failure("Purchase order cannot transition to Cancelled.");
+        }
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(order));
+
+        order.Status = "Cancelled";
+        order.LifecycleStatus = "Cancelled";
+        order.UpdatedBy = currentUserService.UserId;
+        order.UpdatedAt = DateTime.UtcNow;
+        await orderRepository.UpdateAsync(order);
+
+        var response = await ToResponseAsync(order);
+        await auditLogService.LogAsync("Procurement_PurchaseOrders", id, "Cancelled", oldValues, JsonSerializer.Serialize(new { Response = response, Reason = reason }), currentUserService.UserId);
+
+        return Result<PurchaseOrderResponse>.Success(response);
+    }
+
+    // Force-closes the un-fulfilled remainder of an Open/PartiallyReceived PO, releasing that remainder's
+    // PR-line commitment back to the source PR(s) so it can be re-ordered; already-received qty is untouched.
+    public async Task<Result<PurchaseOrderResponse>> CloseAsync(long id, string reason)
+    {
+        var order = await orderRepository.GetByIdAsync(id);
+        if (order is null)
+        {
+            return Result<PurchaseOrderResponse>.Failure($"Purchase order {id} not found.");
+        }
+
+        if (order.Status != "Approved" || order.LifecycleStatus is not ("Open" or "PartiallyReceived"))
+        {
+            return Result<PurchaseOrderResponse>.Failure("Only an Open or PartiallyReceived, Approved purchase order can be closed.");
+        }
+
+        if (!await statusTransitionRepository.IsAllowedAsync("PurchaseOrder", order.LifecycleStatus, "Closed"))
+        {
+            return Result<PurchaseOrderResponse>.Failure("Purchase order cannot transition to Closed.");
+        }
+
+        var oldValues = JsonSerializer.Serialize(await ToResponseAsync(order));
+
+        var lines = await lineRepository.GetByOrderIdAsync(id);
+        var sources = await lineSourceRepository.GetByOrderLineIdsAsync(lines.Select(l => l.Id));
+        foreach (var line in lines)
+        {
+            var excess = line.Quantity - line.ReceivedQuantity;
+            if (excess <= 0) continue;
+
+            var toRelease = excess;
+            foreach (var source in sources.Where(s => s.PurchaseOrderLineId == line.Id && s.PurchaseRequisitionLineId.HasValue).OrderByDescending(s => s.Id))
+            {
+                if (toRelease <= 0) break;
+
+                if (source.Quantity <= toRelease)
+                {
+                    await lineSourceRepository.SoftDeleteAsync(source.Id, currentUserService.UserId ?? 0);
+                    toRelease -= source.Quantity;
+                }
+                else
+                {
+                    await lineSourceRepository.UpdateQuantityAsync(source.Id, source.Quantity - toRelease);
+                    toRelease = 0;
+                }
+            }
+        }
+
+        order.Status = "Closed";
+        order.LifecycleStatus = "Closed";
+        order.UpdatedBy = currentUserService.UserId;
+        order.UpdatedAt = DateTime.UtcNow;
+        await orderRepository.UpdateAsync(order);
+
+        var response = await ToResponseAsync(order);
+        await auditLogService.LogAsync("Procurement_PurchaseOrders", id, "Closed", oldValues, JsonSerializer.Serialize(new { Response = response, Reason = reason }), currentUserService.UserId);
+
+        return Result<PurchaseOrderResponse>.Success(response);
+    }
+
     // Called by Inventory (via this IPurchaseOrderReceiptService contract) after posting a Goods Receipt
     // referencing this PO, so Procurement can track received quantity without Inventory reading its tables.
     public async Task ApplyReceiptAsync(long purchaseOrderId, IReadOnlyList<PurchaseOrderReceiptItemUpdate> items)
@@ -402,10 +583,16 @@ public class PurchaseOrderUseCase(
     private async Task<PurchaseOrderResponse> ToResponseAsync(PurchaseOrder order)
     {
         var userCache = await ResolveUsersAsync([order.CreatedBy]);
-        return await ToResponseAsync(order, userCache);
+        var allOrders = await orderRepository.GetAllAsync();
+        var orderNumberById = allOrders.ToDictionary(o => o.Id, o => o.OrderNumber);
+        var revisedByIdByOriginalId = allOrders.Where(o => o.RevisesPurchaseOrderId.HasValue)
+            .ToDictionary(o => o.RevisesPurchaseOrderId!.Value, o => o.Id);
+        return await ToResponseAsync(order, userCache, orderNumberById, revisedByIdByOriginalId);
     }
 
-    private async Task<PurchaseOrderResponse> ToResponseAsync(PurchaseOrder order, IReadOnlyDictionary<long, UserDirectoryEntry> userCache)
+    private async Task<PurchaseOrderResponse> ToResponseAsync(
+        PurchaseOrder order, IReadOnlyDictionary<long, UserDirectoryEntry> userCache,
+        IReadOnlyDictionary<long, string> orderNumberById, IReadOnlyDictionary<long, long> revisedByIdByOriginalId)
     {
         var lines = await lineRepository.GetByOrderIdAsync(order.Id);
         var allSources = await lineSourceRepository.GetByOrderLineIdsAsync(lines.Select(l => l.Id));
@@ -445,6 +632,9 @@ public class PurchaseOrderUseCase(
             order.Id, order.OrderNumber, sourceRequisitions, order.VendorId, vendor?.Code, vendor?.Name,
             order.CurrencyId, order.PaymentTermDays, order.OrderDate, order.ExpectedDeliveryDate,
             order.Status, order.LifecycleStatus, order.CurrentApprovalLevel, order.Notes,
+            order.RevisesPurchaseOrderId, order.RevisesPurchaseOrderId.HasValue && orderNumberById.TryGetValue(order.RevisesPurchaseOrderId.Value, out var revisesNumber) ? revisesNumber : null,
+            revisedByIdByOriginalId.TryGetValue(order.Id, out var revisedById) ? revisedById : null,
+            revisedByIdByOriginalId.TryGetValue(order.Id, out var revisedById2) && orderNumberById.TryGetValue(revisedById2, out var revisedByNumber) ? revisedByNumber : null,
             order.CreatedAt, order.CreatedBy, createdByUser?.FullName, lineResponses);
     }
 

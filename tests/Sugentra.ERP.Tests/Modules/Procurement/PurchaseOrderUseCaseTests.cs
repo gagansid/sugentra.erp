@@ -37,6 +37,7 @@ public class PurchaseOrderUseCaseTests
     {
         currentUserService.SetupGet(x => x.UserId).Returns(1);
         statusTransitionRepository.Setup(x => x.IsAllowedAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        orderRepository.Setup(x => x.GetAllAsync()).ReturnsAsync(new List<PurchaseOrder>());
         documentNumberGeneratorService.Setup(x => x.GetNextAsync("PurchaseOrder"))
             .ReturnsAsync(new NextDocumentNumberResult(1, "PO/2026/0001"));
         lineRepository.Setup(x => x.GetByOrderIdAsync(It.IsAny<long>()))

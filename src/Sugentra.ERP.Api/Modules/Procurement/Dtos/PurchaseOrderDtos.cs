@@ -17,6 +17,10 @@ public record UpdatePurchaseOrderRequest(
     long VendorId, long CurrencyId, int? PaymentTermDays, DateTime OrderDate,
     DateTime? ExpectedDeliveryDate, string? Notes, List<PurchaseOrderLineRequest> Lines);
 
+public record CancelPurchaseOrderRequest(string Reason);
+
+public record ClosePurchaseOrderRequest(string Reason);
+
 public record PurchaseOrderLineSourceResponse(long? PurchaseRequisitionId, string? RequisitionNumber, decimal Quantity);
 
 public record PurchaseOrderLineResponse(
@@ -30,6 +34,7 @@ public record PurchaseOrderResponse(
     long Id, string OrderNumber, IReadOnlyList<PurchaseOrderSourceRequisitionResponse> SourceRequisitions, long VendorId, string? VendorCode, string? VendorName,
     long CurrencyId, int? PaymentTermDays, DateTime OrderDate, DateTime? ExpectedDeliveryDate,
     string Status, string? LifecycleStatus, string? CurrentApprovalLevel, string? Notes,
+    long? RevisesPurchaseOrderId, string? RevisesOrderNumber, long? RevisedByPurchaseOrderId, string? RevisedByOrderNumber,
     DateTime CreatedAt, long? CreatedBy, string? CreatedByName, IReadOnlyList<PurchaseOrderLineResponse> Lines);
 
 
