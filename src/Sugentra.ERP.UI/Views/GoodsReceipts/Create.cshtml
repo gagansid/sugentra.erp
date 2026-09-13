@@ -315,8 +315,7 @@
                 // ---- Auto-fill lines from the selected Purchase Order ----
                 // The PO already fixes which items (and remaining qty) are expected, so there is no
                 // reason to make the user pick the item again - only the Batch/lot is left to choose.
-                function buildPurchaseOrderRow(line) {
-                    var template = document.querySelector('#lines .line-row');
+                function buildPurchaseOrderRow(template, line) {
                     var clone = template.cloneNode(true);
                     clone.querySelectorAll('.bootstrap-select').forEach(function (wrapper) {
                         wrapper.replaceWith(wrapper.querySelector('select'));
@@ -336,6 +335,11 @@
                     var purchaseOrderId = $(this).val();
                     if (!purchaseOrderId) return;
 
+                    // Grab the template row before #lines gets cleared below - once it's gone there's
+                    // nothing left to clone from.
+                    var template = document.querySelector('#lines .line-row');
+                    if (!template) return;
+
                     $.getJSON('@Url.Action("PurchaseOrderLines")', { purchaseOrderId: purchaseOrderId }, function (result) {
                         if (!result.success || !result.lines || !result.lines.length) {
                             return;
@@ -343,12 +347,21 @@
                         var lines = document.getElementById('lines');
                         lines.innerHTML = '';
                         result.lines.forEach(function (line) {
-                            lines.appendChild(buildPurchaseOrderRow(line));
+                            lines.appendChild(buildPurchaseOrderRow(template, line));
                         });
                         initSelectPickers($(lines));
                         refreshBatchOptions();
                     });
                 });
+
+                @if (selectedPurchaseOrderId.HasValue)
+                {
+                    <text>
+                    // Navigated here from a PO's "Create Goods Receipt" shortcut - the dropdown is
+                    // preselected server-side, so fire the handler above manually to auto-fill lines.
+                    $('select[name="purchaseOrderId"]').trigger('change');
+                    </text>
+                }
 
                 // ---- Create Batch inline, without leaving the Goods Receipt form ----
                 // Global action (button lives above the Lines list, not per-row) - the new batch is
