@@ -12,6 +12,8 @@ public static class StatusBadgeHelper
         "PartiallyReceived" => "info",
         "Approved" or "Approve" or "Completed" or "Posted" or "Post" or "FullyReceived" or "Released" => "primary",
         "Rejected" or "Reject" or "Cancelled" or "SoftDelete" => "danger",
+        "Closed" => "dark",
+        "Superseded" => "secondary",
         _ => "secondary"
     };
 
