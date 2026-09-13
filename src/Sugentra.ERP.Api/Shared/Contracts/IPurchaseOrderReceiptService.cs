@@ -8,5 +8,10 @@ public record PurchaseOrderReceiptItemUpdate(long ItemId, decimal ReceivedQuanti
 public interface IPurchaseOrderReceiptService
 {
     Task ApplyReceiptAsync(long purchaseOrderId, IReadOnlyList<PurchaseOrderReceiptItemUpdate> items);
+
+    // Used by Inventory to validate a PurchaseOrderId supplied on a Goods Receipt before saving it -
+    // returns null when eligible, or a user-facing error message otherwise.
+    Task<string?> ValidateEligibleForReceiptAsync(long purchaseOrderId);
 }
+
 

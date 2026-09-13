@@ -464,6 +464,24 @@ public class PurchaseOrderUseCase(
         await auditLogService.LogAsync("Procurement_PurchaseOrders", purchaseOrderId, "ReceiptApplied", null, JsonSerializer.Serialize(order.LifecycleStatus), null);
     }
 
+    // Called by Inventory's GoodsReceipt Create/Update to validate a supplied PurchaseOrderId server-side -
+    // enforced regardless of client (UI, Android, partner integrations), not just the UI's dropdown filter.
+    public async Task<string?> ValidateEligibleForReceiptAsync(long purchaseOrderId)
+    {
+        var order = await orderRepository.GetByIdAsync(purchaseOrderId);
+        if (order is null)
+        {
+            return $"Purchase order {purchaseOrderId} not found.";
+        }
+
+        if (order.Status != "Approved" || order.LifecycleStatus is not ("Open" or "PartiallyReceived"))
+        {
+            return $"Purchase order {order.OrderNumber} is not eligible to receive goods (status: {order.Status}, lifecycle: {order.LifecycleStatus}).";
+        }
+
+        return null;
+    }
+
     private async Task<Result<PurchaseOrderResponse>> FinalizeApprovedAsync(PurchaseOrder order)
     {
         var oldValues = JsonSerializer.Serialize(await ToResponseAsync(order));

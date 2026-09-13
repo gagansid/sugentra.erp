@@ -44,6 +44,15 @@ public class GoodsReceiptUseCase(
             return Result<GoodsReceiptResponse>.Failure(duplicateBatchError);
         }
 
+        if (request.PurchaseOrderId.HasValue)
+        {
+            var poError = await purchaseOrderReceiptService.ValidateEligibleForReceiptAsync(request.PurchaseOrderId.Value);
+            if (poError is not null)
+            {
+                return Result<GoodsReceiptResponse>.Failure(poError);
+            }
+        }
+
         var number = await documentNumberGeneratorService.GetNextAsync("GoodsReceipt");
 
         var receipt = new GoodsReceipt
@@ -96,6 +105,15 @@ public class GoodsReceiptUseCase(
         if (duplicateBatchError is not null)
         {
             return Result<GoodsReceiptResponse>.Failure(duplicateBatchError);
+        }
+
+        if (request.PurchaseOrderId.HasValue)
+        {
+            var poError = await purchaseOrderReceiptService.ValidateEligibleForReceiptAsync(request.PurchaseOrderId.Value);
+            if (poError is not null)
+            {
+                return Result<GoodsReceiptResponse>.Failure(poError);
+            }
         }
 
         var oldValues = JsonSerializer.Serialize(await ToResponseAsync(receipt));
